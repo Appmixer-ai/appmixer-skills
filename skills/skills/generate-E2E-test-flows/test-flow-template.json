@@ -1,0 +1,166 @@
+{
+    "name": "E2E Test Flow",
+    "flow": {
+        "fbb75e69-59ee-4f2e-a7e8-212e903ce201": {
+            "type": "appmixer.utils.controls.OnStart",
+            "x": 336,
+            "y": 320,
+            "source": {},
+            "version": "1.0.0",
+            "errorHandling": {
+                "autoRetry": false,
+                "onError": "stopFlow"
+            }
+        },
+        "e0c5d708-7014-4766-87b3-73dd3d528f5c": {
+            "type": "appmixer.utils.test.ProcessE2EResults",
+            "x": 2096,
+            "y": 336,
+            "source": {
+                "in": {
+                    "e2051970-21f2-4a3e-9cf5-3afc253a478b": [
+                        "out"
+                    ]
+                }
+            },
+            "version": "1.0.0",
+            "config": {
+                "properties": {
+                    "successStoreId": "64cb41824421780007381f86",
+                    "failedStoreId": "64cb41969751560007caf0bf"
+                },
+                "transform": {
+                    "in": {
+                        "e2051970-21f2-4a3e-9cf5-3afc253a478b": {
+                            "out": {
+                                "type": "json2new",
+                                "modifiers": {
+                                    "recipients": {},
+                                    "testCase": {},
+                                    "result": {
+                                        "661a2f77-19b7-4dbd-9f30-7ff556d65c4a": {
+                                            "variable": "$.e2051970-21f2-4a3e-9cf5-3afc253a478b.out",
+                                            "functions": []
+                                        }
+                                    }
+                                },
+                                "lambda": {
+                                    "recipients": "test@appmixer.com",
+                                    "testCase": "E2E Test Flow",
+                                    "result": "{{{661a2f77-19b7-4dbd-9f30-7ff556d65c4a}}}"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "errorHandling": {
+                "autoRetry": false,
+                "onError": "stopFlow"
+            }
+        },
+        "e2051970-21f2-4a3e-9cf5-3afc253a478b": {
+            "type": "appmixer.utils.test.AfterAll",
+            "x": 1920,
+            "y": 336,
+            "source": {
+                "in": {
+                    "6122345d-f03f-4e8a-a89b-a14c975b6322": [
+                        "out"
+                    ],
+                    "c328eab3-39e1-493d-8b7f-7f4a7fbf6fc4": [
+                        "out"
+                    ],
+                    "96928b3b-466d-4ed5-979c-40b61c9e995f": [
+                        "out"
+                    ]
+                }
+            },
+            "version": "1.0.0",
+            "config": {
+                "properties": {
+                    "timeout": 180
+                }
+            },
+            "errorHandling": {
+                "autoRetry": false,
+                "onError": "stopFlow"
+            }
+        },
+        "6122345d-f03f-4e8a-a89b-a14c975b6322": {
+            "type": "appmixer.utils.test.Assert",
+            "x": 1136,
+            "y": 192,
+            "source": {},
+            "version": "1.0.0",
+            "errorHandling": {
+                "autoRetry": false,
+                "onError": "stopFlow"
+            }
+        },
+        "27fe7676-6028-43d0-b16f-368cc2d8d0d6": {
+            "type": "appmixer.utils.controls.SetVariable",
+            "x": 496,
+            "y": 320,
+            "source": {
+                "in": {
+                    "fbb75e69-59ee-4f2e-a7e8-212e903ce201": [
+                        "out"
+                    ]
+                }
+            },
+            "version": "1.0.0",
+            "config": {
+                "transform": {
+                    "in": {
+                        "fbb75e69-59ee-4f2e-a7e8-212e903ce201": {
+                            "out": {
+                                "type": "json2new",
+                                "modifiers": {
+                                    "variables": {}
+                                },
+                                "lambda": {
+                                    "variables": {
+                                        "ADD": [
+                                            {
+                                                "type": "text",
+                                                "name": "Test Name",
+                                                "text": "test name "
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "errorHandling": {
+                "autoRetry": false,
+                "onError": "stopFlow"
+            }
+        },
+        "c328eab3-39e1-493d-8b7f-7f4a7fbf6fc4": {
+            "type": "appmixer.utils.test.Assert",
+            "x": 1120,
+            "y": 352,
+            "source": {},
+            "version": "1.0.0",
+            "errorHandling": {
+                "autoRetry": false,
+                "onError": "stopFlow"
+            }
+        },
+        "96928b3b-466d-4ed5-979c-40b61c9e995f": {
+            "type": "appmixer.utils.test.Assert",
+            "x": 1120,
+            "y": 480,
+            "source": {},
+            "version": "1.0.0",
+            "errorHandling": {
+                "autoRetry": false,
+                "onError": "stopFlow"
+            }
+        }
+    }
+}

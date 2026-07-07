@@ -1,0 +1,14 @@
+{
+  "name": "appmixer-agents",
+  "owner": {
+    "name": "Appmixer"
+  },
+  "description": "Appmixer agent skills marketplace.",
+  "plugins": [
+    {
+      "name": "appmixer",
+      "source": "./skills",
+      "description": "Appmixer connector development skills (init, pipeline, CLI tests, E2E flows, refactor/review)."
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "appmixer",
+  "description": "Appmixer connector development skills: init/scaffold connectors, full build pipeline, CLI tests, E2E test flows, and component refactor/review against Appmixer standards.",
+  "version": "0.1.1",
+  "license": "MIT",
+  "author": {
+    "name": "Appmixer"
+  },
+  "homepage": "https://github.com/Appmixer-ai/appmixer-openclaw-agents",
+  "repository": "https://github.com/Appmixer-ai/appmixer-openclaw-agents"
+}

@@ -1,0 +1,18 @@
+{
+    "name": "appmixer-connector-agents",
+    "version": "1.0.0",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "test": "echo \"No tests defined\" && exit 0"
+    },
+    "engines": {
+        "node": ">=18"
+    },
+    "dependencies": {
+        "ajv": "^8.17.1",
+        "axios": "^1.12.0",
+        "chalk": "^5.3.0",
+        "dotenv": "^16.4.7"
+    }
+}
