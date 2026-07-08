@@ -25,6 +25,10 @@ the `upload-e2e-flows` skill). The runner uploads/updates the *flows* itself.
 - `APPMIXER_ENV` pointing to a `.env` file with `VERO_APPMIXER_BASE_URL`,
   `VERO_APPMIXER_USERNAME`, `VERO_APPMIXER_PASSWORD` (or those vars set directly)
 - Connector published on the instance; an auth account exists for it
+- **Design conventions** — the fix loop consults
+  `<connectors>/.github/instructions/09-testing.md` (it lives in the connectors
+  repo, not in this plugin). If `<connectors>/.github/instructions/` is missing,
+  stop and tell the user they need an up-to-date `appmixer-connectors` checkout.
 
 ## The runner
 

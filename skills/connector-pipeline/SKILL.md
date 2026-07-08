@@ -15,7 +15,7 @@ bash "${CLAUDE_PLUGIN_ROOT:-${VERO_SKILL_ROOT:-.}/..}/scripts/ensure-deps.sh"
 
 ## Design Reference
 
-All connector design knowledge lives in `appmixer-connectors/.github/instructions/`. This is the single source of truth for connector standards — all agents in the pipeline load it automatically via `loadContext`.
+All connector design knowledge lives in `appmixer-connectors/.github/instructions/`. This is the single source of truth for connector standards — all agents in the pipeline load it automatically via `loadContext`. The conventions live in the connectors repo, not in this plugin: before starting the pipeline, verify `<connectors>/.github/instructions/` exists; if it doesn't, stop and tell the user they need an up-to-date `appmixer-connectors` checkout (set `VERO_CONNECTORS_DIR` or run from inside it).
 
 | File | Content |
 |------|---------|

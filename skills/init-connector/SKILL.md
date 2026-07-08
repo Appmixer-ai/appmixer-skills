@@ -15,6 +15,11 @@ files. There is no sub-agent to spawn.
   `GITHUB_TOKEN`) for private repos.
 - **Connector location** — set `VERO_CONNECTORS_DIR` to the `appmixer-connectors`
   checkout root, or run from inside the repo.
+- **Design conventions** — this skill reads the canonical rules from
+  `<connectors>/.github/instructions/` (they live in the connectors repo, not in
+  this plugin). Before doing anything else, verify that directory exists; if it
+  doesn't, stop and tell the user they need an up-to-date `appmixer-connectors`
+  checkout.
 
 ## Input
 

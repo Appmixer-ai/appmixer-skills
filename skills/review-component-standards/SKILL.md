@@ -27,6 +27,11 @@ The rules to check live in `<connectors>/.github/instructions/`:
 - **Connector location** — set `VERO_CONNECTORS_DIR` to the `appmixer-connectors`
   checkout root, or run from inside the repo. Components live at
   `<connectors>/src/appmixer/<connector>/`.
+- **Design conventions** — the rules this skill checks against are read from
+  `<connectors>/.github/instructions/` (they live in the connectors repo, not in
+  this plugin). Before starting the review, verify that directory exists; if it
+  doesn't, stop and tell the user they need an up-to-date `appmixer-connectors`
+  checkout.
 
 ## Input
 

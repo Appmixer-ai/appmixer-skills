@@ -25,13 +25,30 @@ OpenClaw session) — no skill spawns its own LLM sub-agent. Two shapes:
 Configuration comes from env vars (`VERO_APPMIXER_*`, `VERO_CONNECTORS_DIR`, …) —
 see `.env.example`. Node deps are installed by `scripts/ensure-deps.sh` (idempotent).
 
+### Dependency on `appmixer-connectors`
+
+The skills are tooling **for** the [appmixer-connectors](https://github.com/clientIO/appmixer-connectors)
+repo — they scaffold, test and review connectors inside a checkout of it. A
+checkout is therefore required at runtime: set `VERO_CONNECTORS_DIR` to its
+root, or run from inside the repo (`skills/_shared/resolveConnectorsDir.js` is
+the shared resolver).
+
+The connector **design conventions** (`.github/instructions/*.md`) deliberately
+live in that repo, not here: they describe that codebase, are edited in the same
+PRs as the connector code, and feed its own tooling (the generated
+`copilot-instructions.md`, CI responder, CLAUDE.md). Skills read them from the
+checkout like a linter reads a project's config — this plugin carries the
+*process*, the target repo carries the *rules*. Skills that need the
+conventions verify `<connectors>/.github/instructions/` exists before starting
+and abort with a clear message when it's missing.
+
 > **Note:** the `skills/*/agent/` directories are legacy sub-agent implementations —
 > current SKILL.md files no longer reference them.
 
 ### Installing as a Claude Code plugin
 
 ```bash
-/plugin marketplace add Appmixer-ai/appmixer-openclaw-agents
+/plugin marketplace add Appmixer-ai/appmixer-skills
 /plugin install appmixer@appmixer-agents
 ```
 
