@@ -67,6 +67,19 @@ bash "${CLAUDE_PLUGIN_ROOT:-${VERO_SKILL_ROOT:-.}/..}/scripts/ensure-deps.sh"
    binds to the wrong flow and requests only the base scope → the provider
    rejects auth ("no supported scopes"). Enforced by `component-id-uuid`.
 
+0c. **Key `source` and `config.transform` by the component's REAL inPort name** —
+   read it from the component.json `inPorts` of the component you are wiring INTO.
+   It is `in` for most components, but NOT all (salesforce CreateLead/UpdateLead →
+   `lead`, CreateContact/UpdateContact → `contact`). **Why it matters:** a wrong
+   key uploads fine and even passes the variables check, but the engine rejects
+   flow START with an opaque 400 "Malformed transformation" that names no
+   component. Enforced by `inport-key-match`.
+
+0d. **Never hardcode `config.properties.account`** in generated flows — account
+   IDs are instance-specific and rot; binding happens at upload time
+   (patch-accounts / runner `VERO_APPMIXER_ACCOUNT_ID`). Enforced (warning) by
+   `no-hardcoded-account`.
+
 1. **Flow name starts with `E2E `** and is descriptive.
 2. **Required components present**: `OnStart`, `AfterAll`, `ProcessE2EResults`
    (wired per the template).

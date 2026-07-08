@@ -62,13 +62,24 @@ override with `VERO_APPMIXER_UI_URL`).
 **Auth failures are detected automatically:**
 - **Preflight** — every bound account is validity-tested (`POST /accounts/:id/test`)
   before the first run; an expired/revoked token hard-fails immediately with the
-  account id, before anything executes.
+  account id, before anything executes. ⚠️ This test runs the connector's
+  `validateAccessToken`, which in some connectors (salesforce) only compares a stored
+  expiry date — a dead token can still pass preflight and surface as runtime 401/403
+  (`Bad_OAuth_Token`, `INVALID_SESSION_ID`) or as a flow-start 400 wrapping an inner
+  401 from the trigger's `start()` call. In that case try the service's OTHER
+  accounts and pin the working one.
 - **Scopes** — a TokenError that persists after one account rebind means the bound
   account's token lacks the component's required scopes (read from its
   `component.json`). The runner hard-fails with the exact scopes — pass that to the
   user; only a human OAuth re-consent fixes it. After the re-consent, pin the new
   account with `VERO_APPMIXER_ACCOUNT_ID=<accountId>` if the old scope-less account
   still exists next to it.
+
+**`VERO_APPMIXER_ACCOUNT_ID` is authoritative:** when set, it overrides
+flow-authored `config.properties.account` values both in the uploaded flow
+definition and in the auth grants — a stale account hardcoded in the flow JSON
+can never shadow it. (Unpinned runs keep flow-authored accounts — that is how
+multi-account flows work.)
 
 **Clean timeouts retry once:** a timeout with zero errors means an external event
 (webhook notification) just hasn't arrived yet — latency varies from seconds to
@@ -84,10 +95,23 @@ On exit code 2 the runner prints a `NEEDS_FIX` JSON brief: `reason`, `errors`
    - HTTP errors (4xx/5xx) from connector components
    - Assert failures (wrong field values, missing fields) — Assert output has
      `success` and `error` arrays
-   - Variable reference errors (invalid paths in `config.transform.in.*` / `lambda`)
+   - Variable reference errors (invalid paths in `config.transform.*` / `lambda`)
    - Component errors (bad config); `"Component error"` on ProcessE2EResults
      usually means an upstream Assert or AfterAll failed
    - `"timeout"` in AfterAll = not all Asserts fired — something upstream is stuck
+   - **Flow start rejected: `Component transformation validation error` /
+     `Malformed transformation`** (the response names no component) — some
+     component's `source`/`config.transform` is keyed on a port name that is not
+     one of its inPorts. Most components use `in`, but not all (salesforce
+     CreateLead → `lead`, CreateContact → `contact`). Check every component's
+     `component.json` inPorts; the `inport-key-match` validator catches this
+     statically.
+   - **Flow start rejected: 400 wrapping an inner 401/AxiosError with a service
+     URL** — the engine called the service during start (trigger `start()`) with a
+     dead/wrong account; see the auth notes above. `Cannot read properties of
+     undefined (reading 'fn')` in an OLD component after a publish = stale
+     per-version code snapshot — remove + republish that component (see
+     upload-e2e-flows "Stale Component Definition / Code After Publish").
 2. **Read the failing component's `component.json`** to confirm expected
    inputs/outputs before changing variable paths.
 3. **Fix the flow JSON on disk** (`flowJsonPath` from the brief): variable paths,

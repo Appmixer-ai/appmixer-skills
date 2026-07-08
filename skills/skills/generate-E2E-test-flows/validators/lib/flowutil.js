@@ -11,12 +11,40 @@ export function* components(json) {
     for (const entry of Object.entries(json.flow || {})) yield entry;
 }
 
+// --- Port-agnostic accessors -------------------------------------------------
+// `source` and `config.transform` are keyed FIRST by the component's own (local)
+// inPort name. That is "in" for most components, but NOT all: e.g. salesforce
+// CreateLead/UpdateLead use "lead", CreateContact/UpdateContact use "contact".
+// Validators must never hardcode "in" — a flow keyed on the real (non-"in") port
+// would silently skip every rule, while a flow wrongly keyed on "in" is what the
+// engine rejects at start (400 "Malformed transformation").
+
+// Merged { senderId: senderPorts } across ALL local inPorts of `source`.
+export function sourceIn(comp) {
+    const merged = {};
+    for (const senders of Object.values(comp?.source || {})) {
+        Object.assign(merged, senders || {});
+    }
+    return merged;
+}
+
+// Merged { senderId: { senderOutPort: spec } } across ALL local inPorts of `config.transform`.
+export function transformIn(comp) {
+    const merged = {};
+    for (const senders of Object.values(comp?.config?.transform || {})) {
+        for (const [senderId, ports] of Object.entries(senders || {})) {
+            merged[senderId] = { ...(merged[senderId] || {}), ...ports };
+        }
+    }
+    return merged;
+}
+
 // Edges as { sourceId, targetId, source, target }. An edge exists for every
-// upstream id listed in a component's source.in.
+// upstream id listed in a component's `source` (any local inPort).
 export function* edges(json) {
     const flow = json.flow || {};
     for (const [targetId, target] of Object.entries(flow)) {
-        for (const sourceId of Object.keys(target.source?.in || {})) {
+        for (const sourceId of Object.keys(sourceIn(target))) {
             yield { sourceId, targetId, source: flow[sourceId], target };
         }
     }
@@ -25,8 +53,7 @@ export function* edges(json) {
 // Transform ports: { id, comp, srcId, port, modifiers, lambda }.
 export function* transformPorts(json) {
     for (const [id, comp] of components(json)) {
-        const tin = comp.config?.transform?.in || {};
-        for (const [srcId, ports] of Object.entries(tin)) {
+        for (const [srcId, ports] of Object.entries(transformIn(comp))) {
             for (const [port, data] of Object.entries(ports)) {
                 yield { id, comp, srcId, port, modifiers: data.modifiers || {}, lambda: data.lambda || {} };
             }
@@ -45,8 +72,7 @@ export function collectVariables(obj, acc = []) {
 // Assert expression clauses ({ field, assertion, value, ... }) from a component's
 // transform lambda.expression ({ AND: [...] } / { OR: [...] }).
 export function* assertClauses(comp) {
-    const tin = comp.config?.transform?.in || {};
-    for (const ports of Object.values(tin)) {
+    for (const ports of Object.values(transformIn(comp))) {
         for (const data of Object.values(ports)) {
             const expr = data.lambda?.expression;
             if (!expr || typeof expr !== 'object') continue;

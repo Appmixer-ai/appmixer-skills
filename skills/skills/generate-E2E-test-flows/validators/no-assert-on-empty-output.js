@@ -12,7 +12,7 @@
  * their output is valid. Past-tense triggers Deleted* are events that DO emit
  * data and are excluded by the negative lookahead.
  */
-import { components } from './lib/flowutil.js';
+import { components, sourceIn } from './lib/flowutil.js';
 
 const isEmptyOutput = (type) => /\.Delete(?!d)[A-Z]/.test(type || '');
 
@@ -24,7 +24,7 @@ export const run = (ctx) => {
         const flow = json.flow || {};
         for (const [id, comp] of components(json)) {
             if (!(comp.type || '').endsWith('.Assert')) continue;
-            for (const srcId of Object.keys(comp.source?.in || {})) {
+            for (const srcId of Object.keys(sourceIn(comp))) {
                 const srcType = flow[srcId]?.type;
                 if (isEmptyOutput(srcType)) {
                     ctx.addFailure(file,

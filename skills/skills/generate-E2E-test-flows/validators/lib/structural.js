@@ -3,6 +3,8 @@
  * Pure deterministic checks — no LLM, no external dependencies.
  */
 
+import { sourceIn, transformIn } from './flowutil.js';
+
 // ---------------------------------------------------------------------------
 // Individual validators
 // ---------------------------------------------------------------------------
@@ -39,7 +41,7 @@ export const validateAfterAllConnections = (components) => {
     const afterAll = Object.entries(components).find(([, c]) => c.type === 'appmixer.utils.test.AfterAll');
     if (!afterAll) return errors;
 
-    const afterAllSources = Object.keys(afterAll[1].source?.in || {});
+    const afterAllSources = Object.keys(sourceIn(afterAll[1]));
     const assertIds = Object.entries(components)
         .filter(([, c]) => c.type === 'appmixer.utils.test.Assert')
         .map(([id]) => id);
@@ -55,12 +57,12 @@ export const validateAfterAllConnections = (components) => {
 
 export const validateSourceMismatch = (compId, comp) => {
     const errors = [];
-    const compSources = Object.keys(comp.source?.in || {});
+    const compSources = Object.keys(sourceIn(comp));
 
-    for (const sourceId of Object.keys(comp.config?.transform?.in || {})) {
+    for (const sourceId of Object.keys(transformIn(comp))) {
         if (!compSources.includes(sourceId)) {
             errors.push(error('critical', compId, 'source-mismatch',
-                `Transform references "${sourceId}" but it's not in source.in [${compSources.join(', ')}]`));
+                `Transform references "${sourceId}" but it's not linked in "source" [${compSources.join(', ')}]`));
         }
     }
     return errors;
@@ -145,11 +147,11 @@ export const validateProcessE2EResults = (components) => {
     if (!procComp.config?.properties?.failedStoreId)
         errors.push(error('warning', procId, 'process-config', 'Missing failedStoreId (injected at upload time)'));
 
-    const transformIn = procComp.config?.transform?.in;
-    if (transformIn) {
-        const sourceKey = Object.keys(transformIn)[0];
-        const resultModifier = transformIn[sourceKey]?.out?.modifiers?.result;
-        const resultLambda = transformIn[sourceKey]?.out?.lambda?.result;
+    const tin = transformIn(procComp);
+    if (Object.keys(tin).length) {
+        const sourceKey = Object.keys(tin)[0];
+        const resultModifier = tin[sourceKey]?.out?.modifiers?.result;
+        const resultLambda = tin[sourceKey]?.out?.lambda?.result;
         if (resultModifier && Object.keys(resultModifier).length > 0) {
             const varId = Object.keys(resultModifier)[0];
             if (!resultLambda || !resultLambda.includes(`{{{${varId}}}}`)) {
@@ -167,12 +169,10 @@ export const validateNoRawOutputAsserts = (components) => {
         if (comp.type !== 'appmixer.utils.test.Assert') continue;
 
         // Check all variable references in transform modifiers.
-        // transform.in is keyed by source id, then by the source's OUTPUT PORT name
-        // (often "out", but dynamic-output components emit on ports like "templates").
-        // Scan EVERY port's modifiers, not just "out", so we don't miss raw asserts
-        // on non-"out" ports.
-        const transformIn = comp.config?.transform?.in || {};
-        for (const sourceConfig of Object.values(transformIn)) {
+        // transform is keyed by the component's own inPort, then source id, then
+        // the source's OUTPUT PORT name (often "out", but dynamic-output components
+        // emit on ports like "templates"). Scan EVERY port's modifiers.
+        for (const sourceConfig of Object.values(transformIn(comp))) {
             const modifiers = {};
             for (const portConfig of Object.values(sourceConfig || {})) {
                 if (portConfig?.modifiers) Object.assign(modifiers, portConfig.modifiers);
@@ -232,8 +232,7 @@ export const validateDynamicOutputAsserts = (components) => {
     for (const [compId, comp] of Object.entries(components)) {
         if (comp.type !== 'appmixer.utils.test.Assert') continue;
 
-        const transformIn = comp.config?.transform?.in || {};
-        for (const [sourceId, sourceConfig] of Object.entries(transformIn)) {
+        for (const [sourceId, sourceConfig] of Object.entries(transformIn(comp))) {
             const sourceComp = components[sourceId];
             if (!sourceComp) continue;
 
@@ -243,10 +242,10 @@ export const validateDynamicOutputAsserts = (components) => {
 
             // When the flow sets outputType "first"/"object" on the source, it emits a
             // single item with named fields — $.comp.out.field is valid, don't warn.
-            // transform.in is keyed by upstream id then upstream OUTPUT port name
-            // (not always "out"), so scan every port's lambda.
+            // transform is keyed by local inPort, then upstream id, then upstream
+            // OUTPUT port name (not always "in"/"out"), so scan every port's lambda.
             let sourceOutputType;
-            for (const ports of Object.values(sourceComp.config?.transform?.in || {})) {
+            for (const ports of Object.values(transformIn(sourceComp))) {
                 for (const data of Object.values(ports || {})) {
                     if (typeof data?.lambda?.outputType === 'string') sourceOutputType = data.lambda.outputType;
                 }
@@ -326,8 +325,7 @@ export const deterministicValidation = (flowJson) => {
     for (const [compId, comp] of Object.entries(components)) {
         errors.push(...validateSourceMismatch(compId, comp));
 
-        if (!comp.config?.transform?.in) continue;
-        for (const sourceConfig of Object.values(comp.config.transform.in)) {
+        for (const sourceConfig of Object.values(transformIn(comp))) {
             const out = sourceConfig?.out;
             errors.push(
                 ...validateVariableMapping(compId, out),

@@ -37,10 +37,14 @@ function afterRunStart(ts, runStartTs) {
 }
 
 // Axios error → readable message including the server-side detail (axios only says
-// "Request failed with status code 400"; the reason lives in response.data).
+// "Request failed with status code 400"; the reason lives in response.data, and for
+// flow-start rejections the specifics live one level deeper in response.data.details).
 function describeError(e) {
     const detail = e.response?.data;
-    const msg = detail?.message || (typeof detail === 'string' ? detail.slice(0, 300) : '');
+    let msg = detail?.message || (typeof detail === 'string' ? detail.slice(0, 300) : '');
+    if (detail?.details) {
+        try { msg += ` — details: ${JSON.stringify(detail.details).slice(0, 400)}`; } catch { /* ignore */ }
+    }
     return msg ? `${e.message}: ${msg}` : e.message;
 }
 
@@ -86,8 +90,17 @@ export class AppmixerClient {
         return matches[0].flowId || matches[0].id;
     }
 
+    // Flow start rejections carry the actual reason in the response body (e.g.
+    // "Component transformation validation error" = a source/transform port key does
+    // not match the component's inPort name; an inner 401/AxiosError = the engine's
+    // start-time call to the service failed, typically a dead/wrong account on a
+    // trigger). Surface it — a bare "status code 400" hides the diagnosis.
     async startFlow(flowId) {
-        return startFlow(await this.api(), flowId);
+        try {
+            return await startFlow(await this.api(), flowId);
+        } catch (e) {
+            throw new Error(`startFlow failed: ${describeError(e)}`);
+        }
     }
 
     async stopFlow(flowId) {
@@ -164,12 +177,19 @@ export class AppmixerClient {
         prepared.description = prepared.description || `E2E test flow for ${connectorLabel}`;
         prepared.customFields = prepared.customFields || {};
         prepared.customFields.category = 'E2E_test_flow';
+        const pinnedAccount = process.env.VERO_APPMIXER_ACCOUNT_ID;
         for (const comp of Object.values(prepared.flow || {})) {
             if (comp.type?.includes('ProcessE2EResults')) {
                 comp.config = comp.config || {};
                 comp.config.properties = comp.config.properties || {};
                 comp.config.properties.failedStoreId = storeMap['E2E Failed Tests'];
                 comp.config.properties.successStoreId = storeMap['E2E Succeeded Tests'];
+            }
+            // An explicitly pinned account must also win at RUNTIME: the engine reads
+            // config.properties.account from the flow definition, so a stale flow-authored
+            // account would shadow the pin even after the auth grant is rebound.
+            if (pinnedAccount && comp.config?.properties?.account) {
+                comp.config.properties.account = pinnedAccount;
             }
             // Fail-fast E2E semantics (Configurable Error Handling): no auto-retries, any component
             // error stops the flow — the run gets a clear terminal state instead of retry noise.
@@ -212,10 +232,11 @@ export class AppmixerClient {
     // (newly written nodes are unbound) and the deterministic remedy for TokenError.
     // `connectorPrefixes` is the set of dotted prefixes derived from the flow (e.g. ['microsoft.dynamics']),
     // so this works for nested and multi-connector flows alike.
-    // A component that carries its OWN `config.properties.account` keeps it — this is how
-    // multi-account flows work (e.g. organizer creates an event, attendee accepts it).
-    // The shared fallback (override > first flow-authored account > first service account)
-    // is used for every component without an explicit account.
+    // Precedence per component: explicit override (VERO_APPMIXER_ACCOUNT_ID — operator intent,
+    // beats everything, incl. flow-authored accounts, which may be stale/dead) >
+    // the component's OWN `config.properties.account` (how multi-account flows work,
+    // e.g. organizer creates an event, attendee accepts it) > first flow-authored
+    // account > first existing account of the service.
     async reassignAccounts(flowId, connectorPrefixes, overrideAccountId = null) {
         const flow = await this.getFlow(flowId);
         const components = flow.flow || {};
@@ -240,7 +261,7 @@ export class AppmixerClient {
         const used = new Set();
         for (const [compId, comp] of Object.entries(components)) {
             if (isConnectorComp(comp.type)) {
-                const accountId = comp.config?.properties?.account || sharedAccountId;
+                const accountId = overrideAccountId || comp.config?.properties?.account || sharedAccountId;
                 try {
                     await this.assignAccount(compId, accountId);
                     assigned++;

@@ -41,7 +41,15 @@ import { listAccounts, createAccount, assignComponentAccount } from '../../_shar
 import { resolveConnectorsDir } from '../../_shared/resolveConnectorsDir.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: process.env.APPMIXER_ENV || resolve(__dirname, '..', '..', '..', '..', '.env') });
+// The env file decides WHICH INSTANCE every command talks to. Node resolves this
+// script through symlinks (e.g. a connectors-repo .claude/skills symlink into the
+// openclaw workspace), so the fallback .env may belong to a DIFFERENT checkout and
+// silently point at another instance — fresh tokens then fail with 401 "Invalid JWT"
+// on the instance you thought you were using, and ensure-stores/list-e2e-flows
+// return data from the wrong one. Always announce the effective target on stderr.
+const envPath = process.env.APPMIXER_ENV || resolve(__dirname, '..', '..', '..', '..', '.env');
+dotenv.config({ path: envPath });
+process.stderr.write(`[appmixer-flow] env=${envPath}${process.env.APPMIXER_ENV ? '' : ' (fallback — set APPMIXER_ENV explicitly)'} instance=${process.env.VERO_APPMIXER_BASE_URL || 'MISSING'}\n`);
 
 const E2E_STORES = ['E2E Failed Tests', 'E2E Succeeded Tests'];
 const E2E_FILTER = { filter: 'customFields.category:E2E_test_flow', limit: 500, projection: 'flowId,name,stage' };

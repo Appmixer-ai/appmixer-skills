@@ -35,6 +35,15 @@ All configuration is in a single `.env` file. Set `APPMIXER_ENV` to its path bef
 export APPMIXER_ENV=/path/to/.env
 ```
 
+**⚠️ Export it in EVERY shell command** (agent Bash calls don't share state). Without
+it the scripts fall back to the `.env` next to their REAL (symlink-resolved) location
+— e.g. the openclaw workspace `.env` — and silently talk to a DIFFERENT instance.
+That misdirection looks like auth breakage: fresh tokens get 401 "Invalid JWT" on the
+instance you thought you were using, `ensure-stores`/`list-e2e-flows` return foreign
+IDs/empty lists. `appmixer-flow.mjs` prints the effective env + instance on stderr as
+its first line (`[appmixer-flow] env=... instance=...`) — **read it** and abort if it
+is not the instance you expect.
+
 The `.env` file must contain:
 
 ```
@@ -95,19 +104,38 @@ node "$VERO_SKILL_ROOT"/e2e-shared/scripts/validate-flows.mjs \
 
 ### Step 1: Publish Connector
 
-Pack and publish the connector to the live instance:
+**⚠️ Components are per-user copies.** `appmixer publish`/`remove` act on the copies
+owned by whoever the CLI is logged in as — if that is NOT the e2e user
+(`VERO_APPMIXER_USERNAME`), the publish looks successful but the e2e user's designer,
+flows and API keep serving **their own stale copy**. ALWAYS align the CLI login with
+the e2e user before publishing (idempotent, do it every session — "already logged in"
+may mean logged in as someone else):
+
+```bash
+appmixer url "$VERO_APPMIXER_BASE_URL"    # values via the python-parsed env, see Prerequisites
+printf '%s\n' "$VERO_APPMIXER_PASSWORD" | appmixer login "$VERO_APPMIXER_USERNAME"
+```
+
+Pack and publish (absolute zip path — `pack` writes the zip into the CWD and stale
+zips from earlier sessions may exist elsewhere in the repo; a relative `publish`
+after a cwd reset silently publishes the wrong one):
 
 ```bash
 cd $VERO_CONNECTORS_DIR/src/appmixer
+rm -f appmixer.<connector>.zip
 appmixer pack <connector>
-appmixer publish appmixer.<connector>.zip   # pack outputs appmixer.<connector>.zip
+appmixer publish "$VERO_CONNECTORS_DIR/src/appmixer/appmixer.<connector>.zip"
 ```
 
-If `appmixer` CLI is not authenticated, run:
+**Verify what the server actually stored** (as the e2e user):
+`GET /components/<full.component.name>` returns the stored component **zip** — unzip
+it and compare a marker (version, a changed URL) with your local component.json:
+
 ```bash
-source "$APPMIXER_ENV"
-appmixer url "$VERO_APPMIXER_BASE_URL"
-echo "$VERO_APPMIXER_PASSWORD" | appmixer login "$VERO_APPMIXER_USERNAME"
+TOKEN=$(node "$VERO_SKILL_ROOT"/e2e-shared/scripts/appmixer-flow.mjs auth | tail -1)
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "$VERO_APPMIXER_BASE_URL/components/appmixer.<vendor>.<module>.<Component>" -o /tmp/comp.zip
+unzip -p /tmp/comp.zip "*component.json" | python3 -c "import json,sys; c=json.load(sys.stdin); print(c['version'])"
 ```
 
 ### Step 2: Ensure Auth Account Exists
@@ -135,6 +163,24 @@ TOKEN=$(node "$VERO_SKILL_ROOT"/e2e-shared/scripts/appmixer-flow.mjs auth | tail
 curl -s -X POST "$VERO_APPMIXER_BASE_URL/accounts/$ACCOUNT_ID/test" -H "Authorization: Bearer $TOKEN"
 # Should return {"ok":true}
 ```
+
+**⚠️ `{"ok":true}` may prove nothing.** The test runs the connector's
+`validateAccessToken`, and some connectors (e.g. salesforce) only compare a stored
+expiry date — a revoked/dead token still returns ok. Confirm with a REAL service
+call: hit a cheap component source endpoint with the account bound, the way the
+designer does:
+
+```bash
+curl -s -X POST "$VERO_APPMIXER_BASE_URL/component/appmixer/<vendor>/<module>/<ListComponent>?outPort=out" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"componentId":"<any-component-id-with-this-account>","flowId":"<flowId>"}'
+# Options/data back = token really works. 401/403 (Bad_OAuth_Token, INVALID_SESSION_ID) = dead account.
+```
+
+Dead-account symptom downstream: flow START fails with 400 wrapping an inner 401
+AxiosError whose `config.url` points at the service (trigger `start()` calls), or
+components fail mid-run with 401/403. When several accounts exist for the service,
+test each and pin the working one with `VERO_APPMIXER_ACCOUNT_ID`.
 
 ### Step 3: Upload Test Flows
 
@@ -164,6 +210,13 @@ node "$VERO_SKILL_ROOT"/e2e-shared/scripts/appmixer-flow.mjs patch-accounts "$FL
 ```
 This sets `config.properties.account` on every matching component **and** calls
 `PUT /auth/component/:componentId/:accountId`.
+
+**⚠️ Never commit hardcoded account IDs in the flow JSONs** (the
+`no-hardcoded-account` validator warns on them). Account IDs are instance-specific
+and rot; a stale one gets re-uploaded with the flow on every run and fails at
+runtime with 401/403 even though `accounts/:id/test` says ok. Bind accounts at
+upload time (patch-accounts here, or the run-e2e-flows runner with
+`VERO_APPMIXER_ACCOUNT_ID`, which overrides flow-authored accounts).
 
 **⚠️ Recipients are NOT injected.** If you want ProcessE2EResults to notify
 someone, set `recipients` in the flow JSON's ProcessE2EResults lambda yourself.
@@ -252,17 +305,38 @@ cat /root/.openclaw/workspace-vero/appmixer.env \
 export APPMIXER_ENV=/tmp/connector-e2e.env
 ```
 
-## Stale Component Definition After Publish
+## Stale Component Definition / Code After Publish
 
-`appmixer publish` updates the zip file on the server but **does not always re-index component definitions** in the database. Symptoms: the `/components` API returns the old `inPorts`/`outPorts` even after a successful publish.
+`appmixer publish` **does not refresh already-existing component versions** — neither
+their definitions (`inPorts`/`outPorts`/inspector) nor their **runtime code,
+including shared files like `lib.js`** that components `require()`. Each
+(component, version) is snapshotted at first publish; re-publishing the connector
+only adds NEW components/versions. Worse: re-publishing an EXISTING version
+**appends a duplicate entry** into the stored component package (visible when you
+download `GET /components/<name>` — `unzip -l` shows every file twice) and the
+engine keeps serving the FIRST (oldest) copy. Repeated full-zip publishes therefore
+never converge — only remove + publish produces a clean single-entry package.
 
-**Fix: always use remove + publish** when the component.json structure changed (ports, inspector, schema):
+Symptoms:
+- `/components` returns old `inPorts`/`outPorts`/`source` URLs after a "successful" publish.
+- Newly added components work while an old sibling crashes at runtime with
+  `Cannot read properties of undefined (reading 'someApiFn')` — its frozen snapshot
+  pre-dates a function you added to `lib.js`.
+- Flow start rejected with 400 `Component transformation validation error` because
+  stale inPort schemas are validated against current flow transforms.
+
+**Fix: remove + publish, as the e2e user** (see Step 1 — removes/publishes by a
+different CLI login do NOT touch the e2e user's copies), for every affected component:
 
 ```bash
 appmixer remove appmixer.<vendor>.<module>.<Component>
 sleep 1
-appmixer publish appmixer.<vendor>.zip
+appmixer publish "$VERO_CONNECTORS_DIR/src/appmixer/appmixer.<vendor>.zip"
 ```
+
+Alternative when definitions refuse to update in place: **bump the component
+`version`** in component.json (new version = new snapshot) and update the flows'
+`version` pins to match.
 
 Verify after:
 ```bash
@@ -289,9 +363,28 @@ node "$VERO_SKILL_ROOT"/e2e-shared/scripts/appmixer-flow.mjs ensure-stores
 
 ### Dynamic output ports show "Raw Output" — fix source URL
 If `validate-variables` shows a component only exposes "Raw Output" instead of individual fields, the component's `generateOutputPortOptions` is failing. Common causes:
-1. **Missing `ignoreAuth=true`**: Add `ignoreAuth=true` to the source URL query param.
+1. **The source call fails server-side** — reproduce it directly (the way the designer does) and read the actual error:
+   ```bash
+   curl -s -X POST "$VERO_APPMIXER_BASE_URL/component/appmixer/<vendor>/<module>/<SourceComponent>?outPort=out" \
+     -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+     -d '{"messages":{"in":{...}},"transform":"./transformers#...","componentId":"<comp-id>","flowId":"<flow-id>"}'
+   ```
 2. **Missing `dummy` for required fields**: If inPort schema has required fields not needed for schema generation, send `"dummy"` as their value in source messages.
-After fixing, re-publish the connector and re-upload the flow.
+3. **`ignoreAuth=true` — case-by-case, judged by what the source call DOES** (not by
+   the called component's `auth` block). With `ignoreAuth=true` the engine calls the
+   source WITHOUT the account:
+   - Sources that only generate metadata/static schema (e.g. a
+     `generateOutputPortOptions` branch building options from a static schema, no API
+     call — microsoft/calendar ListEvents) work fine unauthenticated → `ignoreAuth=true`
+     is correct and desirable (dropdown loads even without an account).
+   - Sources that must hit the live service API (salesforce GetObjectFields describe,
+     Dynamics DynamicEntity metadata) fail without auth — e.g. a URL built from
+     `context.profileInfo.instanceUrl` becomes `undefined/...` → 500 `"Invalid URL"`,
+     red chips in the designer inspector, output variables invalid. There `ignoreAuth`
+     must be omitted (the designer sends the caller's bound account automatically)
+     **and the component belongs in `scripts/validators/_ignore-list.js`** so the
+     `dynamic-outport-required-inputs` recommendation doesn't flag it.
+After fixing, re-publish the connector (remove + publish — see the stale-snapshot section) and re-upload the flow.
 
 ### `validate-variables` checks structure only
 It does NOT validate runtime data. A variable like `$.codeblock.out.result.field` may pass validation but fail at runtime. Always confirm by running the flow.

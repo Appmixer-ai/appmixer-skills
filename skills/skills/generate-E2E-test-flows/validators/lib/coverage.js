@@ -5,6 +5,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { sourceIn, transformIn } from './flowutil.js';
 
 // ---------------------------------------------------------------------------
 // Schema loading
@@ -52,10 +53,10 @@ const error = (severity, component, rule, message) => ({ severity, component, ru
 // its transform lambda. Used to know whether a dynamic-output component emits
 // individual item fields ("first"/"object") rather than an array wrapper.
 const getComponentOutputType = (comp) => {
-    // transform.in is keyed by upstream component id, then by that upstream's
-    // OUTPUT port name (which is not always "out" — e.g. CreateContact emits on
-    // "contact"). Scan every port's lambda for an outputType.
-    for (const ports of Object.values(comp?.config?.transform?.in || {})) {
+    // transform is keyed by the component's own inPort name, then upstream id,
+    // then that upstream's OUTPUT port name (neither is always "in"/"out" —
+    // e.g. CreateContact emits on "contact"). Scan every port's lambda.
+    for (const ports of Object.values(transformIn(comp))) {
         for (const data of Object.values(ports || {})) {
             const ot = data?.lambda?.outputType;
             if (typeof ot === 'string') return ot;
@@ -66,10 +67,10 @@ const getComponentOutputType = (comp) => {
 
 const getUsedFields = (comp) => {
     const fields = new Set();
-    // transform.in is keyed by upstream id, then by that upstream's OUTPUT port
-    // name (not always "out" — e.g. CreateContact emits on "contact"), then the
-    // transform data. Scan every port's lambda.
-    for (const ports of Object.values(comp.config?.transform?.in || {})) {
+    // transform is keyed by the component's own inPort, then upstream id, then
+    // that upstream's OUTPUT port name (not always "in"/"out" — e.g.
+    // CreateContact emits on "contact"). Scan every port's lambda.
+    for (const ports of Object.values(transformIn(comp))) {
         for (const data of Object.values(ports || {})) {
             for (const name of Object.keys(data?.lambda || {})) fields.add(name);
         }
@@ -102,7 +103,7 @@ export const validateUnknownFields = (compId, usedFields, schemaFieldNames) => {
 export const validateDataQuality = (compId, comp, schemaProps) => {
     const errors = [];
     const lambdas = [];
-    for (const ports of Object.values(comp.config?.transform?.in || {})) {
+    for (const ports of Object.values(transformIn(comp))) {
         for (const data of Object.values(ports || {})) {
             if (data?.lambda) lambdas.push(data.lambda);
         }
@@ -159,8 +160,7 @@ export const validateAssertFieldSpecificity = (flowJson, connectorsDir) => {
         if (comp.type !== 'appmixer.utils.test.Assert') continue;
 
         // Find what connector component this assert checks
-        const transformIn = comp.config?.transform?.in || {};
-        for (const [sourceId, sourceConfig] of Object.entries(transformIn)) {
+        for (const [sourceId, sourceConfig] of Object.entries(transformIn(comp))) {
             const sourceComp = flowJson.flow[sourceId];
             if (!sourceComp) continue;
             const sourceType = sourceComp.type || '';
@@ -241,12 +241,11 @@ export const validateAssertCoverage = (flowJson, connectorsDir) => {
     const assertedComponents = new Set();
     for (const comp of Object.values(flowJson.flow)) {
         if (comp.type !== 'appmixer.utils.test.Assert') continue;
-        // Check what component this assert reads from (via source.in)
-        for (const srcId of Object.keys(comp.source?.in || {})) {
+        // Check what component this assert reads from (links + transform, any inPort)
+        for (const srcId of Object.keys(sourceIn(comp))) {
             assertedComponents.add(srcId);
         }
-        // Also check transform.in references
-        for (const srcId of Object.keys(comp.config?.transform?.in || {})) {
+        for (const srcId of Object.keys(transformIn(comp))) {
             assertedComponents.add(srcId);
         }
     }
