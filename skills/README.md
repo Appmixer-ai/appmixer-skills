@@ -22,8 +22,25 @@ OpenClaw session) — no skill spawns its own LLM sub-agent. Two shapes:
    - `generate-E2E-test-flows/validate.js` — flow validator (16 rules, incl. the
      mandatory `errorHandling: { autoRetry: false, onError: "stopFlow" }`)
 
-Configuration comes from env vars (`VERO_APPMIXER_*`, `VERO_CONNECTORS_DIR`, …) —
+Configuration comes from env vars (`APPMIXER_SKILL_*`, `APPMIXER_SKILL_CONNECTORS_DIR`, …) —
 see `.env.example`. Node deps are installed by `scripts/ensure-deps.sh` (idempotent).
+
+### Dependency on `appmixer-connectors`
+
+The skills are tooling **for** the [appmixer-connectors](https://github.com/clientIO/appmixer-connectors)
+repo — they scaffold, test and review connectors inside a checkout of it. A
+checkout is therefore required at runtime: set `APPMIXER_SKILL_CONNECTORS_DIR` to its
+root, or run from inside the repo (`skills/_shared/resolveConnectorsDir.js` is
+the shared resolver).
+
+The connector **design conventions** (`.github/instructions/*.md`) deliberately
+live in that repo, not here: they describe that codebase, are edited in the same
+PRs as the connector code, and feed its own tooling (the generated
+`copilot-instructions.md`, CI responder, CLAUDE.md). Skills read them from the
+checkout like a linter reads a project's config — this plugin carries the
+*process*, the target repo carries the *rules*. Skills that need the
+conventions verify `<connectors>/.github/instructions/` exists before starting
+and abort with a clear message when it's missing.
 
 > **Note:** the `skills/*/agent/` directories are legacy sub-agent implementations —
 > current SKILL.md files no longer reference them.
@@ -31,7 +48,7 @@ see `.env.example`. Node deps are installed by `scripts/ensure-deps.sh` (idempot
 ### Installing as a Claude Code plugin
 
 ```bash
-/plugin marketplace add Appmixer-ai/appmixer-openclaw-agents
+/plugin marketplace add Appmixer-ai/appmixer-skills
 /plugin install appmixer@appmixer-agents
 ```
 
@@ -44,13 +61,13 @@ npm ci                      # Node deps for the runner/validator scripts
 cp .env.example .env        # then fill in credentials
 ```
 
-Required: `VERO_APPMIXER_BASE_URL`, `VERO_APPMIXER_USERNAME`,
-`VERO_APPMIXER_PASSWORD`, `VERO_CONNECTORS_DIR`; for `init-connector` also
-`GITHUB_VERO_PAT`. No LLM API keys are needed — the skills run directly in the
+Required: `APPMIXER_SKILL_BASE_URL`, `APPMIXER_SKILL_USERNAME`,
+`APPMIXER_SKILL_PASSWORD`, `APPMIXER_SKILL_CONNECTORS_DIR`; for `init-connector` also
+`APPMIXER_SKILL_GITHUB_PAT`. No LLM API keys are needed — the skills run directly in the
 host agent. Full list: `.env.example`. Point the E2E skills at the file via
 `export APPMIXER_ENV=<plugin-dir>/.env`.
 
-Note: `VERO_SKILL_ROOT` is derived from `CLAUDE_PLUGIN_ROOT` automatically when
+Note: `APPMIXER_SKILL_ROOT` is derived from `CLAUDE_PLUGIN_ROOT` automatically when
 running as a plugin; the SessionStart hook (`hooks/hooks.json` →
 `scripts/ensure-deps.sh`) also installs deps idempotently on its own.
 Requires Node ≥ 18.
@@ -106,10 +123,10 @@ env variables are needed.
 
 ```bash
 # appmixer.env — example
-VERO_APPMIXER_BASE_URL=https://api-acme.appmixer.ai
-VERO_APPMIXER_USERNAME=admin@acme.com
-VERO_APPMIXER_PASSWORD=secret
-VERO_CONNECTORS_DIR=/root/.openclaw/workspace-vero-acme/appmixer-connectors
+APPMIXER_SKILL_BASE_URL=https://api-acme.appmixer.ai
+APPMIXER_SKILL_USERNAME=admin@acme.com
+APPMIXER_SKILL_PASSWORD=secret
+APPMIXER_SKILL_CONNECTORS_DIR=/root/.openclaw/workspace-vero-acme/appmixer-connectors
 ```
 
 ---

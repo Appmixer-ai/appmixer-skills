@@ -1,14 +1,33 @@
 {
   "name": "appmixer-agents",
+  "description": "Appmixer agent skills marketplace — build, test, and publish Appmixer connectors directly from Claude Code.",
   "owner": {
-    "name": "Appmixer"
+    "name": "Appmixer",
+    "url": "https://www.appmixer.com"
   },
-  "description": "Appmixer agent skills marketplace.",
   "plugins": [
     {
       "name": "appmixer",
+      "description": "Appmixer connector development skills: init/scaffold connectors, full build pipeline, CLI tests, E2E test flows, and component refactor/review against Appmixer standards.",
+      "version": "0.1.1",
       "source": "./skills",
-      "description": "Appmixer connector development skills (init, pipeline, CLI tests, E2E flows, refactor/review)."
+      "author": {
+        "name": "Appmixer",
+        "url": "https://www.appmixer.com"
+      },
+      "category": "automation",
+      "keywords": [
+        "appmixer",
+        "connector",
+        "integration",
+        "automation",
+        "workflow",
+        "e2e-testing",
+        "low-code"
+      ],
+      "homepage": "https://github.com/Appmixer-ai/appmixer-skills",
+      "repository": "https://github.com/Appmixer-ai/appmixer-skills",
+      "license": "MIT"
     }
   ]
 }

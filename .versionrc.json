@@ -1,0 +1,20 @@
+{
+  "bumpFiles": [
+    { "filename": "package.json", "type": "json" },
+    { "filename": "package-lock.json", "type": "json" },
+    { "filename": "skills/.claude-plugin/plugin.json", "type": "json" },
+    { "filename": ".claude-plugin/marketplace.json", "updater": "scripts/marketplace-version.js" },
+    { "filename": "skills/connector-pipeline/SKILL.md", "updater": "scripts/skill-version.js" },
+    { "filename": "skills/connector-test-method/SKILL.md", "updater": "scripts/skill-version.js" },
+    { "filename": "skills/generate-E2E-test-flows/SKILL.md", "updater": "scripts/skill-version.js" },
+    { "filename": "skills/init-connector/SKILL.md", "updater": "scripts/skill-version.js" },
+    { "filename": "skills/plan-CLI-tests/SKILL.md", "updater": "scripts/skill-version.js" },
+    { "filename": "skills/review-component-standards/SKILL.md", "updater": "scripts/skill-version.js" },
+    { "filename": "skills/run-CLI-tests/SKILL.md", "updater": "scripts/skill-version.js" },
+    { "filename": "skills/run-e2e-flows/SKILL.md", "updater": "scripts/skill-version.js" },
+    { "filename": "skills/upload-e2e-flows/SKILL.md", "updater": "scripts/skill-version.js" }
+  ],
+  "packageFiles": [
+    { "filename": "package.json", "type": "json" }
+  ]
+}

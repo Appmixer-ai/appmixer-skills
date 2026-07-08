@@ -4,8 +4,18 @@
   "version": "0.1.1",
   "license": "MIT",
   "author": {
-    "name": "Appmixer"
+    "name": "Appmixer",
+    "url": "https://www.appmixer.com"
   },
-  "homepage": "https://github.com/Appmixer-ai/appmixer-openclaw-agents",
-  "repository": "https://github.com/Appmixer-ai/appmixer-openclaw-agents"
+  "homepage": "https://github.com/Appmixer-ai/appmixer-skills",
+  "repository": "https://github.com/Appmixer-ai/appmixer-skills",
+  "keywords": [
+    "appmixer",
+    "connector",
+    "integration",
+    "automation",
+    "workflow",
+    "e2e-testing",
+    "low-code"
+  ]
 }

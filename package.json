@@ -1,0 +1,76 @@
+{
+  "name": "appmixer-skills",
+  "version": "0.1.1",
+  "description": "Appmixer connector development skills for Claude Code, Cursor, GitHub Copilot, and other AI agents",
+  "license": "MIT",
+  "author": {
+    "name": "Appmixer",
+    "url": "https://www.appmixer.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Appmixer-ai/appmixer-skills.git"
+  },
+  "homepage": "https://www.appmixer.com",
+  "keywords": [
+    "agent-skills",
+    "skills",
+    "appmixer",
+    "connector",
+    "integration",
+    "automation",
+    "workflow",
+    "e2e-testing",
+    "low-code",
+    "claude-code",
+    "cursor",
+    "github-copilot",
+    "ai-agents"
+  ],
+  "scripts": {
+    "release": "commit-and-tag-version && bash build.sh"
+  },
+  "agents": {
+    "skills": [
+      {
+        "name": "connector-pipeline",
+        "path": "./skills/connector-pipeline"
+      },
+      {
+        "name": "connector-test-method",
+        "path": "./skills/connector-test-method"
+      },
+      {
+        "name": "generate-E2E-test-flows",
+        "path": "./skills/generate-E2E-test-flows"
+      },
+      {
+        "name": "init-connector",
+        "path": "./skills/init-connector"
+      },
+      {
+        "name": "plan-CLI-tests",
+        "path": "./skills/plan-CLI-tests"
+      },
+      {
+        "name": "review-component-standards",
+        "path": "./skills/review-component-standards"
+      },
+      {
+        "name": "run-CLI-tests",
+        "path": "./skills/run-CLI-tests"
+      },
+      {
+        "name": "run-e2e-flows",
+        "path": "./skills/run-e2e-flows"
+      },
+      {
+        "name": "upload-e2e-flows",
+        "path": "./skills/upload-e2e-flows"
+      }
+    ]
+  },
+  "devDependencies": {
+    "commit-and-tag-version": "12.7.1"
+  }
+}
