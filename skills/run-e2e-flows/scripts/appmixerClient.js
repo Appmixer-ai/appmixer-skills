@@ -171,7 +171,7 @@ export class AppmixerClient {
     // bind the ProcessE2EResults stores to this instance, and enforce fail-fast error handling.
     // Returns a fresh object (no mutation).
     static prepareFlowForUpload(flowJson, connectorLabel, storeMap) {
-        const SERVER_FIELDS = ['err', 'flowId', 'userId', 'stage', 'createdAt', 'modifiedAt'];
+        const SERVER_FIELDS = ['err', 'flowId', 'userId', 'stage', 'createdAt', 'modifiedAt', 'btime', 'mtime', 'runtimeErrors', 'thumbnail'];
         const prepared = JSON.parse(JSON.stringify(flowJson));
         for (const f of SERVER_FIELDS) delete prepared[f];
         prepared.description = prepared.description || `E2E test flow for ${connectorLabel}`;
@@ -228,6 +228,14 @@ export class AppmixerClient {
         return null;
     }
 
+    // All account IDs that exist on this instance (any service) — used to tell
+    // flow-authored account IDs from stale/foreign ones.
+    async listAccountIds() {
+        const data = await listAccounts(await this.api());
+        const accounts = Array.isArray(data) ? data : (data?.accounts || []);
+        return new Set(accounts.map(a => a.accountId || a.id).filter(Boolean));
+    }
+
     // Bind an account to every connector component in the flow. Required after any PUT update
     // (newly written nodes are unbound) and the deterministic remedy for TokenError.
     // `connectorPrefixes` is the set of dotted prefixes derived from the flow (e.g. ['microsoft.dynamics']),
@@ -237,16 +245,29 @@ export class AppmixerClient {
     // the component's OWN `config.properties.account` (how multi-account flows work,
     // e.g. organizer creates an event, attendee accepts it) > first flow-authored
     // account > first existing account of the service.
+    // Flow-authored accounts only count if they exist on THIS instance: flows
+    // downloaded from a server (download-E2E-flows.js) carry that instance's
+    // account IDs, which are meaningless on any other tenant — a foreign/deleted
+    // ID must fall through to a live account, not be re-bound and fail preflight.
     async reassignAccounts(flowId, connectorPrefixes, overrideAccountId = null) {
         const flow = await this.getFlow(flowId);
         const components = flow.flow || {};
         const isConnectorComp = type => connectorPrefixes.some(p => type?.startsWith(`appmixer.${p}.`));
 
+        const liveIds = await this.listAccountIds();
+        const flowAccount = (comp) => {
+            const id = comp.config?.properties?.account;
+            if (!id) return null;
+            if (liveIds.has(id)) return id;
+            console.log(chalk.yellow(`Flow-authored account ${id} does not exist on this instance — ignoring it.`));
+            return null;
+        };
+
         let sharedAccountId = overrideAccountId;
         if (!sharedAccountId) {
             for (const comp of Object.values(components)) {
                 if (isConnectorComp(comp.type)) {
-                    sharedAccountId = comp.config?.properties?.account;
+                    sharedAccountId = flowAccount(comp);
                     if (sharedAccountId) break;
                 }
             }
@@ -257,18 +278,41 @@ export class AppmixerClient {
             return { assigned: 0, accountIds: [] };
         }
 
+        // Resolve the account per component and fix the flow DEFINITION where it
+        // differs: the engine reads config.properties.account from the definition
+        // at runtime, so a foreign/stale ID left there would shadow the rebound
+        // auth grant (same reason patch-accounts rewrites the definition).
+        const resolved = {};
+        let definitionChanged = false;
+        for (const [compId, comp] of Object.entries(components)) {
+            if (!isConnectorComp(comp.type)) continue;
+            const accountId = overrideAccountId || flowAccount(comp) || sharedAccountId;
+            resolved[compId] = accountId;
+            if (comp.config?.properties?.account !== accountId) {
+                comp.config = comp.config || {};
+                comp.config.properties = comp.config.properties || {};
+                comp.config.properties.account = accountId;
+                definitionChanged = true;
+            }
+        }
+        if (definitionChanged) {
+            try {
+                await this.uploadFlow(flowId, { flow: components }, { forceUpdate: true });
+                console.log(chalk.blue('Rewrote flow definition with resolved account IDs.'));
+            } catch (e) {
+                console.log(chalk.yellow(`Warning: failed to rewrite accounts in flow definition: ${describeError(e)}`));
+            }
+        }
+
         let assigned = 0;
         const used = new Set();
-        for (const [compId, comp] of Object.entries(components)) {
-            if (isConnectorComp(comp.type)) {
-                const accountId = overrideAccountId || comp.config?.properties?.account || sharedAccountId;
-                try {
-                    await this.assignAccount(compId, accountId);
-                    assigned++;
-                    used.add(accountId);
-                } catch (e) {
-                    console.log(chalk.yellow(`Warning: failed to assign account to ${compId}: ${describeError(e)}`));
-                }
+        for (const [compId, accountId] of Object.entries(resolved)) {
+            try {
+                await this.assignAccount(compId, accountId);
+                assigned++;
+                used.add(accountId);
+            } catch (e) {
+                console.log(chalk.yellow(`Warning: failed to assign account to ${compId}: ${describeError(e)}`));
             }
         }
         console.log(chalk.blue(`Assigned account(s) ${[...used].join(', ')} to ${assigned} component(s).`));

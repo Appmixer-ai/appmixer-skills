@@ -211,12 +211,14 @@ node "$VERO_SKILL_ROOT"/e2e-shared/scripts/appmixer-flow.mjs patch-accounts "$FL
 This sets `config.properties.account` on every matching component **and** calls
 `PUT /auth/component/:componentId/:accountId`.
 
-**⚠️ Never commit hardcoded account IDs in the flow JSONs** (the
-`no-hardcoded-account` validator warns on them). Account IDs are instance-specific
-and rot; a stale one gets re-uploaded with the flow on every run and fails at
-runtime with 401/403 even though `accounts/:id/test` says ok. Bind accounts at
-upload time (patch-accounts here, or the run-e2e-flows runner with
-`VERO_APPMIXER_ACCOUNT_ID`, which overrides flow-authored accounts).
+**Account IDs in flow JSONs are tolerated but instance-specific.** Flows
+downloaded from a live instance (`download-E2E-flows.js`) carry that instance's
+`config.properties.account` values — do not strip them (they keep the file in
+sync with the download output), but never rely on them either: they are
+meaningless on any other tenant and rot when accounts are deleted. Binding is
+always re-done at upload/run time — patch-accounts here, or the run-e2e-flows
+runner, which ignores flow-authored IDs that don't exist on the target instance
+and rebinds a live account (`VERO_APPMIXER_ACCOUNT_ID` overrides everything).
 
 **⚠️ Recipients are NOT injected.** If you want ProcessE2EResults to notify
 someone, set `recipients` in the flow JSON's ProcessE2EResults lambda yourself.

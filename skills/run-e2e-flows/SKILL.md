@@ -83,7 +83,9 @@ override with `VERO_APPMIXER_UI_URL`).
 flow-authored `config.properties.account` values both in the uploaded flow
 definition and in the auth grants — a stale account hardcoded in the flow JSON
 can never shadow it. (Unpinned runs keep flow-authored accounts — that is how
-multi-account flows work.)
+multi-account flows work — but only when the ID exists on the target instance;
+foreign/deleted IDs, e.g. from a flow downloaded off another tenant, are
+ignored and a live account is bound instead.)
 
 **Clean timeouts retry once:** a timeout with zero errors means an external event
 (webhook notification) just hasn't arrived yet — latency varies from seconds to

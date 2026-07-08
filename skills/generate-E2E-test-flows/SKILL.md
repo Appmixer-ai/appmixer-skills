@@ -75,10 +75,12 @@ bash "${CLAUDE_PLUGIN_ROOT:-${VERO_SKILL_ROOT:-.}/..}/scripts/ensure-deps.sh"
    flow START with an opaque 400 "Malformed transformation" that names no
    component. Enforced by `inport-key-match`.
 
-0d. **Never hardcode `config.properties.account`** in generated flows — account
-   IDs are instance-specific and rot; binding happens at upload time
-   (patch-accounts / runner `VERO_APPMIXER_ACCOUNT_ID`). Enforced (warning) by
-   `no-hardcoded-account`.
+0d. **Don't invent `config.properties.account`** in newly generated flows —
+   binding happens at upload time (patch-accounts / runner
+   `VERO_APPMIXER_ACCOUNT_ID`). Flows downloaded from a live instance
+   (`download-E2E-flows.js`) DO carry that instance's account IDs — leave them
+   in place; the runner ignores IDs that don't exist on the target instance and
+   rebinds a live account instead.
 
 1. **Flow name starts with `E2E `** and is descriptive.
 2. **Required components present**: `OnStart`, `AfterAll`, `ProcessE2EResults`

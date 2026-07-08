@@ -53,7 +53,7 @@ process.stderr.write(`[appmixer-flow] env=${envPath}${process.env.APPMIXER_ENV ?
 
 const E2E_STORES = ['E2E Failed Tests', 'E2E Succeeded Tests'];
 const E2E_FILTER = { filter: 'customFields.category:E2E_test_flow', limit: 500, projection: 'flowId,name,stage' };
-const SERVER_FIELDS = ['err', 'userId', 'stage', 'createdAt', 'modifiedAt'];
+const SERVER_FIELDS = ['err', 'flowId', 'userId', 'stage', 'createdAt', 'modifiedAt', 'btime', 'mtime', 'runtimeErrors', 'thumbnail'];
 
 const out = (s) => process.stdout.write(s + '\n');
 const err = (s) => process.stderr.write(s + '\n');
