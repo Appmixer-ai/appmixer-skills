@@ -311,11 +311,7 @@ export APPMIXER_ENV=/tmp/connector-e2e.env
 their definitions (`inPorts`/`outPorts`/inspector) nor their **runtime code,
 including shared files like `lib.js`** that components `require()`. Each
 (component, version) is snapshotted at first publish; re-publishing the connector
-only adds NEW components/versions. Worse: re-publishing an EXISTING version
-**appends a duplicate entry** into the stored component package (visible when you
-download `GET /components/<name>` — `unzip -l` shows every file twice) and the
-engine keeps serving the FIRST (oldest) copy. Repeated full-zip publishes therefore
-never converge — only remove + publish produces a clean single-entry package.
+only adds NEW components/versions.
 
 Symptoms:
 - `/components` returns old `inPorts`/`outPorts`/`source` URLs after a "successful" publish.
@@ -370,20 +366,14 @@ If `validate-variables` shows a component only exposes "Raw Output" instead of i
      -d '{"messages":{"in":{...}},"transform":"./transformers#...","componentId":"<comp-id>","flowId":"<flow-id>"}'
    ```
 2. **Missing `dummy` for required fields**: If inPort schema has required fields not needed for schema generation, send `"dummy"` as their value in source messages.
-3. **`ignoreAuth=true` — case-by-case, judged by what the source call DOES** (not by
-   the called component's `auth` block). With `ignoreAuth=true` the engine calls the
-   source WITHOUT the account:
-   - Sources that only generate metadata/static schema (e.g. a
-     `generateOutputPortOptions` branch building options from a static schema, no API
-     call — microsoft/calendar ListEvents) work fine unauthenticated → `ignoreAuth=true`
-     is correct and desirable (dropdown loads even without an account).
-   - Sources that must hit the live service API (salesforce GetObjectFields describe,
-     Dynamics DynamicEntity metadata) fail without auth — e.g. a URL built from
-     `context.profileInfo.instanceUrl` becomes `undefined/...` → 500 `"Invalid URL"`,
-     red chips in the designer inspector, output variables invalid. There `ignoreAuth`
-     must be omitted (the designer sends the caller's bound account automatically)
-     **and the component belongs in `scripts/validators/_ignore-list.js`** so the
-     `dynamic-outport-required-inputs` recommendation doesn't flag it.
+3. **`ignoreAuth=true` — only for sources that genuinely need NO auth.** ⚠️ Do NOT
+   cargo-cult it: with `ignoreAuth=true` the engine calls the source component
+   WITHOUT the account, so a source that needs auth (describe/list endpoints reading
+   `context.auth.accessToken` / `context.profileInfo.instanceUrl`) builds its URL from
+   `undefined` and fails with 500 `"Invalid URL"` — the designer then renders red
+   **"Invalid URL" chips** in the inspector and all output variables show as invalid.
+   The designer sends the caller's bound account automatically; auth-requiring
+   sources must keep the default (no `ignoreAuth`).
 After fixing, re-publish the connector (remove + publish — see the stale-snapshot section) and re-upload the flow.
 
 ### `validate-variables` checks structure only
