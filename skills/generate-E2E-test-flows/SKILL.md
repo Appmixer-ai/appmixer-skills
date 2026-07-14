@@ -38,6 +38,13 @@ bash "${CLAUDE_PLUGIN_ROOT:-${APPMIXER_SKILL_ROOT:-.}/..}/scripts/ensure-deps.sh
 2. **Read the canonical template** `$APPMIXER_SKILL_ROOT/generate-E2E-test-flows/test-flow-template.json`
    — copy its structure (OnStart → setup → component-under-test → Assert →
    AfterAll → ProcessE2EResults). It is a complete, working example.
+
+   ⚠️ **The template is the ONLY structural source of truth. Do NOT copy patterns
+   from other connectors' committed test flows** — many pre-date the current
+   rules and still contain deprecated shapes, most notoriously
+   `appmixer.utils.test.BeforeAll` (forbidden — the `no-beforeall` validator
+   rejects it) and components without `errorHandling`. If a flow you are looking
+   at disagrees with the template, the template wins.
 3. **Read each component's `component.json`** under
    `$APPMIXER_SKILL_CONNECTORS_DIR/src/appmixer/<connector>/...` to get the REAL input
    schema and output port name(s) — do not guess them.
