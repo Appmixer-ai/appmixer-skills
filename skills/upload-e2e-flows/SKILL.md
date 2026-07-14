@@ -83,9 +83,8 @@ for line in open('$APPMIXER_ENV'):
 test -d "$APPMIXER_SKILL_CONNECTORS_DIR/src/appmixer" || { echo "Invalid APPMIXER_SKILL_CONNECTORS_DIR: $APPMIXER_SKILL_CONNECTORS_DIR"; exit 1; }
 ```
 
-Legacy `VERO_*` names in the .env still work for the Node scripts (they map them
-to `APPMIXER_SKILL_*` with a deprecation note), but rename them when you touch
-the file.
+Only `APPMIXER_SKILL_*` names are supported. Legacy `VERO_*` names are no longer
+mapped — rename them in your .env.
 
 ## Helper Script
 

@@ -34,7 +34,6 @@ import { fileURLToPath } from 'url';
 import { existsSync, readFileSync, readdirSync } from 'fs';
 import dotenv from 'dotenv';
 import { createClient } from '../../_shared/appmixerApi/index.js';
-import { applyEnvCompat } from '../../_shared/appmixerApi/envCompat.js';
 import {
     createFlow, upsertFlow, getFlow, listFlows, deleteFlow, startFlow, stopFlow
 } from '../../_shared/appmixerApi/flows.js';
@@ -50,7 +49,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // return data from the wrong one. Always announce the effective target on stderr.
 const envPath = process.env.APPMIXER_ENV || resolve(__dirname, '..', '..', '..', '..', '.env');
 dotenv.config({ path: envPath });
-applyEnvCompat();
 process.stderr.write(`[appmixer-flow] env=${envPath}${process.env.APPMIXER_ENV ? '' : ' (fallback — set APPMIXER_ENV explicitly)'} instance=${process.env.APPMIXER_SKILL_BASE_URL || 'MISSING'}\n`);
 
 const E2E_STORES = ['E2E Failed Tests', 'E2E Succeeded Tests'];
