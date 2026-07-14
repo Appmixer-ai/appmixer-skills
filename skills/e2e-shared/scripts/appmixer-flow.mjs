@@ -265,10 +265,48 @@ async function main() {
         case 'create-account': {
             const [connector, authJson] = args;
             if (!connector || !authJson) throw new Error('Usage: create-account <connector> <auth-json>');
+            const service = `appmixer:${connector}`;
+            const token = JSON.parse(authJson);
+
+            // The engine validates OAuth2 scopes on POST /accounts and reads them
+            // from token.scope (singular, array). The CLI login does not store the
+            // granted scopes anywhere, so resolve the requested scopes from the
+            // connector's auth.js — the same source the CLI used for the consent.
+            if (!token.scope) {
+                try {
+                    const connectorsDir = resolveConnectorsDir();
+                    const authModule = (await import(
+                        join(connectorsDir, 'src', 'appmixer', connector, 'auth.js'))).default;
+                    const definition = typeof authModule.definition === 'function'
+                        ? authModule.definition() : authModule.definition;
+                    if (Array.isArray(definition?.scope)) {
+                        token.scope = definition.scope;
+                        process.stderr.write(`[create-account] token.scope filled from auth.js (${token.scope.length} scopes)\n`);
+                    }
+                } catch (e) {
+                    process.stderr.write(`[create-account] could not resolve scopes from auth.js: ${e.message}\n`);
+                }
+            }
+
+            // OAuth2 account creation instantiates the connector's auth module on the
+            // engine, which needs the service config (clientId/clientSecret). Check it
+            // exists first — without it the API fails with an opaque 500.
+            try {
+                const { data: cfg } = await client.get(`/service-config/${service}`);
+                if (!cfg || (!cfg.clientId && !cfg.clientID)) {
+                    throw new Error(`Service config for ${service} has no clientId. ` +
+                        `Set it first: PUT /service-config/${service} {"clientId": "...", "clientSecret": "..."} ` +
+                        '(or via Backoffice > Services).');
+                }
+            } catch (e) {
+                if (e.response?.status === 404 || !e.response) throw e;
+                throw new Error(`Service config check failed for ${service}: ${e.message}`);
+            }
+
             const resp = await createAccount(client, {
                 name: `${connector} e2e test`,
-                service: `appmixer:${connector}`,
-                token: JSON.parse(authJson),
+                service,
+                token,
                 profileInfo: {}
             });
             out(resp.accountId || resp._id || JSON.stringify(resp));

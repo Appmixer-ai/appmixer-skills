@@ -202,7 +202,29 @@ fields = d.get('appmixer:<connector>', {}).get('authFields', {})
 print(json.dumps(fields))
 ")
 ACCOUNT_ID=$(node "$APPMIXER_SKILL_ROOT"/e2e-shared/scripts/appmixer-flow.mjs create-account <connector> "$AUTH_JSON")
+
+# For OAuth2 connectors, pass the tokens instead of authFields:
+# AUTH_JSON='{"accessToken":"...","refreshToken":"..."}'
 ```
+
+**OAuth2 specifics** (all handled by `create-account`, listed for manual/curl debugging):
+
+- The engine validates scopes on `POST /accounts` and reads them from **`token.scope`
+  (singular, array)** — `token.scopes` or a top-level `scopes` field is silently
+  ignored and the request fails with `400 "Scopes provided have missing required
+  scopes"`. `create-account` fills `token.scope` from the connector's `auth.js`
+  automatically when the auth JSON doesn't carry it.
+- **Service config must exist** (`GET /service-config/appmixer:<connector>` must
+  return a `clientId`) — the engine instantiates the connector's auth module during
+  account creation and needs it. Without it the API fails with an opaque 500.
+  `create-account` checks this and tells you to set it:
+  `PUT /service-config/appmixer:<connector> {"clientId":"...","clientSecret":"..."}`.
+- **500 wrapping `Request failed with status code 404`** on account creation means
+  the connector's `requestProfileInfo` makes an HTTP call that fails server-side
+  (e.g. the service has no userinfo endpoint). Fix the connector: derive profile
+  info without HTTP (decode JWT claims locally) or guard the call — then
+  remove + republish the connector (stale auth-module snapshots survive plain
+  publishes; a worker restart may be needed).
 
 Test the account is valid:
 ```bash
