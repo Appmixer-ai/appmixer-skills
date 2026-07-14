@@ -279,7 +279,9 @@ export async function run({ flowPath, baseUrl = null, maxAttempts = 5, timeoutSe
                             reason: 'clean timeout on an OnStart-only flow (no external triggers) — '
                                 + (silent.length
                                     ? `Assert(s) [${silent.join(', ')}] never fired. Inspect the component(s) feeding them: `
-                                    + 'typical causes are a per-record outputType emitting NOTHING on an empty result, '
+                                    + 'typical causes are a per-record outputType emitting NOTHING on an empty result '
+                                    + '(often because the hardcoded test entity — patient, record, view — simply has no '
+                                    + 'data in this environment; query the API and switch the flow to an entity that has some), '
                                     + 'or a link/variable referencing a non-existent outPort (run the outport-exists and '
                                     + 'outputtype-fanout validators).'
                                     : 'every Assert fired but AfterAll/ProcessE2EResults did not complete — check AfterAll wiring and timeout.')
