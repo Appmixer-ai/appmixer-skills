@@ -44,11 +44,11 @@ Connector publish (appmixer pack/publish) is NOT done here — publish the conne
 upload-e2e-flows skill or manually) so its components are available on the instance.
 
   path-to-flow.json   Local E2E flow JSON under <repo>/src/appmixer/<connector>/...
-  baseUrl             Optional Appmixer API base URL (default: APPMIXER_SKILL_BASE_URL)
+  baseUrl             Optional Appmixer API base URL (default: APPMIXER_SKILL_API_URL)
 
 Exit codes: 0 = flow passed | 1 = hard failure (config/budget) | 2 = NEEDS_FIX (agent fixes + re-runs)
 
-Env: APPMIXER_SKILL_BASE_URL, APPMIXER_SKILL_USERNAME, APPMIXER_SKILL_PASSWORD (or APPMIXER_ENV → .env)`);
+Env: APPMIXER_SKILL_API_URL, APPMIXER_SKILL_USERNAME, APPMIXER_SKILL_PASSWORD (or APPMIXER_ENV → .env)`);
     process.exit(1);
 }
 

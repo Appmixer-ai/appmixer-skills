@@ -38,15 +38,14 @@ const S = {
 };
 const TERMINAL = new Set([S.DONE_OK, S.DONE_FAIL, S.DONE_NEEDS_FIX]);
 
-// Designer (UI) URL for a flow. Convention on Appmixer instances: "api.acme.com" → "my.acme.com",
-// while "api-<name>" hosts drop the prefix entirely (api-dev-x.dev.appmixer.ai → dev-x.dev.appmixer.ai).
-// Override with APPMIXER_SKILL_UI_URL when neither convention holds.
+// Designer (UI) URL for a flow. Comes exclusively from APPMIXER_SKILL_UI_URL -
+// deriving the UI host from the API host (api.* -> my.*, api-<x> -> <x>) proved
+// fragile across instances, so no guessing: without the env var, report the
+// flow id instead of a link.
 function designerUrl(baseUrl, flowId) {
-    try {
-        const ui = process.env.APPMIXER_SKILL_UI_URL
-            || baseUrl.replace(/^(https?:\/\/)api\./, '$1my.').replace(/^(https?:\/\/)api-/, '$1');
-        return `${ui.replace(/\/$/, '')}/designer/${flowId}`;
-    } catch { return null; }
+    const ui = process.env.APPMIXER_SKILL_UI_URL;
+    if (!ui) return `(set APPMIXER_SKILL_UI_URL for a designer link) flowId=${flowId}`;
+    return `${ui.replace(/\/$/, '')}/designer/${flowId}`;
 }
 
 // Required OAuth scopes of a component, read from its component.json on disk.

@@ -16,16 +16,20 @@ const tokenCache = new Map(); // key → { token, expiry }
  * Authenticate and return a configured axios instance with cached token.
  */
 export const createClient = async ({
-    baseUrl = process.env.APPMIXER_SKILL_BASE_URL,
+    baseUrl = process.env.APPMIXER_SKILL_API_URL,
     username = process.env.APPMIXER_SKILL_USERNAME,
     password = process.env.APPMIXER_SKILL_PASSWORD,
     // Escape hatch: skip /user/auth and use a pre-obtained token (e.g. when
     // /user/auth returns 403 for SSO-only accounts or special-char passwords).
     token: explicitToken = process.env.APPMIXER_TOKEN
 } = {}) => {
-    if (!baseUrl) throw new Error('APPMIXER_BASE_URL is required');
+    if (!baseUrl) {
+        throw new Error('APPMIXER_SKILL_API_URL is required (renamed from APPMIXER_SKILL_BASE_URL). ' +
+            'It must point at the API host, not the designer UI - a 405/HTML response from ' +
+            '/user/auth means a UI host was configured.');
+    }
     if (!explicitToken && (!username || !password)) {
-        throw new Error('APPMIXER_USERNAME and APPMIXER_PASSWORD (or APPMIXER_TOKEN) are required');
+        throw new Error('APPMIXER_SKILL_USERNAME and APPMIXER_SKILL_PASSWORD (or APPMIXER_TOKEN) are required');
     }
 
     const normalizedUrl = baseUrl.replace(/\/+$/, '');

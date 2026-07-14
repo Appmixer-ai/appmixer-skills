@@ -188,7 +188,7 @@ Run after Step 4 generates test flow JSONs. Publishes the connector and uploads 
 **Prerequisites:**
 - Test flow JSONs in `artifacts/test-flows/` (from Step 4)
 - Auth credentials configured (from Step 3a)
-- `appmixer.env` in the workspace root (auto-detected) **or** `APPMIXER_ENV` env var pointing to a custom path; must contain `APPMIXER_SKILL_CONNECTORS_DIR`, `APPMIXER_SKILL_BASE_URL`, `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD`
+- `appmixer.env` in the workspace root (auto-detected) **or** `APPMIXER_ENV` env var pointing to a custom path; must contain `APPMIXER_SKILL_CONNECTORS_DIR`, `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD`
 
 1. **Lint + repo validator** before publishing — catch errors early:
    ```bash
@@ -261,7 +261,7 @@ After every meaningful change (component created, refactored, fixed):
 2. **Publish** to the Appmixer instance (credentials from `.env`):
    ```bash
    cd $APPMIXER_SKILL_CONNECTORS_DIR
-   appmixer url $APPMIXER_SKILL_BASE_URL
+   appmixer url $APPMIXER_SKILL_API_URL
    appmixer login -u $APPMIXER_SKILL_USERNAME -p $APPMIXER_SKILL_PASSWORD
    appmixer pack <connector-module-path>
    appmixer publish

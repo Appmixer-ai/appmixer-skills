@@ -54,7 +54,7 @@ The `.env` file must contain:
 
 ```
 APPMIXER_SKILL_CONNECTORS_DIR=/path/to/appmixer-connectors
-APPMIXER_SKILL_BASE_URL=https://api.appmixer.com
+APPMIXER_SKILL_API_URL=https://api.appmixer.com
 APPMIXER_SKILL_USERNAME=your@email.com
 APPMIXER_SKILL_PASSWORD=yourpassword
 ```
@@ -77,7 +77,7 @@ for line in open('$APPMIXER_ENV'):
     print(f'export {k}={shlex.quote(v)}')
 ")"
 : "${APPMIXER_SKILL_CONNECTORS_DIR:?APPMIXER_SKILL_CONNECTORS_DIR missing in $APPMIXER_ENV}"
-: "${APPMIXER_SKILL_BASE_URL:?APPMIXER_SKILL_BASE_URL missing in $APPMIXER_ENV}"
+: "${APPMIXER_SKILL_API_URL:?APPMIXER_SKILL_API_URL missing in $APPMIXER_ENV}"
 : "${APPMIXER_SKILL_USERNAME:?APPMIXER_SKILL_USERNAME missing in $APPMIXER_ENV}"
 : "${APPMIXER_SKILL_PASSWORD:?APPMIXER_SKILL_PASSWORD missing in $APPMIXER_ENV}"
 test -d "$APPMIXER_SKILL_CONNECTORS_DIR/src/appmixer" || { echo "Invalid APPMIXER_SKILL_CONNECTORS_DIR: $APPMIXER_SKILL_CONNECTORS_DIR"; exit 1; }
@@ -131,7 +131,7 @@ the e2e user before publishing (idempotent, do it every session — "already log
 may mean logged in as someone else):
 
 ```bash
-appmixer url "$APPMIXER_SKILL_BASE_URL"    # values via the python-parsed env, see Prerequisites
+appmixer url "$APPMIXER_SKILL_API_URL"    # values via the python-parsed env, see Prerequisites
 printf '%s\n' "$APPMIXER_SKILL_PASSWORD" | appmixer login "$APPMIXER_SKILL_USERNAME"
 ```
 
@@ -172,7 +172,7 @@ byte-identical AND carry your marker** — otherwise remove + publish again:
 ```bash
 TOKEN=$(node "$APPMIXER_SKILL_ROOT"/e2e-shared/scripts/appmixer-flow.mjs auth | tail -1)
 curl -s -H "Authorization: Bearer $TOKEN" \
-  "$APPMIXER_SKILL_BASE_URL/components/appmixer.<vendor>.<module>.<Component>" -o /tmp/comp.zip
+  "$APPMIXER_SKILL_API_URL/components/appmixer.<vendor>.<module>.<Component>" -o /tmp/comp.zip
 python3 - <<'EOF'
 import zipfile
 z = zipfile.ZipFile('/tmp/comp.zip')
@@ -228,7 +228,7 @@ ACCOUNT_ID=$(node "$APPMIXER_SKILL_ROOT"/e2e-shared/scripts/appmixer-flow.mjs cr
 Test the account is valid:
 ```bash
 TOKEN=$(node "$APPMIXER_SKILL_ROOT"/e2e-shared/scripts/appmixer-flow.mjs auth | tail -1)
-curl -s -X POST "$APPMIXER_SKILL_BASE_URL/accounts/$ACCOUNT_ID/test" -H "Authorization: Bearer $TOKEN"
+curl -s -X POST "$APPMIXER_SKILL_API_URL/accounts/$ACCOUNT_ID/test" -H "Authorization: Bearer $TOKEN"
 # Should return {"ok":true}
 ```
 
@@ -239,7 +239,7 @@ call: hit a cheap component source endpoint with the account bound, the way the
 designer does:
 
 ```bash
-curl -s -X POST "$APPMIXER_SKILL_BASE_URL/component/appmixer/<vendor>/<module>/<ListComponent>?outPort=out" \
+curl -s -X POST "$APPMIXER_SKILL_API_URL/component/appmixer/<vendor>/<module>/<ListComponent>?outPort=out" \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"componentId":"<any-component-id-with-this-account>","flowId":"<flowId>"}'
 # Options/data back = token really works. 401/403 (Bad_OAuth_Token, INVALID_SESSION_ID) = dead account.
@@ -430,7 +430,7 @@ node "$APPMIXER_SKILL_ROOT"/e2e-shared/scripts/appmixer-flow.mjs ensure-stores
 If `validate-variables` shows a component only exposes "Raw Output" instead of individual fields, the component's `generateOutputPortOptions` is failing. Common causes:
 1. **The source call fails server-side** — reproduce it directly (the way the designer does) and read the actual error:
    ```bash
-   curl -s -X POST "$APPMIXER_SKILL_BASE_URL/component/appmixer/<vendor>/<module>/<SourceComponent>?outPort=out" \
+   curl -s -X POST "$APPMIXER_SKILL_API_URL/component/appmixer/<vendor>/<module>/<SourceComponent>?outPort=out" \
      -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
      -d '{"messages":{"in":{...}},"transform":"./transformers#...","componentId":"<comp-id>","flowId":"<flow-id>"}'
    ```

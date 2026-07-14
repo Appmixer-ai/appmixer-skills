@@ -61,7 +61,7 @@ npm ci                      # Node deps for the runner/validator scripts
 cp .env.example .env        # then fill in credentials
 ```
 
-Required: `APPMIXER_SKILL_BASE_URL`, `APPMIXER_SKILL_USERNAME`,
+Required: `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`,
 `APPMIXER_SKILL_PASSWORD`, `APPMIXER_SKILL_CONNECTORS_DIR`; for `init-connector` also
 `APPMIXER_SKILL_GITHUB_PAT`. No LLM API keys are needed — the skills run directly in the
 host agent. Full list: `.env.example`. Point the E2E skills at the file via
@@ -123,7 +123,7 @@ env variables are needed.
 
 ```bash
 # appmixer.env — example
-APPMIXER_SKILL_BASE_URL=https://api-acme.appmixer.ai
+APPMIXER_SKILL_API_URL=https://api-acme.appmixer.ai
 APPMIXER_SKILL_USERNAME=admin@acme.com
 APPMIXER_SKILL_PASSWORD=secret
 APPMIXER_SKILL_CONNECTORS_DIR=/root/.openclaw/workspace-vero-acme/appmixer-connectors

@@ -28,7 +28,7 @@ the `upload-e2e-flows` skill). The runner uploads/updates the *flows* itself.
   ```bash
   bash "${CLAUDE_PLUGIN_ROOT:-${APPMIXER_SKILL_ROOT:-.}/..}/scripts/ensure-deps.sh"
   ```
-- `APPMIXER_ENV` pointing to a `.env` file with `APPMIXER_SKILL_BASE_URL`,
+- `APPMIXER_ENV` pointing to a `.env` file with `APPMIXER_SKILL_API_URL`,
   `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD` (or those vars set directly)
 - Connector published on the instance; an auth account exists for it
 - **Design conventions** — the fix loop consults
@@ -66,8 +66,9 @@ automatically.
 
 The last line of every run is machine-parsable:
 `RESULT | PASSED\|FAILED\|NEEDS_FIX | <flow name> | <designer URL>`.
-The designer URL opens the flow in the instance UI (api host → my host convention;
-override with `APPMIXER_SKILL_UI_URL`).
+The designer URL opens the flow in the instance UI. It is built from
+`APPMIXER_SKILL_UI_URL` (no host derivation from the API URL); when unset, the
+runner prints the flowId instead of a link.
 
 **Auth failures are detected automatically:**
 - **Preflight** — every bound account is validity-tested (`POST /accounts/:id/test`)

@@ -51,11 +51,11 @@ function describeError(e) {
 export class AppmixerClient {
 
     constructor({ baseUrl, username, password } = {}) {
-        this.baseUrl = (baseUrl || process.env.APPMIXER_SKILL_BASE_URL || '').replace(/\/+$/, '');
+        this.baseUrl = (baseUrl || process.env.APPMIXER_SKILL_API_URL || '').replace(/\/+$/, '');
         this.username = username || process.env.APPMIXER_SKILL_USERNAME;
         this.password = password || process.env.APPMIXER_SKILL_PASSWORD;
         this.client = null;
-        if (!this.baseUrl) throw new Error('APPMIXER_SKILL_BASE_URL is not set');
+        if (!this.baseUrl) throw new Error('APPMIXER_SKILL_API_URL is not set');
     }
 
     async auth() {

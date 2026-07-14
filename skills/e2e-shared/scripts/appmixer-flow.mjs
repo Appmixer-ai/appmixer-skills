@@ -24,7 +24,7 @@
  *   upload-flow <flow.json> <connector>
  *   upload-all <connector>
  *
- * Config comes from process.env (APPMIXER_SKILL_BASE_URL / USERNAME / PASSWORD,
+ * Config comes from process.env (APPMIXER_SKILL_API_URL / USERNAME / PASSWORD,
  * APPMIXER_SKILL_CONNECTORS_DIR). If APPMIXER_ENV points at a .env file it is loaded first
  * (dotenv never overrides values already in process.env).
  */
@@ -49,7 +49,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // return data from the wrong one. Always announce the effective target on stderr.
 const envPath = process.env.APPMIXER_ENV || resolve(__dirname, '..', '..', '..', '..', '.env');
 dotenv.config({ path: envPath });
-process.stderr.write(`[appmixer-flow] env=${envPath}${process.env.APPMIXER_ENV ? '' : ' (fallback — set APPMIXER_ENV explicitly)'} instance=${process.env.APPMIXER_SKILL_BASE_URL || 'MISSING'}\n`);
+process.stderr.write(`[appmixer-flow] env=${envPath}${process.env.APPMIXER_ENV ? '' : ' (fallback — set APPMIXER_ENV explicitly)'} instance=${process.env.APPMIXER_SKILL_API_URL || 'MISSING'}\n`);
 
 const E2E_STORES = ['E2E Failed Tests', 'E2E Succeeded Tests'];
 const E2E_FILTER = { filter: 'customFields.category:E2E_test_flow', limit: 500, projection: 'flowId,name,stage' };
