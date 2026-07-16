@@ -22,9 +22,13 @@ See [skills/README.md](skills/README.md) for architecture details (how the skill
 
 ## Prerequisites
 
-- A checkout of [appmixer-connectors](https://github.com/clientIO/appmixer-connectors) — set `APPMIXER_SKILL_CONNECTORS_DIR` to its root, or run from inside the repo
-- An Appmixer instance + credentials for E2E skills (`APPMIXER_SKILL_*` env vars — see [skills/.env.example](skills/.env.example))
 - Node.js >= 18
+- A local clone of [appmixer-connectors](https://github.com/clientIO/appmixer-connectors) — the repo the skills read conventions from and write connector code into:
+  ```bash
+  git clone https://github.com/clientIO/appmixer-connectors.git
+  ```
+- For skills that talk to a live Appmixer instance (upload-e2e-flows, run-e2e-flows, connector-pipeline): an Appmixer instance URL + credentials — see [Configuration](#configuration)
+- For `init-connector`: an authenticated `gh` CLI (`gh auth login`) — used to fetch the source issue and push the branch
 
 ## Installation
 
@@ -56,7 +60,7 @@ Download the [complete bundle](https://raw.githubusercontent.com/Appmixer-ai/app
 npx skills add Appmixer-ai/appmixer-skills
 ```
 
-Installs all skills into your agent's skills directory. Works with any agent that supports the [Open Agent Skills](https://skills.sh) protocol. Note: skills reference shared helpers (`_shared/`, `e2e-shared/`, `scripts/`) — if your agent installs skills individually, copy those directories alongside them.
+Installs all skills into your agent's skills directory. Works with any agent that supports the [Open Agent Skills](https://skills.sh) protocol. Note: skills reference shared helpers (`_shared/`, `e2e-shared/`, `scripts/`) — if your agent installs skills individually, copy those directories alongside them. For non-Claude-Code installs also `export APPMIXER_SKILL_ROOT=<path-to-the-installed-skills-directory>` — the SKILL.md commands use it to locate the shared scripts (in the Claude Code plugin it is derived automatically).
 
 ### Manual Installation (Any Agent)
 
@@ -72,12 +76,26 @@ Copy the contents of the `skills/` directory into your agent's skills folder:
 
 ## Configuration
 
-Skills that talk to a live Appmixer instance read configuration from environment variables — copy [skills/.env.example](skills/.env.example) to `skills/.env` and fill in `APPMIXER_SKILL_BASE_URL`, `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD`, and `APPMIXER_SKILL_CONNECTORS_DIR`. Node dependencies are installed automatically by `skills/scripts/ensure-deps.sh` on session start.
+Skills read configuration from environment variables (`APPMIXER_SKILL_*`). Set them up once:
+
+1. Copy [skills/.env.example](skills/.env.example) to a location of your choice, e.g. `~/appmixer-skills.env` (any path works — the file is referenced by the `APPMIXER_ENV` variable, not by location).
+2. Fill in the required values:
+   - `APPMIXER_SKILL_CONNECTORS_DIR` — absolute path to your `appmixer-connectors` clone (its root, the directory containing `src/appmixer`). If unset, skills fall back to searching upward from the current working directory, so you can also skip this and just start your agent from inside the clone.
+   - `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD` — the Appmixer API host and credentials (only needed for the live-instance skills).
+3. Point the skills at the file before starting your agent:
+   ```bash
+   export APPMIXER_ENV=~/appmixer-skills.env
+   claude
+   ```
+   Alternatively, export the individual `APPMIXER_SKILL_*` variables directly in your shell and skip the file entirely.
+
+Node dependencies are installed automatically by `skills/scripts/ensure-deps.sh` on session start.
 
 ## Releasing (maintainers)
 
 ```bash
 npm install
+npm test               # smoke tests: script syntax, env-var contract, no-config failure modes
 npm run release        # bumps version everywhere, updates CHANGELOG, tags, builds dist/
 git push --follow-tags
 gh release create v<VERSION> dist/*-v<VERSION>.zip
