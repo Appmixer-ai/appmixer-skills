@@ -4,7 +4,7 @@ description: Run E2E test flows on a live Appmixer instance and monitor results.
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.1"
+  version: "0.1.2"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
@@ -26,7 +26,7 @@ the `upload-e2e-flows` skill). The runner uploads/updates the *flows* itself.
 
 - **Node dependencies** — install once (idempotent, skips if already present):
   ```bash
-  bash "${CLAUDE_PLUGIN_ROOT:-${APPMIXER_SKILL_ROOT:-.}/..}/scripts/ensure-deps.sh"
+  bash "${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT}/scripts/ensure-deps.sh"
   ```
 - `APPMIXER_ENV` pointing to a `.env` file with `APPMIXER_SKILL_API_URL`,
   `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD` (or those vars set directly)
@@ -39,7 +39,7 @@ the `upload-e2e-flows` skill). The runner uploads/updates the *flows* itself.
 ## The runner
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT:-${APPMIXER_SKILL_ROOT:-.}/..}/skills/run-e2e-flows/scripts/run.js" \
+node "${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT}/run-e2e-flows/scripts/run.js" \
     <path-to-flow.json> [baseUrl]
 ```
 
@@ -153,7 +153,7 @@ timeouts — `assertsFired`/`assertsSilent` (component IDs). Then:
    re-publish (`appmixer pack && appmixer publish`) before re-running.
 5. **Validate** the edited flow:
    ```bash
-   node "${CLAUDE_PLUGIN_ROOT:-${APPMIXER_SKILL_ROOT:-.}/..}/skills/generate-E2E-test-flows/validate.js" <flow.json>
+   node "${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT}/generate-E2E-test-flows/validate.js" <flow.json>
    ```
 6. **Re-run the runner** with the same flow path.
 

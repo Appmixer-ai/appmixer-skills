@@ -4,7 +4,7 @@ description: Publish an Appmixer connector to a live instance and upload E2E tes
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.1"
+  version: "0.1.2"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
@@ -14,19 +14,18 @@ metadata:
 Publish a connector and upload E2E test flows to a live Appmixer instance.
 
 > **Paths:** all `"$APPMIXER_SKILL_ROOT"/e2e-shared/scripts/...` invocations below
-> require `APPMIXER_SKILL_ROOT` to point at the skills directory
-> (`.../workspace-vero/skills`); it is set by the runtime (openclaw box, or the
-> CI workflow). When running as a Claude Code plugin `APPMIXER_SKILL_ROOT` is not
-> set — resolve it from the plugin root by prefixing commands in this skill with:
-> `export APPMIXER_SKILL_ROOT="${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT/skills}"`.
+> require `APPMIXER_SKILL_ROOT` to point at the skills directory. When running
+> as a Claude Code plugin it is not set — the plugin root IS the skills
+> directory, so prefix commands in this skill with:
+> `export APPMIXER_SKILL_ROOT="${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT}"`.
 > `appmixer-flow.mjs` is a Node CLI built on `_shared/appmixerApi`
-> (deps installed via `npm ci` in `workspace-vero`);
+> (deps installed by `scripts/ensure-deps.sh`);
 
 ## Prerequisites
 
 - **Node dependencies** — install once (idempotent, skips if already present):
   ```bash
-  bash "${CLAUDE_PLUGIN_ROOT:-${APPMIXER_SKILL_ROOT:-.}/..}/scripts/ensure-deps.sh"
+  bash "${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT}/scripts/ensure-deps.sh"
   ```
 - `APPMIXER_ENV` environment variable pointing to `.env` file (see below)
 - Connector source in `$APPMIXER_SKILL_CONNECTORS_DIR/src/appmixer/<connector>/`
@@ -42,9 +41,9 @@ export APPMIXER_ENV=/path/to/.env
 ```
 
 **⚠️ Export it in EVERY shell command** (agent Bash calls don't share state). Without
-it the scripts fall back to the `.env` next to their REAL (symlink-resolved) location
-— e.g. the openclaw workspace `.env` — and silently talk to a DIFFERENT instance.
-That misdirection looks like auth breakage: fresh tokens get 401 "Invalid JWT" on the
+it the scripts read whatever `APPMIXER_SKILL_*` variables happen to be exported in the
+environment — which may point at a DIFFERENT instance. That misdirection looks like
+auth breakage: fresh tokens get 401 "Invalid JWT" on the
 instance you thought you were using, `ensure-stores`/`list-e2e-flows` return foreign
 IDs/empty lists. `appmixer-flow.mjs` prints the effective env + instance on stderr as
 its first line (`[appmixer-flow] env=... instance=...`) — **read it** and abort if it
@@ -83,8 +82,7 @@ for line in open('$APPMIXER_ENV'):
 test -d "$APPMIXER_SKILL_CONNECTORS_DIR/src/appmixer" || { echo "Invalid APPMIXER_SKILL_CONNECTORS_DIR: $APPMIXER_SKILL_CONNECTORS_DIR"; exit 1; }
 ```
 
-Only `APPMIXER_SKILL_*` names are supported. Legacy `VERO_*` names are no longer
-mapped — rename them in your .env.
+Only `APPMIXER_SKILL_*` names are supported.
 
 ## Helper Script
 
@@ -357,10 +355,10 @@ node "$APPMIXER_SKILL_ROOT"/e2e-shared/scripts/appmixer-flow.mjs auth   # echoes
 
 ## `APPMIXER_SKILL_CONNECTORS_DIR` Mismatch
 
-The global `appmixer.env` usually points to the main connector dir (or the last-used worktree). When working on a specific connector worktree, create a **temp env** so `upload-all` resolves the right path:
+Your `.env` usually points to the main connector dir (or the last-used worktree). When working on a specific connector worktree, create a **temp env** so `upload-all` resolves the right path:
 
 ```bash
-cat /root/.openclaw/workspace-vero/appmixer.env \
+cat "$APPMIXER_ENV" \
   | sed 's|APPMIXER_SKILL_CONNECTORS_DIR=.*|APPMIXER_SKILL_CONNECTORS_DIR=/path/to/worktree|' \
   > /tmp/connector-e2e.env
 export APPMIXER_ENV=/tmp/connector-e2e.env

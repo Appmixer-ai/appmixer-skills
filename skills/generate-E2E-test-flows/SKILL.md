@@ -4,7 +4,7 @@ description: Generate E2E test flows for an Appmixer connector. Use when user wa
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.1"
+  version: "0.1.2"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
@@ -15,20 +15,19 @@ Generate E2E test flow JSON files for a connector's components. **You (the agent
 write the flows directly** — there is no separate sub-agent. After writing them
 you run a deterministic validator and fix anything it flags, looping until clean.
 
-> **Paths:** `$APPMIXER_SKILL_ROOT` points at the skills directory
-> (`.../workspace-vero/skills`), set by the runtime (openclaw box or the CI
-> workflow). When running as a Claude Code plugin `APPMIXER_SKILL_ROOT` is not set —
-> resolve it from the plugin root by prefixing commands with:
-> `export APPMIXER_SKILL_ROOT="${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT/skills}"`.
+> **Paths:** `$APPMIXER_SKILL_ROOT` points at the skills directory. When running
+> as a Claude Code plugin it is not set — the plugin root IS the skills
+> directory, so prefix commands with:
+> `export APPMIXER_SKILL_ROOT="${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT}"`.
 > The validator (`validate.js`) needs Node deps (`ajv`) which are
-> installed via `npm ci` in `workspace-vero`.
+> installed by `scripts/ensure-deps.sh`.
 
 ## Setup (first run)
 
 Install Node dependencies (idempotent, skips if already present):
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT:-${APPMIXER_SKILL_ROOT:-.}/..}/scripts/ensure-deps.sh"
+bash "${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT}/scripts/ensure-deps.sh"
 ```
 
 ## How it works

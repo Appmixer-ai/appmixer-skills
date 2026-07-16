@@ -1,8 +1,8 @@
 # Changelog
 
-All notable changes to this project are documented in this file.
+All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
-The format follows [Conventional Commits](https://www.conventionalcommits.org/); releases are cut with `npm run release` ([commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version)), which bumps the version everywhere (package.json, plugin.json, marketplace.json, every SKILL.md), updates this changelog, tags, and builds `dist/` artifacts.
+## 0.1.2 (2026-07-16)
 
 ## 0.1.1
 

@@ -4,7 +4,7 @@ description: End-to-end Appmixer connector development pipeline. Use when user w
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.1"
+  version: "0.1.2"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
@@ -16,7 +16,7 @@ Full end-to-end workflow for building an Appmixer connector.
 Before running any step, ensure Node dependencies are installed (idempotent, skips if already present):
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT:-${APPMIXER_SKILL_ROOT:-.}/..}/scripts/ensure-deps.sh"
+bash "${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT}/scripts/ensure-deps.sh"
 ```
 
 ## Design Reference
@@ -102,7 +102,7 @@ drive (`run-e2e-flows/scripts/run.js`, `e2e-shared/scripts/appmixer-flow.mjs`,
 
 ## Step 1: Research
 
-Use slash command in the connectors repo (Claude Code, not OpenClaw):
+Use slash command in the connectors repo:
 ```
 /research-connector <service> <api-docs-url>
 ```
@@ -188,7 +188,7 @@ Run after Step 4 generates test flow JSONs. Publishes the connector and uploads 
 **Prerequisites:**
 - Test flow JSONs in `artifacts/test-flows/` (from Step 4)
 - Auth credentials configured (from Step 3a)
-- `appmixer.env` in the workspace root (auto-detected) **or** `APPMIXER_ENV` env var pointing to a custom path; must contain `APPMIXER_SKILL_CONNECTORS_DIR`, `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD`
+- `APPMIXER_ENV` env var pointing to a `.env` file (or the `APPMIXER_SKILL_*` variables exported directly); must provide `APPMIXER_SKILL_CONNECTORS_DIR`, `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD`
 
 1. **Lint + repo validator** before publishing — catch errors early:
    ```bash
@@ -204,7 +204,7 @@ Run after Step 4 generates test flow JSONs. Publishes the connector and uploads 
 
 2. **Publish + upload flows:**
    ```bash
-   : "${APPMIXER_ENV:=$(pwd)/appmixer.env}"
+   : "${APPMIXER_ENV:?APPMIXER_ENV is not set — point it to your .env file}"
    source "$APPMIXER_ENV"
 
    # Pack and publish connector
@@ -270,7 +270,7 @@ After every meaningful change (component created, refactored, fixed):
 
 3. **Push** the branch to origin after commits.
 
-Load credentials from `openclaw/.env` for the Appmixer instance URL and credentials.
+Load the Appmixer instance URL and credentials from the `APPMIXER_SKILL_*` env vars (`$APPMIXER_ENV` file).
 
 ---
 

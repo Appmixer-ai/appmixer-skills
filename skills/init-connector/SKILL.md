@@ -4,7 +4,7 @@ description: Initialize a new Appmixer connector from a GitHub issue. Use when u
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.1"
+  version: "0.1.2"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
@@ -17,8 +17,8 @@ files. There is no sub-agent to spawn.
 
 ## Prerequisites
 
-- **GitHub access** — `gh` CLI authenticated, or a token (`APPMIXER_SKILL_GITHUB_PAT` /
-  `GITHUB_TOKEN`) for private repos.
+- **GitHub access** — `gh` CLI authenticated (`gh auth login`); needed to fetch
+  the source issue and push the branch.
 - **Connector location** — set `APPMIXER_SKILL_CONNECTORS_DIR` to the `appmixer-connectors`
   checkout root, or run from inside the repo.
 - **Design conventions** — this skill reads the canonical rules from
@@ -37,9 +37,6 @@ files. There is no sub-agent to spawn.
 
 ```bash
 gh issue view <number> --repo <org/repo> --json title,body,labels
-# or without gh:
-curl -s -H "Authorization: token $APPMIXER_SKILL_GITHUB_PAT" \
-    https://api.github.com/repos/<org>/<repo>/issues/<number>
 ```
 
 From the issue extract:
@@ -110,7 +107,7 @@ Report what was created (files, component count, auth type).
 
 1. **Create branch** `feature/<connector>-connector` in `appmixer-connectors`
 2. **Commit** all generated files with message like `feat: add <connector> connector`
-3. **Publish** the connector module to Appmixer (`appmixer pack` + `appmixer publish` — credentials in `openclaw/.env`)
+3. **Publish** the connector module to Appmixer (`appmixer pack` + `appmixer publish` — credentials from the `APPMIXER_SKILL_*` env vars / `$APPMIXER_ENV` file)
 4. **Push** the branch to origin
 
 Tell the user the connector is initialized and suggest next step:

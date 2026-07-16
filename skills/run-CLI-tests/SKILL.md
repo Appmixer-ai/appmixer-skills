@@ -4,7 +4,7 @@ description: Test and validate Appmixer connector components. Use when user want
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.1"
+  version: "0.1.2"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
@@ -173,5 +173,5 @@ Record the result (status, reason) for the component in `test-plan.json`.
 If testing leads to fixes:
 
 1. **Commit** to the appropriate branch in `appmixer-connectors`.
-2. **Publish** the connector module (`appmixer pack` + `appmixer publish` — credentials in `openclaw/.env`).
+2. **Publish** the connector module (`appmixer pack` + `appmixer publish` — credentials from the `APPMIXER_SKILL_*` env vars / `$APPMIXER_ENV` file).
 3. **Push** the branch to origin.
