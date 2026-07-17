@@ -336,7 +336,13 @@ export class AppmixerClient {
                 if (!afterRunStart(src.gridTimestamp || src.timestamp, runStartTs)) return false;
                 return src.componentType?.includes('ProcessE2EResults') && !src.err;
             });
-            if (done) { await this.stopFlow(flowId); return 'done'; }
+            if (done) {
+                await this.stopFlow(flowId);
+                // A completed run is NOT a passing run: Assert reports failed assertions
+                // in its result payload (error[]), not as a component error — a flow can
+                // reach ProcessE2EResults with every assertion failed.
+                return AppmixerClient.collectAssertFailures(hits, runStartTs).length ? 'error' : 'done';
+            }
 
             const errorCount = hits.filter(h => {
                 const src = h._source || h;
@@ -386,6 +392,40 @@ export class AppmixerClient {
             if (IGNORE_COMPONENTS.has(componentType)) continue;
             errors.push({ componentId, componentType, message, timestamp: src.gridTimestamp || src.timestamp });
         }
+        for (const failure of AppmixerClient.collectAssertFailures(logs?.hits || [], runStartTs)) {
+            errors.push(failure);
+        }
         return errors;
+    }
+
+    // Failed assertions never surface as component errors: utils.test.Assert logs its
+    // result payload ({componentId, success: [...], error: [...]}) as a plain info
+    // message and the flow continues to ProcessE2EResults. Scan those payloads so an
+    // assertion failure fails the run instead of being reported as PASSED.
+    static collectAssertFailures(hits, runStartTs) {
+        const failures = [];
+        const seen = new Set();
+        for (const hit of hits || []) {
+            const src = hit._source || hit;
+            if (!afterRunStart(src.gridTimestamp || src.timestamp, runStartTs)) continue;
+            if (!src.componentType?.endsWith('.Assert')) continue;
+            let payload;
+            try {
+                payload = typeof src.msg === 'string' ? JSON.parse(src.msg) : src.msg;
+            } catch {
+                continue;
+            }
+            if (!payload || !Array.isArray(payload.error) || payload.error.length === 0) continue;
+            const key = `${src.componentId}|${payload.error.join('|')}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            failures.push({
+                componentId: src.componentId || payload.componentId,
+                componentType: src.componentType,
+                message: `Assertion failed: ${payload.error.join('; ')}`,
+                timestamp: src.gridTimestamp || src.timestamp
+            });
+        }
+        return failures;
     }
 }

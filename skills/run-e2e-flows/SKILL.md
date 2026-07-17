@@ -217,7 +217,7 @@ timestamp, but when reading logs manually always check `gridTimestamp`.
 ### Search/Find race conditions after Create
 Many APIs have eventual consistency on search indexes. A record created 1 second ago may not appear in search results yet:
 - **Best approach:** Search for a pre-existing test record instead of a just-created one
-- **Alternative:** Add a `appmixer.utils.controls.CodeBlock` with `await new Promise(r => setTimeout(r, 5000))` as delay
+- **Alternative:** Insert `appmixer.utils.timers.Wait` with `interval: "1m"` (minimum unit is minutes). CodeBlock CANNOT delay — it runs synchronously in isolated-vm (`evalSync`), `await`/`setTimeout`/Promises are unavailable and error out.
 - **Alternative:** Use GetById between Create and Find to add natural delay
 
 ### Duplicate records on re-runs
@@ -230,7 +230,10 @@ Previous test runs may leave records behind if cleanup failed:
 `appmixer.utils.controls.CodeBlock` wraps the return value under a `result` field. Access it via `$.code-block-id.out.result`. Deep access like `$.code-block-id.out.result.field` does NOT work — return simple strings/numbers only.
 
 ### CodeBlock code syntax
-CodeBlock runs in `isolated-vm`. Bare `return` statements are illegal. Use expressions directly (e.g., `'value-' + Date.now()`) or IIFEs — a single expression that evaluates to a value.
+CodeBlock runs in `isolated-vm`, **synchronously** (`evalSync`) — no `await`, no `setTimeout`, no Promises. Input variables are exposed on **`$data`** (e.g. `$data.body`), not as bare identifiers. Bare `return` statements are illegal. Use expressions directly (e.g., `'value-' + Date.now()`) or IIFEs — a single expression that evaluates to a value.
+
+### Assert failures do NOT stop the flow — and `equal` reads `expected`, not `value`
+A failed assertion is logged in the Assert result payload (`error[]`) as a plain info message; the flow continues and ProcessE2EResults still completes. The runner scans Assert payloads (`collectAssertFailures`) so these fail the run — but when reading logs manually, always check the Assert `success`/`error` arrays, not just component errors. Common authoring bug: `{"assertion": "equal", "field": ..., "value": "200"}` — the Assert component reads the comparison value from the key **`expected`**; with `value` it compares against `undefined` and fails with the misleading message "expected undefined to equal 200".
 
 ### Log parsing
 The `/logs` API returns raw Elasticsearch hits. Error details are in `hits[]._source.err` as a **JSON string** (not object). Parse `err.response.data` for the actual error message.

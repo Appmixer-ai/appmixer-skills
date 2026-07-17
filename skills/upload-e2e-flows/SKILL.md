@@ -364,6 +364,18 @@ cat "$APPMIXER_ENV" \
 export APPMIXER_ENV=/tmp/connector-e2e.env
 ```
 
+## Stale Worker OAuth State After Re-authentication
+
+Engine workers also cache per-account OAuth state (the refresh-token lineage).
+After a user re-authenticates an OAuth account to gain NEW permissions (e.g.
+Epic: re-consent after adding app APIs), workers still holding the old lineage
+keep minting **fresh access tokens with the OLD entitlements** — the token's
+`iat` looks current, yet some calls 403 while identical calls from another
+worker succeed (search 200 + read 403 within one flow run; scratch flows
+pass/fail per worker). Rebinding accounts, new flowIds or new componentIds do
+NOT help. Fix: **restart the engine workers**, or create a brand-new account
+(new accountId) and rebind. Real case: epic GetAppointment, 2026-07-17.
+
 ## Stale Component Definition / Code After Publish
 
 `appmixer publish` **does not refresh already-existing component versions** — neither

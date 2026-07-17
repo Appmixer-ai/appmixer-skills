@@ -259,7 +259,9 @@ async test(context) {
 
 The production `receive()` just forwards the webhook body, so there's no fetch+map to share with
 it — instead the reuse is **across the connector's webhook triggers**. Add `fetchLatestExample()`
-+ `toWebhookShape()` to the connector commons once; each trigger's `test()` is a thin wrapper.
++ `toWebhookShape()` to the connector's shared `lib.js` once (older connectors use a
+`*-commons.js` file — for NEW code always use `lib.js`, the repository convention);
+each trigger's `test()` is a thin wrapper.
 See `src/appmixer/calendly/calendly-commons.js` + `events/InviteeCreated/InviteeCreated.js`.
 
 ```javascript
