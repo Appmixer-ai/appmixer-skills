@@ -4,7 +4,7 @@ description: Review an Appmixer component against standards and best practices. 
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.3"
+  version: "0.1.4"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---

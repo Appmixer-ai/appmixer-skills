@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.4](https://github.com/Appmixer-ai/appmixer-skills/compare/v0.1.3...v0.1.4) (2026-07-17)
+
+
+### Bug Fixes
+
+* add missing _shared/loadEnv.js (imported by run.js, appmixer-flow.mjs, validate.js) ([1cc86c5](https://github.com/Appmixer-ai/appmixer-skills/commit/1cc86c58e3508677a88566be8fe7e083ca61a937))
+
 ## [0.1.3](https://github.com/Appmixer-ai/appmixer-skills/compare/v0.1.2...v0.1.3) (2026-07-17)
 
 ## 0.1.2 (2026-07-16)

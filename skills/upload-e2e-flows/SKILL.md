@@ -4,7 +4,7 @@ description: Publish an Appmixer connector to a live instance and upload E2E tes
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.3"
+  version: "0.1.4"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
