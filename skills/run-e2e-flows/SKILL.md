@@ -4,7 +4,7 @@ description: Run E2E test flows on a live Appmixer instance and monitor results.
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.5"
+  version: "0.1.6"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
