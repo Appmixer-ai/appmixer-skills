@@ -25,6 +25,7 @@ export const createClient = async ({
 } = {}) => {
     if (!baseUrl) {
         throw new Error('APPMIXER_SKILL_API_URL is required (renamed from APPMIXER_SKILL_BASE_URL). ' +
+            'Configure it in ~/.config/appmixer-skills/env, or export it, or point APPMIXER_ENV at a config file. ' +
             'It must point at the API host, not the designer UI - a 405/HTML response from ' +
             '/user/auth means a UI host was configured.');
     }

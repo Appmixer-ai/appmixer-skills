@@ -3,15 +3,11 @@
 // CLI entry point for the deterministic E2E flow runner (explicit state machine, no LLM).
 //
 import { run, emergencyStop } from './orchestrator.js';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import dotenv from 'dotenv';
+import { resolve } from 'path';
+import { loadEnv } from '../../_shared/loadEnv.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-// Config comes from APPMIXER_ENV (a .env file) or from variables already exported
-// in the environment — there is deliberately no path fallback: a guessed .env can
-// silently point at a different instance.
-if (process.env.APPMIXER_ENV) dotenv.config({ path: process.env.APPMIXER_ENV });
+// Config precedence: exported vars > APPMIXER_ENV file > ~/.config/appmixer-skills/env.
+loadEnv();
 
 // On ANY forced exit (runner timeout, Ctrl-C, kill) stop the flow first — a leaked running flow
 // keeps trigger subscriptions alive and interferes with every subsequent run. Cap the stop

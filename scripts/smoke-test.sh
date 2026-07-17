@@ -30,11 +30,14 @@ check() { # check <name> <expected-substring> <actual-output>
     fi
 }
 
-# Scripts must never read config from anything but process.env / APPMIXER_ENV,
-# so tests only need env manipulation — no config files in magic locations.
+# Config precedence is exported vars > APPMIXER_ENV > ~/.config/appmixer-skills/env.
+# Isolate HOME so the developer's real config file can't leak into the tests.
+FAKE_HOME="$WORK/home"
+mkdir -p "$FAKE_HOME"
 CLEAN=(env -u APPMIXER_ENV -u APPMIXER_SKILL_API_URL -u APPMIXER_SKILL_USERNAME \
        -u APPMIXER_SKILL_PASSWORD -u APPMIXER_SKILL_CONNECTORS_DIR -u APPMIXER_TOKEN \
-       -u APPMIXER_SKILL_ACCOUNT_ID -u APPMIXER_SKILL_UI_URL -u CLAUDE_PLUGIN_ROOT)
+       -u APPMIXER_SKILL_ACCOUNT_ID -u APPMIXER_SKILL_UI_URL -u CLAUDE_PLUGIN_ROOT \
+       HOME="$FAKE_HOME")
 
 echo "── syntax ──────────────────────────────────────────────────────────"
 SYNTAX_OK=1
@@ -90,6 +93,17 @@ EOF
 OUT=$("${CLEAN[@]}" APPMIXER_ENV="$WORK/test.env" node "$PLUGIN/e2e-shared/scripts/appmixer-flow.mjs" list-e2e-flows 2>&1)
 check "APPMIXER_ENV file is loaded and announced" "env=$WORK/test.env" "$OUT"
 check "instance from APPMIXER_ENV is effective" "instance=https://api.example-nonexistent.test" "$OUT"
+
+mkdir -p "$FAKE_HOME/.config/appmixer-skills"
+sed 's/example-nonexistent/default-config/' "$WORK/test.env" > "$FAKE_HOME/.config/appmixer-skills/env"
+OUT=$("${CLEAN[@]}" node "$PLUGIN/e2e-shared/scripts/appmixer-flow.mjs" list-e2e-flows 2>&1)
+check "default ~/.config/appmixer-skills/env is auto-loaded" "instance=https://api.default-config.test" "$OUT"
+
+OUT=$("${CLEAN[@]}" APPMIXER_ENV="$WORK/test.env" node "$PLUGIN/e2e-shared/scripts/appmixer-flow.mjs" list-e2e-flows 2>&1)
+check "APPMIXER_ENV wins over the default file" "instance=https://api.example-nonexistent.test" "$OUT"
+
+OUT=$("${CLEAN[@]}" APPMIXER_SKILL_API_URL="https://api.exported-var.test" node "$PLUGIN/e2e-shared/scripts/appmixer-flow.mjs" list-e2e-flows 2>&1)
+check "exported vars win over config files" "instance=https://api.exported-var.test" "$OUT"
 
 OUT=$(CLAUDE_PLUGIN_ROOT="$PLUGIN" bash "$PLUGIN/scripts/ensure-deps.sh" 2>&1 && echo ENSURE_DEPS_OK)
 check "ensure-deps.sh no-ops with vendored node_modules" "ENSURE_DEPS_OK" "$OUT"

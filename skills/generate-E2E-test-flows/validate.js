@@ -25,6 +25,9 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { loadEnv } from '../_shared/loadEnv.js';
+
+loadEnv();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const VALIDATORS_DIR = path.join(__dirname, 'validators');

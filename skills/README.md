@@ -52,19 +52,19 @@ and abort with a clear message when it's missing.
 /plugin install appmixer@appmixer-agents
 ```
 
-Claude Code does NOT configure secrets during install — create an env file and
-point the skills at it (any path works):
+Claude Code does NOT configure secrets during install — configuration happens on
+first use: when a skill finds no config, it asks the user for the values and
+writes `~/.config/appmixer-skills/env` itself. To configure manually instead:
 
 ```bash
-cp <plugin-dir>/.env.example ~/appmixer-skills.env   # then fill in credentials
-export APPMIXER_ENV=~/appmixer-skills.env
+mkdir -p ~/.config/appmixer-skills
+cp <plugin-dir>/.env.example ~/.config/appmixer-skills/env   # then fill in
 ```
 
 Required: `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`,
 `APPMIXER_SKILL_PASSWORD`, `APPMIXER_SKILL_CONNECTORS_DIR`; `init-connector` additionally
 expects an authenticated `gh` CLI. No LLM API keys are needed — the skills run directly in the
-host agent. Full list: `.env.example`. Alternatively, export the individual
-`APPMIXER_SKILL_*` variables in your shell and skip the file.
+host agent. Full list: `.env.example`.
 
 Note: `APPMIXER_SKILL_ROOT` (path to this `skills/` directory) equals
 `CLAUDE_PLUGIN_ROOT` when running as a plugin — SKILL.md commands use
@@ -75,14 +75,18 @@ Requires Node ≥ 18.
 
 ## Configuration resolution
 
-At runtime every script reads plain `process.env`:
+Every script entrypoint calls `_shared/loadEnv.js`, which loads configuration
+into `process.env` with this precedence:
 
-- `APPMIXER_ENV` (optional) — path to a `.env` file; the E2E scripts
-  (`run-e2e-flows/scripts/run.js`, `e2e-shared/scripts/appmixer-flow.mjs`) load
-  it via dotenv before reading the variables. `appmixer-flow.mjs` prints the
-  effective env file + target instance on stderr as its first line — read it to
-  confirm you're talking to the right instance.
-- Without `APPMIXER_ENV`, variables already exported in the shell are used as-is.
-- `APPMIXER_SKILL_CONNECTORS_DIR` — if unset, `resolveConnectorsDir.js` walks up
-  from the current working directory looking for a directory containing
-  `src/appmixer`.
+1. Variables already exported in the shell always win (dotenv never overrides).
+2. `APPMIXER_ENV` — explicit path to an alternate config file, when set (useful
+   for switching between instances).
+3. `~/.config/appmixer-skills/env` — the well-known default, when it exists.
+   Skills create it on first use by asking the user for the values.
+
+`appmixer-flow.mjs` prints the effective config file + target instance on stderr
+as its first line — read it to confirm you're talking to the right instance.
+
+`APPMIXER_SKILL_CONNECTORS_DIR` — if unset by any of the above,
+`resolveConnectorsDir.js` walks up from the current working directory looking
+for a directory containing `src/appmixer`.

@@ -31,7 +31,7 @@
 
 import { join, basename } from 'path';
 import { existsSync, readFileSync, readdirSync } from 'fs';
-import dotenv from 'dotenv';
+import { loadEnv } from '../../_shared/loadEnv.js';
 import { createClient } from '../../_shared/appmixerApi/index.js';
 import {
     createFlow, upsertFlow, getFlow, listFlows, deleteFlow, startFlow, stopFlow
@@ -39,14 +39,12 @@ import {
 import { listAccounts, createAccount, assignComponentAccount } from '../../_shared/appmixerApi/accounts.js';
 import { resolveConnectorsDir } from '../../_shared/resolveConnectorsDir.js';
 
-// The env file decides WHICH INSTANCE every command talks to. Config comes from
-// APPMIXER_ENV (a .env file) or from variables already exported in the environment —
-// there is deliberately no path fallback: a guessed .env can silently point at a
-// DIFFERENT instance (fresh tokens then fail with 401 "Invalid JWT" on the instance
-// you thought you were using). Always announce the effective target on stderr.
-const envPath = process.env.APPMIXER_ENV;
-if (envPath) dotenv.config({ path: envPath });
-process.stderr.write(`[appmixer-flow] env=${envPath || 'process env (APPMIXER_ENV not set)'} instance=${process.env.APPMIXER_SKILL_API_URL || 'MISSING'}\n`);
+// The env file decides WHICH INSTANCE every command talks to. Precedence: exported
+// vars > APPMIXER_ENV file > ~/.config/appmixer-skills/env. A wrong target looks
+// like auth breakage (fresh tokens fail with 401 "Invalid JWT" on the instance you
+// thought you were using) — always announce the effective target on stderr.
+const envInfo = loadEnv();
+process.stderr.write(`[appmixer-flow] env=${envInfo.path || 'process env (no config file)'} instance=${process.env.APPMIXER_SKILL_API_URL || 'MISSING'}\n`);
 
 const E2E_STORES = ['E2E Failed Tests', 'E2E Succeeded Tests'];
 const E2E_FILTER = { filter: 'customFields.category:E2E_test_flow', limit: 500, projection: 'flowId,name,stage' };

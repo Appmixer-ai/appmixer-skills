@@ -76,18 +76,16 @@ Copy the contents of the `skills/` directory into your agent's skills folder:
 
 ## Configuration
 
-Skills read configuration from environment variables (`APPMIXER_SKILL_*`). Set them up once:
+Skills read configuration from environment variables (`APPMIXER_SKILL_*`), loaded from `~/.config/appmixer-skills/env` automatically.
 
-1. Copy [skills/.env.example](skills/.env.example) to a location of your choice, e.g. `~/appmixer-skills.env` (any path works — the file is referenced by the `APPMIXER_ENV` variable, not by location).
-2. Fill in the required values:
-   - `APPMIXER_SKILL_CONNECTORS_DIR` — absolute path to your `appmixer-connectors` clone (its root, the directory containing `src/appmixer`). If unset, skills fall back to searching upward from the current working directory, so you can also skip this and just start your agent from inside the clone.
-   - `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD` — the Appmixer API host and credentials (only needed for the live-instance skills).
-3. Point the skills at the file before starting your agent:
-   ```bash
-   export APPMIXER_ENV=~/appmixer-skills.env
-   claude
-   ```
-   Alternatively, export the individual `APPMIXER_SKILL_*` variables directly in your shell and skip the file entirely.
+**Zero-setup path (recommended):** just install and start using a skill. On first use the agent detects the missing configuration, asks you for the values, and writes `~/.config/appmixer-skills/env` itself. Every later session picks it up automatically.
+
+**Manual path:** copy [skills/.env.example](skills/.env.example) to `~/.config/appmixer-skills/env` and fill in:
+
+- `APPMIXER_SKILL_CONNECTORS_DIR` — absolute path to your `appmixer-connectors` clone (its root, the directory containing `src/appmixer`). This is the minimal config — without a connectors clone the skills have nothing to work on. If unset, skills fall back to searching upward from the current working directory, so starting your agent from inside the clone also works.
+- `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD` — the Appmixer API host and credentials (only needed for the live-instance skills).
+
+Precedence: variables exported in your shell always win; `APPMIXER_ENV` can point to an alternate file (useful for switching between instances); `~/.config/appmixer-skills/env` is the default.
 
 Node dependencies are installed automatically by `skills/scripts/ensure-deps.sh` on session start.
 
