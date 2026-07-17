@@ -4,7 +4,7 @@ description: Test and validate Appmixer connector components. Use when user want
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.2"
+  version: "0.1.3"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
@@ -30,7 +30,9 @@ spawn.
 - **Auth credentials** — the connector must have valid auth in
   `~/.config/configstore/appmixer.json` (see Step 0).
 - **Connector location** — set `APPMIXER_SKILL_CONNECTORS_DIR` to the `appmixer-connectors`
-  checkout root, or run from inside the repo. Components live at
+  checkout root, or run from inside the repo. When neither applies, read it
+  from `~/.config/appmixer-skills/env`; if that file is missing too, ask the
+  user for the path and write it there (KEY=value, `chmod 600`). Components live at
   `<connectors>/src/appmixer/<connector>/core/<Component>/`.
 - **Test plan** — a `test-plan.json` (run the `plan-CLI-tests` skill first if absent).
 

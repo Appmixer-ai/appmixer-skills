@@ -4,7 +4,7 @@ description: End-to-end Appmixer connector development pipeline. Use when user w
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.2"
+  version: "0.1.3"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
@@ -188,7 +188,7 @@ Run after Step 4 generates test flow JSONs. Publishes the connector and uploads 
 **Prerequisites:**
 - Test flow JSONs in `artifacts/test-flows/` (from Step 4)
 - Auth credentials configured (from Step 3a)
-- `APPMIXER_ENV` env var pointing to a `.env` file (or the `APPMIXER_SKILL_*` variables exported directly); must provide `APPMIXER_SKILL_CONNECTORS_DIR`, `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD`
+- Configuration providing `APPMIXER_SKILL_CONNECTORS_DIR`, `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD` — from exported vars, the `APPMIXER_ENV` file, or `~/.config/appmixer-skills/env` (in that precedence). If missing, ask the user for the values and write `~/.config/appmixer-skills/env` (KEY=value lines, `chmod 600`) first.
 
 1. **Lint + repo validator** before publishing — catch errors early:
    ```bash
@@ -204,7 +204,7 @@ Run after Step 4 generates test flow JSONs. Publishes the connector and uploads 
 
 2. **Publish + upload flows:**
    ```bash
-   : "${APPMIXER_ENV:?APPMIXER_ENV is not set — point it to your .env file}"
+   : "${APPMIXER_ENV:=$HOME/.config/appmixer-skills/env}"
    source "$APPMIXER_ENV"
 
    # Pack and publish connector

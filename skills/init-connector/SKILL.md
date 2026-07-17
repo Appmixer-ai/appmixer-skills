@@ -4,7 +4,7 @@ description: Initialize a new Appmixer connector from a GitHub issue. Use when u
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.2"
+  version: "0.1.3"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
@@ -20,7 +20,9 @@ files. There is no sub-agent to spawn.
 - **GitHub access** — `gh` CLI authenticated (`gh auth login`); needed to fetch
   the source issue and push the branch.
 - **Connector location** — set `APPMIXER_SKILL_CONNECTORS_DIR` to the `appmixer-connectors`
-  checkout root, or run from inside the repo.
+  checkout root, or run from inside the repo. When neither applies, read it
+  from `~/.config/appmixer-skills/env`; if that file is missing too, ask the
+  user for the path and write it there (KEY=value, `chmod 600`).
 - **Design conventions** — this skill reads the canonical rules from
   `<connectors>/.github/instructions/` (they live in the connectors repo, not in
   this plugin). Before doing anything else, verify that directory exists; if it

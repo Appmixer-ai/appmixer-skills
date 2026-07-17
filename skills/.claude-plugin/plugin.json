@@ -1,7 +1,7 @@
 {
   "name": "appmixer",
   "description": "Appmixer connector development skills: init/scaffold connectors, full build pipeline, CLI tests, E2E test flows, and component refactor/review against Appmixer standards.",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "license": "MIT",
   "author": {
     "name": "Appmixer",

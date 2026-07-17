@@ -4,7 +4,7 @@ description: Review an Appmixer component against standards and best practices. 
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.2"
+  version: "0.1.3"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
@@ -31,7 +31,9 @@ The rules to check live in `<connectors>/.github/instructions/`:
 ## Prerequisites
 
 - **Connector location** — set `APPMIXER_SKILL_CONNECTORS_DIR` to the `appmixer-connectors`
-  checkout root, or run from inside the repo. Components live at
+  checkout root, or run from inside the repo. When neither applies, read it
+  from `~/.config/appmixer-skills/env`; if that file is missing too, ask the
+  user for the path and write it there (KEY=value, `chmod 600`). Components live at
   `<connectors>/src/appmixer/<connector>/`.
 - **Design conventions** — the rules this skill checks against are read from
   `<connectors>/.github/instructions/` (they live in the connectors repo, not in

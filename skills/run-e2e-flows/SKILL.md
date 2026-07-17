@@ -4,7 +4,7 @@ description: Run E2E test flows on a live Appmixer instance and monitor results.
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.2"
+  version: "0.1.3"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
@@ -28,8 +28,11 @@ the `upload-e2e-flows` skill). The runner uploads/updates the *flows* itself.
   ```bash
   bash "${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT}/scripts/ensure-deps.sh"
   ```
-- `APPMIXER_ENV` pointing to a `.env` file with `APPMIXER_SKILL_API_URL`,
-  `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD` (or those vars set directly)
+- Configuration: `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`,
+  `APPMIXER_SKILL_PASSWORD` — the runner loads them from exported vars, the
+  `APPMIXER_ENV` file, or `~/.config/appmixer-skills/env` (in that precedence).
+  If none provide them, ask the user for the values and write
+  `~/.config/appmixer-skills/env` (KEY=value lines, `chmod 600`), then continue.
 - Connector published on the instance; an auth account exists for it
 - **Design conventions** — the fix loop consults
   `<connectors>/.github/instructions/09-testing.md` (it lives in the connectors
