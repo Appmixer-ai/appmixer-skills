@@ -4,7 +4,7 @@ description: Initialize a new Appmixer connector from a GitHub issue. Use when u
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.6"
+  version: "0.1.7"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
