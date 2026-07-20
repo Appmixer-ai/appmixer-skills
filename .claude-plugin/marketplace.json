@@ -1,5 +1,5 @@
 {
-  "name": "appmixer-agents",
+  "name": "appmixer-skills",
   "description": "Appmixer agent skills marketplace — build, test, and publish Appmixer connectors directly from Claude Code.",
   "owner": {
     "name": "Appmixer",

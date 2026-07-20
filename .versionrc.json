@@ -1,4 +1,8 @@
 {
+  "commitAll": true,
+  "scripts": {
+    "postbump": "bash build.sh && git add dist/appmixer-skills.zip"
+  },
   "bumpFiles": [
     { "filename": "package.json", "type": "json" },
     { "filename": "package-lock.json", "type": "json" },
