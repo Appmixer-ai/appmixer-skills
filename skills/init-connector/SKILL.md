@@ -110,7 +110,11 @@ Report what was created (files, component count, auth type).
 1. **Create branch** `feature/<connector>-connector` in `appmixer-connectors`
 2. **Commit** all generated files with message like `feat: add <connector> connector`
 3. **Publish** the connector module to Appmixer (`appmixer pack` + `appmixer publish` — credentials from the `APPMIXER_SKILL_*` env vars / `$APPMIXER_ENV` file)
-4. **Push** the branch to origin
+4. **Push** the branch — Git safety first: confirm the push target (remote URL +
+   branch) with the user before the first push of the session; never push to
+   `dev`/`main`, never force-push. If `origin` is the shared upstream
+   (e.g. `clientIO/appmixer-connectors`) and the user hasn't confirmed direct
+   write access, propose a fork (`gh repo fork --remote`) and push there.
 
 Tell the user the connector is initialized and suggest next step:
 > "Connector **X** initialized with N components. Next: authenticate and run `plan-CLI-tests` to start testing."

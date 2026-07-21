@@ -263,6 +263,17 @@ See the `run-e2e-flows` skill for full details on the fix rules, monitoring, and
 
 ## Git & Publish Rules
 
+**Git safety (applies to every push):**
+
+- **Confirm the push target with the user before the FIRST push of the session** —
+  state the remote URL and branch and wait for approval; subsequent pushes to the
+  same remote+branch may proceed without re-asking.
+- **Feature branches only** — never push to `dev`/`main`/`master`, never force-push.
+- **Check where `origin` points** (`git remote get-url origin`): if it is the shared
+  upstream (e.g. `clientIO/appmixer-connectors`) and the user hasn't explicitly
+  confirmed direct write access, propose a fork workflow instead
+  (`gh repo fork --remote` adds a fork and a remote) and push there.
+
 After every meaningful change (component created, refactored, fixed):
 
 1. **Commit** to the appropriate branch in `appmixer-connectors`:

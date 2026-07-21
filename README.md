@@ -27,6 +27,7 @@ See [skills/README.md](skills/README.md) for architecture details (how the skill
   ```bash
   git clone https://github.com/clientIO/appmixer-connectors.git
   ```
+  Skills commit generated code to feature branches in this clone and push to its `origin`. If you don't have write access to the upstream repo, fork it first (`gh repo fork clientIO/appmixer-connectors --clone`) so pushes go to your fork — the skills ask before the first push of a session either way.
 - For skills that talk to a live Appmixer instance (upload-e2e-flows, run-e2e-flows, connector-pipeline): an Appmixer instance URL + credentials — see [Configuration](#configuration)
 - For `init-connector`: an authenticated `gh` CLI (`gh auth login`) — used to fetch the source issue and push the branch
 
