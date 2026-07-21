@@ -15,10 +15,10 @@ Generate E2E test flow JSON files for a connector's components. **You (the agent
 write the flows directly** — there is no separate sub-agent. After writing them
 you run a deterministic validator and fix anything it flags, looping until clean.
 
-> **Paths:** `$APPMIXER_SKILL_ROOT` points at the skills directory. When running
-> as a Claude Code plugin it is not set — the plugin root IS the skills
-> directory, so prefix commands with:
-> `export APPMIXER_SKILL_ROOT="${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT}"`.
+> **Paths:** `$APPMIXER_SKILL_ROOT` points at the full skills directory (the one
+> containing `_shared/`). The Setup block below resolves it (plugin root in
+> Claude Code, downloaded bundle elsewhere) — run it first and keep prefixing
+> later commands with the same export.
 > The validator (`validate.js`) needs Node deps (`ajv`) which are
 > installed by `scripts/ensure-deps.sh`.
 
@@ -27,7 +27,15 @@ you run a deterministic validator and fix anything it flags, looping until clean
 Install Node dependencies (idempotent, skips if already present):
 
 ```bash
-bash "${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT}/scripts/ensure-deps.sh"
+export APPMIXER_SKILL_ROOT="${APPMIXER_SKILL_ROOT:-${CLAUDE_PLUGIN_ROOT:-$HOME/.appmixer-skills/appmixer}}"
+if [ ! -d "$APPMIXER_SKILL_ROOT/_shared" ]; then
+    # per-skill installs (npx skills, manual copy) ship only the skill dirs —
+    # fetch the full bundle with the shared helpers once
+    curl -fsSL -o /tmp/appmixer-skills.zip https://raw.githubusercontent.com/Appmixer-ai/appmixer-skills/main/dist/appmixer-skills.zip
+    mkdir -p "$HOME/.appmixer-skills" && unzip -oq /tmp/appmixer-skills.zip -d "$HOME/.appmixer-skills" && rm /tmp/appmixer-skills.zip
+    export APPMIXER_SKILL_ROOT="$HOME/.appmixer-skills/appmixer"
+fi
+bash "$APPMIXER_SKILL_ROOT/scripts/ensure-deps.sh"
 ```
 
 ## How it works
@@ -163,8 +171,15 @@ bash "${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT}/scripts/ensure-deps.sh"
     CodeBlock is a last resort.
 12. **No hardcoded dates** — compute with `g_now` + `g_addTimeSpan` (determinism).
 13. **Clean up what you create** — a flow that Creates a resource should Delete it.
-14. **Layout flows left→right** — each connection's target should sit to the right
-    of its source (`target.x >= source.x + 128`); no backward/overlapping edges.
+14. **Layout flows as a left→right staircase** — grid minimums **MIN_DX = 208**
+    (horizontal gap between components) and **MIN_DY = 128** (vertical). Pattern: a
+    tested component and **its** Assert share the same **y**; the Assert sits at the
+    component's **x + MIN_DX**. The next tested component steps down to **y + MIN_DY**
+    (and right), so each component→Assert pair gets its own row. OnStart/SetVariable
+    lead in on the first row; AfterAll → cleanup (Delete) → ProcessE2EResults follow
+    to the right after the last Assert. Connected components either share a row
+    (Δy = 0) or are ≥ MIN_DY apart; never backward/overlapping edges. Enforced
+    (as warnings) by `layout`.
 15. **Cover every component** — each connector **action** should appear in at least
     one flow. `component-coverage` excludes `trigger: true` components, so it only
     flags uncovered **actions** — but triggers CAN and SHOULD be E2E-covered too,

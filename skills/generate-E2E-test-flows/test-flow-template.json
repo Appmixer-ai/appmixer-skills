@@ -3,7 +3,7 @@
     "flow": {
         "fbb75e69-59ee-4f2e-a7e8-212e903ce201": {
             "type": "appmixer.utils.controls.OnStart",
-            "x": 336,
+            "x": 64,
             "y": 320,
             "source": {},
             "version": "1.0.0",
@@ -14,8 +14,8 @@
         },
         "e0c5d708-7014-4766-87b3-73dd3d528f5c": {
             "type": "appmixer.utils.test.ProcessE2EResults",
-            "x": 2096,
-            "y": 336,
+            "x": 1552,
+            "y": 320,
             "source": {
                 "in": {
                     "e2051970-21f2-4a3e-9cf5-3afc253a478b": [
@@ -61,8 +61,8 @@
         },
         "e2051970-21f2-4a3e-9cf5-3afc253a478b": {
             "type": "appmixer.utils.test.AfterAll",
-            "x": 1920,
-            "y": 336,
+            "x": 1344,
+            "y": 320,
             "source": {
                 "in": {
                     "6122345d-f03f-4e8a-a89b-a14c975b6322": [
@@ -100,7 +100,7 @@
         },
         "27fe7676-6028-43d0-b16f-368cc2d8d0d6": {
             "type": "appmixer.utils.controls.SetVariable",
-            "x": 496,
+            "x": 272,
             "y": 320,
             "source": {
                 "in": {
@@ -142,8 +142,8 @@
         },
         "c328eab3-39e1-493d-8b7f-7f4a7fbf6fc4": {
             "type": "appmixer.utils.test.Assert",
-            "x": 1120,
-            "y": 352,
+            "x": 1136,
+            "y": 320,
             "source": {},
             "version": "1.0.0",
             "errorHandling": {
@@ -153,8 +153,8 @@
         },
         "96928b3b-466d-4ed5-979c-40b61c9e995f": {
             "type": "appmixer.utils.test.Assert",
-            "x": 1120,
-            "y": 480,
+            "x": 1136,
+            "y": 448,
             "source": {},
             "version": "1.0.0",
             "errorHandling": {
