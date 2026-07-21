@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.8](https://github.com/Appmixer-ai/appmixer-skills/compare/v0.1.7...v0.1.8) (2026-07-21)
+
+
+### Features
+
+* self-bootstrap shared helpers for per-skill installs (npx skills) ([33cac80](https://github.com/Appmixer-ai/appmixer-skills/commit/33cac80c4c7d500981d7e8cc4a5bc1e0d8c15f2b))
+
 ## [0.1.7](https://github.com/Appmixer-ai/appmixer-skills/compare/v0.1.6...v0.1.7) (2026-07-20)
 
 ## [0.1.6](https://github.com/Appmixer-ai/appmixer-skills/compare/v0.1.5...v0.1.6) (2026-07-17)

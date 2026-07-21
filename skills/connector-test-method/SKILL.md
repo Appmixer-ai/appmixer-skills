@@ -4,7 +4,7 @@ description: Add a test(context) method to an Appmixer trigger component so Flow
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.7"
+  version: "0.1.8"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
