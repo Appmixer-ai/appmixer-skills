@@ -4,7 +4,7 @@ description: Create a test plan for all components in an Appmixer connector. Use
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.8"
+  version: "0.1.9"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---

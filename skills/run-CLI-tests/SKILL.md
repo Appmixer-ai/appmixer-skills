@@ -4,7 +4,7 @@ description: Test and validate Appmixer connector components. Use when user want
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.8"
+  version: "0.1.9"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---

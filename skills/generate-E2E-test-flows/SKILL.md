@@ -4,7 +4,7 @@ description: Generate E2E test flows for an Appmixer connector. Use when user wa
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.8"
+  version: "0.1.9"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
