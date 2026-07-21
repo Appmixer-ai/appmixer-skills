@@ -60,11 +60,11 @@ Download the [complete bundle](https://raw.githubusercontent.com/Appmixer-ai/app
 npx skills add Appmixer-ai/appmixer-skills
 ```
 
-Installs all skills into your agent's skills directory. Works with any agent that supports the [Open Agent Skills](https://skills.sh) protocol. Note: skills reference shared helpers (`_shared/`, `e2e-shared/`, `scripts/`) — if your agent installs skills individually, copy those directories alongside them. For non-Claude-Code installs also `export APPMIXER_SKILL_ROOT=<path-to-the-installed-skills-directory>` — the SKILL.md commands use it to locate the shared scripts (in the Claude Code plugin it is derived automatically).
+Installs all skills into your agent's skills directory. Works with any agent that supports the [Open Agent Skills](https://skills.sh) protocol. Note: this protocol installs only the skill directories, without the shared helpers (`_shared/`, `e2e-shared/`, `scripts/`) the skills build on — the skills handle that themselves: on first use they download the full bundle to `~/.appmixer-skills/` and run from there (`APPMIXER_SKILL_ROOT` points at it; the setup block in each affected SKILL.md does this automatically).
 
 ### Manual Installation (Any Agent)
 
-Copy the contents of the `skills/` directory into your agent's skills folder:
+Copy the contents of the `skills/` directory into your agent's skills folder (copying everything — including `_shared/`, `e2e-shared/` and `scripts/` — keeps the skills self-contained; if you copy only individual skill folders, they download the full bundle to `~/.appmixer-skills/` on first use instead):
 
 | Agent | Skills directory |
 |-------|-----------------|

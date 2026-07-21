@@ -66,12 +66,13 @@ Required: `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`,
 expects an authenticated `gh` CLI. No LLM API keys are needed — the skills run directly in the
 host agent. Full list: `.env.example`.
 
-Note: `APPMIXER_SKILL_ROOT` (path to this `skills/` directory) equals
-`CLAUDE_PLUGIN_ROOT` when running as a plugin — SKILL.md commands use
-`${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT}`, so you only set it for
-non-plugin installs. The SessionStart hook (`hooks/hooks.json` →
-`scripts/ensure-deps.sh`) installs Node deps idempotently on session start.
-Requires Node ≥ 18.
+Note: `APPMIXER_SKILL_ROOT` points at the full skills directory (the one
+containing `_shared/`). The setup block in each affected SKILL.md resolves it
+automatically: plugin root when running as a Claude Code plugin, otherwise
+`~/.appmixer-skills/appmixer` — downloading the bundle there first when the
+shared helpers are missing (per-skill installs via `npx skills` or manual
+copies). The SessionStart hook (`hooks/hooks.json` → `scripts/ensure-deps.sh`)
+installs Node deps idempotently on session start. Requires Node ≥ 18.
 
 ## Configuration resolution
 

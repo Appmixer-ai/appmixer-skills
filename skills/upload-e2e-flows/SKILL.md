@@ -14,10 +14,10 @@ metadata:
 Publish a connector and upload E2E test flows to a live Appmixer instance.
 
 > **Paths:** all `"$APPMIXER_SKILL_ROOT"/e2e-shared/scripts/...` invocations below
-> require `APPMIXER_SKILL_ROOT` to point at the skills directory. When running
-> as a Claude Code plugin it is not set — the plugin root IS the skills
-> directory, so prefix commands in this skill with:
-> `export APPMIXER_SKILL_ROOT="${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT}"`.
+> require `APPMIXER_SKILL_ROOT` to point at the full skills directory (the one
+> containing `_shared/`). Run the Node-dependencies block in Prerequisites first —
+> it resolves the root (plugin root in Claude Code, downloaded bundle elsewhere)
+> and exports the variable; keep prefixing later commands with that export.
 > `appmixer-flow.mjs` is a Node CLI built on `_shared/appmixerApi`
 > (deps installed by `scripts/ensure-deps.sh`);
 
@@ -25,7 +25,19 @@ Publish a connector and upload E2E test flows to a live Appmixer instance.
 
 - **Node dependencies** — install once (idempotent, skips if already present):
   ```bash
-  bash "${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT}/scripts/ensure-deps.sh"
+  export APPMIXER_SKILL_ROOT="${APPMIXER_SKILL_ROOT:-${CLAUDE_PLUGIN_ROOT:-$HOME/.appmixer-skills/appmixer}}"
+  if [ ! -d "$APPMIXER_SKILL_ROOT/_shared" ]; then
+      # per-skill installs (npx skills, manual copy) ship only the skill dirs —
+      # fetch the full bundle with the shared helpers once
+      curl -fsSL -o /tmp/appmixer-skills.zip https://raw.githubusercontent.com/Appmixer-ai/appmixer-skills/main/dist/appmixer-skills.zip \
+          || { echo "ERROR: cannot download the appmixer-skills bundle (GitHub unreachable)." >&2
+               echo "Offline alternatives: install the Claude Code plugin, or copy the full" >&2
+               echo "skills directory (with _shared/) and export APPMIXER_SKILL_ROOT to it." >&2
+               exit 1; }
+      mkdir -p "$HOME/.appmixer-skills" && unzip -oq /tmp/appmixer-skills.zip -d "$HOME/.appmixer-skills" && rm /tmp/appmixer-skills.zip
+      export APPMIXER_SKILL_ROOT="$HOME/.appmixer-skills/appmixer"
+  fi
+  bash "$APPMIXER_SKILL_ROOT/scripts/ensure-deps.sh"
   ```
 - Configuration — `~/.config/appmixer-skills/env`, an `APPMIXER_ENV` file, or exported vars (see below)
 - Connector source in `$APPMIXER_SKILL_CONNECTORS_DIR/src/appmixer/<connector>/`

@@ -46,6 +46,15 @@ while IFS= read -r f; do
 done < <(find "$REPO_ROOT/skills" -name node_modules -prune -o \( -name '*.js' -o -name '*.mjs' \) -print)
 [[ $SYNTAX_OK == 1 ]] && { echo "ok   node --check on all shipped scripts"; PASS=$((PASS+1)); } || FAIL=$((FAIL+1))
 
+echo "── bundle integrity (bootstrap contract) ───────────────────────────"
+# Per-skill installs (npx skills) bootstrap by downloading dist/appmixer-skills.zip
+# from main — the committed bundle must always contain the shared runtime.
+BUNDLE_LIST=$(unzip -l "$REPO_ROOT/dist/appmixer-skills.zip" 2>/dev/null || echo MISSING)
+for want in appmixer/_shared/loadEnv.js appmixer/scripts/ensure-deps.sh \
+            appmixer/e2e-shared/scripts/appmixer-flow.mjs appmixer/package-lock.json; do
+    check "bundle contains $want" "$want" "$BUNDLE_LIST"
+done
+
 echo "── env-var contract ────────────────────────────────────────────────"
 # .env.example is the authoritative list: every process.env.X read by shipped
 # scripts must appear there, or be a documented runtime/meta variable.
@@ -75,6 +84,19 @@ check "run.js without args prints usage" "Usage: node run.js" "$OUT"
 OUT=$("${CLEAN[@]}" node "$PLUGIN/e2e-shared/scripts/appmixer-flow.mjs" list-e2e-flows 2>&1)
 check "appmixer-flow.mjs announces missing instance" "instance=MISSING" "$OUT"
 check "appmixer-flow.mjs names the missing variable" "APPMIXER_SKILL_API_URL is required" "$OUT"
+
+echo "── offline bootstrap failure (no GitHub) ───────────────────────────"
+# The SKILL.md bootstrap block must abort with an actionable message when the
+# bundle download fails (air-gapped box, GitHub outage) — not cascade into
+# unzip/file-not-found noise. Reproduce with a failing curl shim.
+mkdir -p "$WORK/no-net-bin"
+printf '#!/bin/bash\necho "curl: (6) Could not resolve host" >&2\nexit 6\n' > "$WORK/no-net-bin/curl"
+chmod +x "$WORK/no-net-bin/curl"
+BOOTSTRAP_BLOCK=$(awk '/^ *export APPMIXER_SKILL_ROOT=/{f=1} f{sub(/^  /,""); print} /ensure-deps.sh"$/{if(f)exit}' \
+    "$REPO_ROOT/skills/upload-e2e-flows/SKILL.md")
+OUT=$("${CLEAN[@]}" PATH="$WORK/no-net-bin:$PATH" bash -c "$BOOTSTRAP_BLOCK" 2>&1)
+check "bootstrap aborts with actionable offline error" "cannot download the appmixer-skills bundle" "$OUT"
+check "bootstrap suggests offline alternatives" "Offline alternatives" "$OUT"
 
 echo "── happy-path mechanics ────────────────────────────────────────────"
 cd "$CONNECTORS/sub/deep"

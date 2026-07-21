@@ -31,7 +31,11 @@ export APPMIXER_SKILL_ROOT="${APPMIXER_SKILL_ROOT:-${CLAUDE_PLUGIN_ROOT:-$HOME/.
 if [ ! -d "$APPMIXER_SKILL_ROOT/_shared" ]; then
     # per-skill installs (npx skills, manual copy) ship only the skill dirs —
     # fetch the full bundle with the shared helpers once
-    curl -fsSL -o /tmp/appmixer-skills.zip https://raw.githubusercontent.com/Appmixer-ai/appmixer-skills/main/dist/appmixer-skills.zip
+    curl -fsSL -o /tmp/appmixer-skills.zip https://raw.githubusercontent.com/Appmixer-ai/appmixer-skills/main/dist/appmixer-skills.zip \
+        || { echo "ERROR: cannot download the appmixer-skills bundle (GitHub unreachable)." >&2
+             echo "Offline alternatives: install the Claude Code plugin, or copy the full" >&2
+             echo "skills directory (with _shared/) and export APPMIXER_SKILL_ROOT to it." >&2
+             exit 1; }
     mkdir -p "$HOME/.appmixer-skills" && unzip -oq /tmp/appmixer-skills.zip -d "$HOME/.appmixer-skills" && rm /tmp/appmixer-skills.zip
     export APPMIXER_SKILL_ROOT="$HOME/.appmixer-skills/appmixer"
 fi

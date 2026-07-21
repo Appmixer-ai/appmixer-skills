@@ -26,7 +26,19 @@ the `upload-e2e-flows` skill). The runner uploads/updates the *flows* itself.
 
 - **Node dependencies** — install once (idempotent, skips if already present):
   ```bash
-  bash "${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT}/scripts/ensure-deps.sh"
+  export APPMIXER_SKILL_ROOT="${APPMIXER_SKILL_ROOT:-${CLAUDE_PLUGIN_ROOT:-$HOME/.appmixer-skills/appmixer}}"
+  if [ ! -d "$APPMIXER_SKILL_ROOT/_shared" ]; then
+      # per-skill installs (npx skills, manual copy) ship only the skill dirs —
+      # fetch the full bundle with the shared helpers once
+      curl -fsSL -o /tmp/appmixer-skills.zip https://raw.githubusercontent.com/Appmixer-ai/appmixer-skills/main/dist/appmixer-skills.zip \
+          || { echo "ERROR: cannot download the appmixer-skills bundle (GitHub unreachable)." >&2
+               echo "Offline alternatives: install the Claude Code plugin, or copy the full" >&2
+               echo "skills directory (with _shared/) and export APPMIXER_SKILL_ROOT to it." >&2
+               exit 1; }
+      mkdir -p "$HOME/.appmixer-skills" && unzip -oq /tmp/appmixer-skills.zip -d "$HOME/.appmixer-skills" && rm /tmp/appmixer-skills.zip
+      export APPMIXER_SKILL_ROOT="$HOME/.appmixer-skills/appmixer"
+  fi
+  bash "$APPMIXER_SKILL_ROOT/scripts/ensure-deps.sh"
   ```
 - Configuration: `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`,
   `APPMIXER_SKILL_PASSWORD` — the runner loads them from exported vars, the
@@ -42,7 +54,7 @@ the `upload-e2e-flows` skill). The runner uploads/updates the *flows* itself.
 ## The runner
 
 ```bash
-node "${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT}/run-e2e-flows/scripts/run.js" \
+node "${APPMIXER_SKILL_ROOT:-${CLAUDE_PLUGIN_ROOT:-$HOME/.appmixer-skills/appmixer}}/run-e2e-flows/scripts/run.js" \
     <path-to-flow.json> [baseUrl]
 ```
 
@@ -156,7 +168,7 @@ timeouts — `assertsFired`/`assertsSilent` (component IDs). Then:
    re-publish (`appmixer pack && appmixer publish`) before re-running.
 5. **Validate** the edited flow:
    ```bash
-   node "${APPMIXER_SKILL_ROOT:-$CLAUDE_PLUGIN_ROOT}/generate-E2E-test-flows/validate.js" <flow.json>
+   node "${APPMIXER_SKILL_ROOT:-${CLAUDE_PLUGIN_ROOT:-$HOME/.appmixer-skills/appmixer}}/generate-E2E-test-flows/validate.js" <flow.json>
    ```
 6. **Re-run the runner** with the same flow path.
 
