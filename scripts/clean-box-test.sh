@@ -34,12 +34,13 @@ docker build -q -t "$IMAGE" -f "$REPO_ROOT/scripts/clean-box.Dockerfile" "$REPO_
 run_in_box() { # run_in_box [extra docker args --] <shell command>
     local extra=()
     while [[ "$1" != "--" ]]; do extra+=("$1"); shift; done; shift
-    docker run --rm "${extra[@]}" "$IMAGE" bash -lc "$1" 2>&1
+    # ${extra[@]+...} guard: bash 3.2 (macOS) treats empty-array expansion as unbound under set -u
+    docker run --rm ${extra[@]+"${extra[@]}"} "$IMAGE" bash -lc "$1" 2>&1
 }
 
 echo "── scenario 1: npx install on a clean box ──────────────────────────"
 OUT=$(run_in_box -- '
-    npx -y skills add Appmixer-ai/appmixer-skills --agent claude-code >/dev/null 2>&1
+    npx -y skills add Appmixer-ai/appmixer-skills --agent claude-code --skill "*" -y >/dev/null 2>&1
     ls .claude/skills/ && test -f .claude/skills/run-e2e-flows/SKILL.md && echo INSTALL_OK')
 check "npx installs the 9 skill dirs" "INSTALL_OK" "$OUT"
 
@@ -67,7 +68,7 @@ check "air-gapped box cannot download (bootstrap would abort with its message)" 
 echo "── scenario 4: agent behavior (headless claude) ────────────────────"
 if [[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" || -n "${ANTHROPIC_API_KEY:-}" ]]; then
     OUT=$(run_in_box -e CLAUDE_CODE_OAUTH_TOKEN -e ANTHROPIC_API_KEY -- '
-        npx -y skills add Appmixer-ai/appmixer-skills --agent claude-code >/dev/null 2>&1
+        npx -y skills add Appmixer-ai/appmixer-skills --agent claude-code --skill "*" -y >/dev/null 2>&1
         claude -p --dangerously-skip-permissions --max-turns 15 \
           "Use the generate-E2E-test-flows skill to generate test flows for the \"asana\" connector. Do exactly what the skill says. If a prerequisite is missing, say precisely what is missing and what I should do, then stop." 2>&1')
     # A clean box has no connectors checkout and no config: the agent must surface

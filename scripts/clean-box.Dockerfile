@@ -11,6 +11,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Non-root user: mirrors a real box and lets claude run with
 # --dangerously-skip-permissions (refused for root).
-RUN useradd -m tester
+RUN useradd -m tester && mkdir -p /home/tester/project && chown -R tester:tester /home/tester
 USER tester
 WORKDIR /home/tester/project
