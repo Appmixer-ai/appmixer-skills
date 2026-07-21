@@ -60,6 +60,12 @@ Download the [complete bundle](https://raw.githubusercontent.com/Appmixer-ai/app
 npx skills add Appmixer-ai/appmixer-skills
 ```
 
+By default the CLI opens an interactive skill picker (when it can't auto-detect your agent). For a non-interactive install of everything — scripts, CI, containers — pass the flags explicitly:
+
+```bash
+npx skills add Appmixer-ai/appmixer-skills --agent claude-code --skill "*" -y
+```
+
 Installs all skills into your agent's skills directory. Works with any agent that supports the [Open Agent Skills](https://skills.sh) protocol. Note: this protocol installs only the skill directories, without the shared helpers (`_shared/`, `e2e-shared/`, `scripts/`) the skills build on — the skills handle that themselves: on first use they download the full bundle to `~/.appmixer-skills/` and run from there (`APPMIXER_SKILL_ROOT` points at it; the setup block in each affected SKILL.md does this automatically).
 
 ### Manual Installation (Any Agent)
