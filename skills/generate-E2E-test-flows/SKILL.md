@@ -214,6 +214,32 @@ bash "$APPMIXER_SKILL_ROOT/scripts/ensure-deps.sh"
       — set the AfterAll `timeout` to 420 and expect the runner to wait, not fail.
     - Cleanup should consume the TRIGGER's output (`$.trigger.out.id`) — it then
       doubles as the assertion that the trigger fired.
+    - **No native action component for the provoke?** Use the connector's
+      `MakeApiCall` in the provoke lane. Extract values from its response with
+      `$.<makeApiCallId>.out.body` + a `g_jsonPath` modifier (its out port is
+      `{status, body}` — there is no `response` field, and deep paths like
+      `.out.body.order.id` are designer-invalid). Chain as many calls as the
+      provoke needs (create → lookup → mutate), each step reading ids from the
+      previous step's `body`.
+    - **Transition-fired webhooks**: many events fire on a STATE TRANSITION, not
+      on a state (orders/paid, fulfilled, closed…). The provoke must create the
+      entity in a NON-target state and then explicitly transition it — and watch
+      for API defaults that silently pre-satisfy the target state (Shopify:
+      API-created orders default to `financial_status: paid` even when omitted,
+      so orders/paid never fires unless you create with `pending` and then POST
+      a `sale` transaction). If a created-as-X entity doesn't fire "X" events,
+      that's why.
+    - **Event not provokable via API at all** (real storefront/UI action:
+      checkout sessions, customer-portal steps)? Still generate the flow —
+      trigger lane + `OnStart → Wait` (validators require OnStart) — and add a
+      sticky `note` in the flow JSON with numbered manual steps to fire the
+      event, plus a longer AfterAll `timeout` (600) so a human has time to click
+      through. The flow then serves as a repeatable manual verification harness.
+    - **Verify the trigger's topic fires at all** before writing the flow: a
+      generic "updated" topic can be dead for the whole real journey (per-step
+      topics fire instead) — see the multi-topic trigger pattern in
+      `07-component-types.md`. A wrong topic produces a flow that registers
+      fine and times out forever.
 
 (Failures 1-10 — including 5c, 6b and 9b — fail validation; 11-19 are warnings
 or generation guidance.)
