@@ -132,6 +132,13 @@ instance-outage message instead of burning the fix budget.
 runner stops the flow (best-effort, 10 s cap) before exiting, so no run leaks a
 running flow with live trigger subscriptions.
 
+**Overall runner timeout is `AGENT_TIMEOUT_MS` (default 10 min).** With two
+482 s WAIT windows plus upload/stop overhead, the default expires DURING the
+second window — an external event arriving after ~9 min is lost to "Runner
+timeout exceeded". For trigger flows waiting on slow external events (manual
+storefront/UI steps, provider-side latency in the tens of minutes), export
+`AGENT_TIMEOUT_MS=1500000` (or more) before invoking the runner.
+
 ## The fix loop (you)
 
 On exit code 2 the runner prints a `NEEDS_FIX` JSON brief: `reason`, `errors`
@@ -215,6 +222,28 @@ Flows are monitored via **log polling**, not flow stage:
 Do NOT use `OnError + StopFlow` components in test flows — they cause spurious lock errors on some instances and add noise to logs.
 
 ## Known Gotchas
+
+### Polling triggers baseline on their first tick — the flow must be RUNNING when the event lands
+A `tick()` trigger records the current item set on its first poll after flow
+start and only emits items that appear LATER. The runner stops the flow between
+its retry windows, so an event that becomes visible during that stopped gap is
+swallowed by the next run's fresh baseline — with slow provider latency (e.g.
+Shopify lists an abandoned checkout ~10 min after the customer leaves) the
+runner's stop/start windows can miss it forever. Workaround for such flows:
+start the flow directly (`POST /flows/:id/coordinator {"command":"start"}`),
+keep it running until the event is visible, verify the emission in `/logs`
+manually, then stop the flow. Note the flow-authored AfterAll timeout still
+applies — a very late event yields a recorded "timeout" result even though the
+trigger emission proves the component works; restart the flow just before the
+event if you need a clean PASSED record.
+
+### Webhook registration fails with 422/404 "Invalid topic"
+Two distinct causes, in triage order: (1) the auth token lacks the topic's
+required scope — fix by granting the scope upstream; (2) the topic does not
+exist on that API surface — some providers expose certain topics only via a
+different registration channel (Shopify: most `returns/*` topics are
+GraphQL-`webhookSubscriptionCreate`-only; REST rejects them). Probe the topic
+with a direct API call before touching the component code.
 
 ### Stale logs from previous runs
 Errors shown may be from **previous** runs. The runner filters by run start
