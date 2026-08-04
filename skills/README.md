@@ -10,8 +10,8 @@ The skills in `skills/` are **instructions for the host agent** (e.g. a Claude
 Code session) — no skill spawns its own LLM sub-agent. Two shapes:
 
 1. **Pure instructions** — `SKILL.md` describes the procedure and the agent executes
-   it directly with its own tools: `init-connector`, `test-components`,
-   `review-component-standards`, `generate-e2e-flows`, `connector-pipeline`.
+   it directly with its own tools: `new-connector`, `test-components`,
+   `review-component-standards`, `generate-e2e-flows`.
 2. **Instructions + deterministic script** — the agent drives a Node script with no
    LLM inside:
    - `run-e2e-flows/scripts/run.js` — E2E runner (explicit state machine;
@@ -36,7 +36,7 @@ customer's own workspace works just as well.
 
 The connector **design conventions** are bundled with the skills in
 `_shared/instructions/*.md` — the single source of truth the skills read
-(`init-connector`, `review-component-standards`, `connector-pipeline`). The
+(`new-connector`, `review-component-standards`, `run-e2e-flows`). The
 workspace itself does not need to provide any conventions.
 
 > **Note:** the `skills/*/agent/` directories are legacy sub-agent implementations —
@@ -59,9 +59,8 @@ cp <plugin-dir>/.env.example ~/.config/appmixer-skills/env   # then fill in
 ```
 
 Required: `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`,
-`APPMIXER_SKILL_PASSWORD`, `APPMIXER_SKILL_CONNECTORS_DIR`; `init-connector` additionally
-expects an authenticated `gh` CLI. No LLM API keys are needed — the skills run directly in the
-host agent. Full list: `.env.example`.
+`APPMIXER_SKILL_PASSWORD`, `APPMIXER_SKILL_CONNECTORS_DIR`. No LLM API keys are
+needed — the skills run directly in the host agent. Full list: `.env.example`.
 
 Note: `APPMIXER_SKILL_ROOT` points at the full skills directory (the one
 containing `_shared/`). The setup block in each affected SKILL.md resolves it

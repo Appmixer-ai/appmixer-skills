@@ -8,8 +8,7 @@ Give your AI coding agent deep Appmixer connector-development expertise — scaf
 
 | Skill | What it does |
 |-------|-------------|
-| **init-connector** | Scaffold a new connector from a GitHub issue — fetch requirements, research the API, write the files |
-| **connector-pipeline** | End-to-end connector development pipeline — from scaffold through tests to publish |
+| **new-connector** | Build a new connector end-to-end — gather requirements, research the API, scaffold components, then drive tests, E2E flows and publish |
 | **test-components** | Plan, test and validate connector components with a test+fix cycle |
 | **connector-test-method** | Add a `test(context)` method to trigger components for Flow Test Mode |
 | **review-component-standards** | Read-only audit of a component against Appmixer standards and best practices |
@@ -27,8 +26,7 @@ See [skills/README.md](skills/README.md) for architecture details (how the skill
   git clone https://github.com/appmixer-ai/appmixer-connectors.git
   ```
   The connector design conventions ship with the skills (`skills/_shared/instructions/`) — the workspace does not need to provide them. When the workspace is a git repo, skills commit generated code to feature branches and ask before the first push of a session.
-- For skills that talk to a live Appmixer instance (upload-e2e-flows, run-e2e-flows, connector-pipeline): an Appmixer instance URL + credentials — see [Configuration](#configuration)
-- For `init-connector`: an authenticated `gh` CLI (`gh auth login`) — used to fetch the source issue and push the branch
+- For skills that talk to a live Appmixer instance (upload-e2e-flows, run-e2e-flows, new-connector): an Appmixer instance URL + credentials — see [Configuration](#configuration)
 
 ## Installation
 
@@ -40,7 +38,7 @@ claude
 /plugin install appmixer@appmixer-agents
 ```
 
-All 8 skills and their shared helpers load automatically.
+All 7 skills and their shared helpers load automatically.
 
 ### Claude Code Plugin (Manual)
 

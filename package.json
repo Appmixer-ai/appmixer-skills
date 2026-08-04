@@ -34,10 +34,6 @@
   "agents": {
     "skills": [
       {
-        "name": "connector-pipeline",
-        "path": "./skills/connector-pipeline"
-      },
-      {
         "name": "connector-test-method",
         "path": "./skills/connector-test-method"
       },
@@ -46,8 +42,8 @@
         "path": "./skills/generate-e2e-flows"
       },
       {
-        "name": "init-connector",
-        "path": "./skills/init-connector"
+        "name": "new-connector",
+        "path": "./skills/new-connector"
       },
       {
         "name": "review-component-standards",
