@@ -1,0 +1,70 @@
+{
+    "name": "appmixer.service.core.FindTasks",
+    "label": "Find Tasks",
+    "description": "Search for tasks based on specified criteria. This component will return a maximum of 500 records",
+    "inPorts": [
+        {
+            "name": "in",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "query": { "type": "string" },
+                    "status": { "type": "string" },
+                    "outputType": { "type": "string", "default": "array" }
+                }
+            },
+            "inspector": {
+                "inputs": {
+                    "query": {
+                        "type": "text",
+                        "index": 1,
+                        "label": "Search Query",
+                        "tooltip": "Search term to find tasks"
+                    },
+                    "status": {
+                        "type": "select",
+                        "index": 2,
+                        "label": "Status",
+                        "options": [
+                            { "label": "All", "value": "" },
+                            { "label": "Open", "value": "open" },
+                            { "label": "Completed", "value": "completed" }
+                        ]
+                    },
+                    "outputType": {
+                        "type": "select",
+                        "label": "Output Type",
+                        "index": 3,
+                        "defaultValue": "array",
+                        "tooltip": "Choose whether you want to receive the result set as one complete list, or first item only or one item at a time or stream the items to a file.",
+                        "options": [
+                            { "label": "First Item Only", "value": "first" },
+                            { "label": "All items at once", "value": "array" },
+                            { "label": "One item at a time", "value": "object" },
+                            { "label": "Store to CSV file", "value": "file" }
+                        ]
+                    }
+                }
+            }
+        }
+    ],
+    "outPorts": [
+        {
+            "name": "out",
+            "source": {
+                "url": "/component/appmixer/service/core/FindTasks?outPort=out",
+                "data": {
+                    "properties": {
+                        "generateOutputPortOptions": true
+                    },
+                    "messages": {
+                        "in/outputType": "inputs/in/outputType"
+                    }
+                }
+            }
+        },
+        {
+            "name": "notFound"
+        }
+    ]
+}

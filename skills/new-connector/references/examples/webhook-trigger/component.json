@@ -1,0 +1,45 @@
+{
+    "name": "appmixer.service.core.UpdatedContact",
+    "label": "Updated Contact",
+    "description": "Triggers when a contact is updated.",
+    "author": "Appmixer <info@appmixer.com>",
+    "webhook": true,
+    "auth": {
+        "service": "appmixer:service"
+    },
+    "properties": {
+        "schema": {
+            "properties": {
+                "listId": { "type": "string" }
+            }
+        },
+        "inspector": {
+            "inputs": {
+                "listId": {
+                    "type": "select",
+                    "label": "List",
+                    "index": 1,
+                    "source": {
+                        "url": "/component/appmixer/service/core/ListLists?outPort=out",
+                        "data": {
+                            "transform": "./transformers#listsToSelectArray"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "outPorts": [
+        {
+            "name": "out",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string", "title": "Contact ID", "example": "c-1001" },
+                    "email": { "type": "string", "title": "Email", "example": "jane@example.com" },
+                    "updated_at": { "type": "string", "format": "date-time", "title": "Updated Date", "example": "2025-01-15T10:30:00Z" }
+                }
+            }
+        }
+    ]
+}

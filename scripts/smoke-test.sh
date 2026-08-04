@@ -46,6 +46,13 @@ while IFS= read -r f; do
 done < <(find "$REPO_ROOT/skills" -name node_modules -prune -o \( -name '*.js' -o -name '*.mjs' \) -print)
 [[ $SYNTAX_OK == 1 ]] && { echo "ok   node --check on all shipped scripts"; PASS=$((PASS+1)); } || FAIL=$((FAIL+1))
 
+echo "── references sync (instructions/ -> skills/*/references/) ─────────"
+if node "$REPO_ROOT/scripts/sync-references.mjs" --check > /dev/null 2>&1; then
+    echo "ok   skill references/ in sync with instructions/"; PASS=$((PASS+1))
+else
+    echo "FAIL references out of sync — run: node scripts/sync-references.mjs"; FAIL=$((FAIL+1))
+fi
+
 echo "── bundle integrity (bootstrap contract) ───────────────────────────"
 # Per-skill installs (npx skills) bootstrap by downloading dist/appmixer-skills.zip
 # from main — the committed bundle must always contain the shared runtime.

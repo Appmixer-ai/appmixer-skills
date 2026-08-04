@@ -34,9 +34,12 @@ shared resolver). A clone of
 as a workspace and doubles as a library of real-world example connectors, but a
 customer's own workspace works just as well.
 
-The connector **design conventions** are bundled with the skills in
-`_shared/instructions/*.md` — the single source of truth the skills read
-(`new-connector`, `review-component-standards`, `run-e2e-flows`). The
+The connector **design conventions** ship inside the skills that use them
+(`new-connector`, `review-component-standards`, `run-e2e-flows`), in each
+skill's `references/` directory — including complete example files in
+`references/examples/`. The canonical source is `instructions/` at the repo
+root; `node scripts/sync-references.mjs` copies it into the skills (CI checks
+the copies with `--check`). Edit `instructions/`, never the copies. The
 workspace itself does not need to provide any conventions.
 
 > **Note:** the `skills/*/agent/` directories are legacy sub-agent implementations —

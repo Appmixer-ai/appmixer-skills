@@ -1,8 +1,11 @@
 # Appmixer Development & Component Creation Guidelines
 
-> These instructions ship with the [appmixer-skills](https://github.com/Appmixer-ai/appmixer-skills)
-> plugin (`_shared/instructions/`) and are the canonical connector-design rules the
-> skills follow. For real-world example connectors to learn from, see
+> These instructions are the canonical connector-design rules the
+> [appmixer-skills](https://github.com/Appmixer-ai/appmixer-skills) follow. They
+> are maintained in `instructions/` at the repo root and synced into each
+> skill's `references/` directory (`node scripts/sync-references.mjs`) — edit
+> them there, never the copies. Complete example files live in `examples/`.
+> For real-world example connectors to learn from, see
 > https://github.com/appmixer-ai/appmixer-connectors.
 
 ## Overview

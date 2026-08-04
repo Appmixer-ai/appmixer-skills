@@ -25,7 +25,7 @@ See [skills/README.md](skills/README.md) for architecture details (how the skill
   ```bash
   git clone https://github.com/appmixer-ai/appmixer-connectors.git
   ```
-  The connector design conventions ship with the skills (`skills/_shared/instructions/`) — the workspace does not need to provide them. When the workspace is a git repo, skills commit generated code to feature branches and ask before the first push of a session.
+  The connector design conventions ship inside the skills (each skill's `references/` directory) — the workspace does not need to provide them. When the workspace is a git repo, skills commit generated code to feature branches and ask before the first push of a session.
 - For skills that talk to a live Appmixer instance (upload-e2e-flows, run-e2e-flows, new-connector): an Appmixer instance URL + credentials — see [Configuration](#configuration)
 
 ## Installation

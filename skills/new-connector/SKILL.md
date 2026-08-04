@@ -41,12 +41,16 @@ bash "$APPMIXER_SKILL_ROOT/scripts/ensure-deps.sh"
   root (any directory containing `src/appmixer/`), or run from inside it. When
   neither applies, read it from `~/.config/appmixer-skills/env`; if that file is
   missing too, ask the user for the path and write it there (KEY=value, `chmod 600`).
-- **Design conventions** — bundled with the skills in
-  `$APPMIXER_SKILL_ROOT/_shared/instructions/` (the block above resolves the root).
+- **Design conventions** — bundled in this skill's own `references/` directory;
+  no extra setup needed to read them.
 
 ## Design Reference
 
-All connector design knowledge lives in `$APPMIXER_SKILL_ROOT/_shared/instructions/` — the single source of truth for connector standards. Real-world example connectors: https://github.com/appmixer-ai/appmixer-connectors.
+All connector design knowledge lives in the `references/` directory next to this
+SKILL.md — the single source of truth for connector standards. Complete example
+files (component.json, behaviors, auth.js, lib.js, an E2E flow) are in
+`references/examples/`. Real-world example connectors:
+https://github.com/appmixer-ai/appmixer-connectors.
 
 | File | Content |
 |------|---------|
@@ -99,10 +103,11 @@ user wants more components, use the "Adding New Components" flow below instead.
 
 ### 2a. Load the design rules
 
-Read `$APPMIXER_SKILL_ROOT/_shared/instructions/` — at minimum: `01-connectors.md`,
+Read this skill's `references/` — at minimum: `01-connectors.md`,
 `02-authentication.md`, `04-components.md`, `06-component-behavior.md`,
 `07-component-types.md`, `08-best-practices.md`. These are the canonical
-conventions everything below must follow.
+conventions everything below must follow. Use the complete example files in
+`references/examples/` as scaffolding templates.
 
 When a reference implementation helps (auth pattern, pagination, dynamic
 sources), browse real connectors at
@@ -194,8 +199,8 @@ After 3 failures → report to user: skip or investigate manually.
 
 > **Auditing without changing files:** use the `review-component-standards`
 > skill for a read-only report. Fixing is done by editing the component files
-> directly as part of this loop — apply the standards in
-> `$APPMIXER_SKILL_ROOT/_shared/instructions/`.
+> directly as part of this loop — apply the standards in this skill's
+> `references/`.
 
 ### 3d. Finalize
 

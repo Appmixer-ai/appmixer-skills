@@ -1,0 +1,20 @@
+{
+    "name": "appmixer.service.core.NewTask",
+    "label": "New Task",
+    "description": "Triggers when a new task is created",
+    "trigger": true,
+    "tick": true,
+    "outPorts": [
+        {
+            "name": "out",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string", "title": "Task ID", "example": "1001" },
+                    "title": { "type": "string", "title": "Title", "example": "Buy groceries" },
+                    "created_at": { "type": "string", "format": "date-time", "title": "Created Date", "example": "2025-01-15T10:30:00Z" }
+                }
+            }
+        }
+    ]
+}

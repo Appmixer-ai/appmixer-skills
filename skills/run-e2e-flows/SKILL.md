@@ -47,8 +47,7 @@ the `upload-e2e-flows` skill). The runner uploads/updates the *flows* itself.
   `~/.config/appmixer-skills/env` (KEY=value lines, `chmod 600`), then continue.
 - Connector published on the instance; an auth account exists for it
 - **Design conventions** — the fix loop consults
-  `$APPMIXER_SKILL_ROOT/_shared/instructions/09-testing.md` (bundled with the
-  skills; the Node-dependencies block above resolves the root).
+  `references/09-testing.md` in this skill's directory (no setup needed).
 
 ## The runner
 
@@ -169,7 +168,7 @@ timeouts — `assertsFired`/`assertsSilent` (component IDs). Then:
    inputs/outputs before changing variable paths.
 3. **Fix the flow JSON on disk** (`flowJsonPath` from the brief): variable paths,
    assert expressions, input mappings, modifiers. Consult
-   `$APPMIXER_SKILL_ROOT/_shared/instructions/09-testing.md` for flow design patterns.
+   `references/09-testing.md` for flow design patterns.
 4. **If the component source itself is broken**, fix it in the connector and
    re-publish (`appmixer pack && appmixer publish`) before re-running.
 5. **Validate** the edited flow:
@@ -296,6 +295,6 @@ Tests must pass on repeated runs without input changes:
 
 ## References
 
-- **Flow design patterns**: `$APPMIXER_SKILL_ROOT/_shared/instructions/09-testing.md` — read before diagnosing or fixing flows
+- **Flow design patterns**: `references/09-testing.md` — read before diagnosing or fixing flows
 - **API details**: `skills/_shared/appmixerApi/*.js` — the shared HTTP client library is the single source of truth for Appmixer API calls (auth, flows, accounts, logs, stores)
 - **Triage rules**: `scripts/triage.js` — add deterministic rules there for repeatable failure classes (keeps fixes rare)

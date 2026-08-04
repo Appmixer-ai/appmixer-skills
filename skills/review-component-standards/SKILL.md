@@ -11,15 +11,14 @@ metadata:
 
 # Review Component Standards
 
-Audits an Appmixer component against the bundled design standards
-(`_shared/instructions/`). **You (the agent) do the review
+Audits an Appmixer component against the design standards bundled in this
+skill's `references/` directory. **You (the agent) do the review
 directly** — read the files and produce a structured issue list. There is no
 sub-agent to spawn. **Do NOT modify any files.**
 
 ## Design Reference
 
-The rules to check live in `$APPMIXER_SKILL_ROOT/_shared/instructions/`
-(resolve the root as in Prerequisites):
+The rules to check live in the `references/` directory next to this SKILL.md:
 
 | File | Content |
 |------|---------|
@@ -29,8 +28,9 @@ The rules to check live in `$APPMIXER_SKILL_ROOT/_shared/instructions/`
 | `07-component-types.md` | Actions, triggers, dynamic components |
 | `08-best-practices.md` | Coding standards, naming, error handling |
 
-Real-world example connectors (when you want a reference implementation):
-https://github.com/appmixer-ai/appmixer-connectors
+Complete example files (component.json, behaviors, auth.js, lib.js) are in
+`references/examples/`. Real-world example connectors (when you want a
+reference implementation): https://github.com/appmixer-ai/appmixer-connectors
 
 ## Prerequisites
 
@@ -39,18 +39,6 @@ https://github.com/appmixer-ai/appmixer-connectors
   neither applies, read it from `~/.config/appmixer-skills/env`; if that file is
   missing too, ask the user for the path and write it there (KEY=value,
   `chmod 600`). Components live at `<workspace>/src/appmixer/<connector>/`.
-- **Design rules** — bundled with the skills. Resolve the skills root first
-  (idempotent; downloads the full bundle only for per-skill installs that lack
-  `_shared/`):
-  ```bash
-  export APPMIXER_SKILL_ROOT="${APPMIXER_SKILL_ROOT:-${CLAUDE_PLUGIN_ROOT:-$HOME/.appmixer-skills/appmixer}}"
-  if [ ! -d "$APPMIXER_SKILL_ROOT/_shared" ]; then
-      curl -fsSL -o /tmp/appmixer-skills.zip https://raw.githubusercontent.com/Appmixer-ai/appmixer-skills/main/dist/appmixer-skills.zip
-      mkdir -p "$HOME/.appmixer-skills" && unzip -oq /tmp/appmixer-skills.zip -d "$HOME/.appmixer-skills" && rm /tmp/appmixer-skills.zip
-      export APPMIXER_SKILL_ROOT="$HOME/.appmixer-skills/appmixer"
-  fi
-  ls "$APPMIXER_SKILL_ROOT/_shared/instructions/"
-  ```
 
 ## Input
 

@@ -1,0 +1,42 @@
+{
+    "name": "appmixer.service.core.GetTask",
+    "label": "Get Task",
+    "description": "Retrieve a specific task by ID.",
+    "inPorts": [
+        {
+            "name": "in",
+            "inspector": {
+                "inputs": {
+                    "taskId": {
+                        "type": "text",
+                        "index": 1,
+                        "label": "Task ID",
+                        "tooltip": "The unique identifier of the task"
+                    }
+                }
+            },
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "taskId": { "type": "string" }
+                },
+                "required": ["taskId"]
+            }
+        }
+    ],
+    "outPorts": [
+        {
+            "name": "out",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string", "title": "Task ID", "example": "1001" },
+                    "title": { "type": "string", "title": "Title", "example": "Buy groceries" },
+                    "description": { "type": "string", "title": "Description", "example": "Milk, eggs, bread" },
+                    "status": { "type": "string", "title": "Status", "example": "open" },
+                    "created_at": { "type": "string", "format": "date-time", "title": "Created Date", "example": "2025-01-15T10:30:00Z" }
+                }
+            }
+        }
+    ]
+}
