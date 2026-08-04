@@ -1,5 +1,5 @@
 ---
-name: generate-E2E-test-flows
+name: generate-e2e-flows
 description: Generate E2E test flows for an Appmixer connector. Use when user wants to create end-to-end tests, generate test flows, or after component testing is complete.
 license: MIT
 metadata:
@@ -46,7 +46,7 @@ bash "$APPMIXER_SKILL_ROOT/scripts/ensure-deps.sh"
 
 1. **Pick the components** to cover (one trigger or action per flow; default: all
    testable components of the connector).
-2. **Read the canonical template** `$APPMIXER_SKILL_ROOT/generate-E2E-test-flows/test-flow-template.json`
+2. **Read the canonical template** `$APPMIXER_SKILL_ROOT/generate-e2e-flows/test-flow-template.json`
    — copy its structure (OnStart → setup → component-under-test → Assert →
    AfterAll → ProcessE2EResults). It is a complete, working example.
 
@@ -63,7 +63,7 @@ bash "$APPMIXER_SKILL_ROOT/scripts/ensure-deps.sh"
    `$APPMIXER_SKILL_CONNECTORS_DIR/src/appmixer/<connector>/artifacts/test-flows/test-flow-<name>.json`.
 5. **Validate**:
    ```bash
-   node "$APPMIXER_SKILL_ROOT/generate-E2E-test-flows/validate.js" \
+   node "$APPMIXER_SKILL_ROOT/generate-e2e-flows/validate.js" \
      "$APPMIXER_SKILL_CONNECTORS_DIR/src/appmixer/<connector>/artifacts/test-flows"
    ```
    Fix every reported failure and re-run until it prints `Validation passed`.
@@ -246,8 +246,7 @@ or generation guidance.)
 
 ## Adding / changing a rule
 
-The validator is `validate.js` + `validators/*.js` (modeled on
-`appmixer-connectors/scripts/validate.js`): each validator exports
+The validator is `validate.js` + `validators/*.js`: each validator exports
 `{ name, description, run(ctx) }` and calls `ctx.addFailure` / `ctx.addWarning`.
 Shared check logic lives in `validators/lib/`. Add a new file to `validators/` to
 add a rule — `validate.js` auto-discovers it.

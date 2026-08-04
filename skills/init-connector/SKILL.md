@@ -19,15 +19,22 @@ files. There is no sub-agent to spawn.
 
 - **GitHub access** — `gh` CLI authenticated (`gh auth login`); needed to fetch
   the source issue and push the branch.
-- **Connector location** — set `APPMIXER_SKILL_CONNECTORS_DIR` to the `appmixer-connectors`
-  checkout root, or run from inside the repo. When neither applies, read it
-  from `~/.config/appmixer-skills/env`; if that file is missing too, ask the
-  user for the path and write it there (KEY=value, `chmod 600`).
-- **Design conventions** — this skill reads the canonical rules from
-  `<connectors>/.github/instructions/` (they live in the connectors repo, not in
-  this plugin). Before doing anything else, verify that directory exists; if it
-  doesn't, stop and tell the user they need an up-to-date `appmixer-connectors`
-  checkout.
+- **Connector workspace** — set `APPMIXER_SKILL_CONNECTORS_DIR` to the workspace
+  root (any directory containing `src/appmixer/`), or run from inside it. When
+  neither applies, read it from `~/.config/appmixer-skills/env`; if that file is
+  missing too, ask the user for the path and write it there (KEY=value, `chmod 600`).
+- **Design conventions** — bundled with the skills in
+  `$APPMIXER_SKILL_ROOT/_shared/instructions/`. Resolve the root first
+  (idempotent; downloads the full bundle only for per-skill installs that lack
+  `_shared/`):
+  ```bash
+  export APPMIXER_SKILL_ROOT="${APPMIXER_SKILL_ROOT:-${CLAUDE_PLUGIN_ROOT:-$HOME/.appmixer-skills/appmixer}}"
+  if [ ! -d "$APPMIXER_SKILL_ROOT/_shared" ]; then
+      curl -fsSL -o /tmp/appmixer-skills.zip https://raw.githubusercontent.com/Appmixer-ai/appmixer-skills/main/dist/appmixer-skills.zip
+      mkdir -p "$HOME/.appmixer-skills" && unzip -oq /tmp/appmixer-skills.zip -d "$HOME/.appmixer-skills" && rm /tmp/appmixer-skills.zip
+      export APPMIXER_SKILL_ROOT="$HOME/.appmixer-skills/appmixer"
+  fi
+  ```
 
 ## Input
 
@@ -53,10 +60,14 @@ check `<connectors>/src/appmixer/<connector>/service.json`.
 
 ## Step 2: Load the design rules
 
-Read `<connectors>/.github/instructions/` — at minimum: `01-connectors.md`,
+Read `$APPMIXER_SKILL_ROOT/_shared/instructions/` — at minimum: `01-connectors.md`,
 `02-authentication.md`, `04-components.md`, `06-component-behavior.md`,
 `07-component-types.md`, `08-best-practices.md`. These are the canonical
 conventions everything below must follow.
+
+When a reference implementation helps (auth pattern, pagination, dynamic
+sources), browse real connectors at
+https://github.com/appmixer-ai/appmixer-connectors (`src/appmixer/<connector>/`).
 
 ## Step 3: Research the API
 
@@ -107,7 +118,7 @@ Report what was created (files, component count, auth type).
 
 ## After initialization
 
-1. **Create branch** `feature/<connector>-connector` in `appmixer-connectors`
+1. **Create branch** `feature/<connector>-connector` in the workspace repo (if it is git-managed)
 2. **Commit** all generated files with message like `feat: add <connector> connector`
 3. **Publish** the connector module to Appmixer (`appmixer pack` + `appmixer publish` — credentials from the `APPMIXER_SKILL_*` env vars / `$APPMIXER_ENV` file)
 4. **Push** the branch — Git safety first: confirm the push target (remote URL +
@@ -117,4 +128,4 @@ Report what was created (files, component count, auth type).
    write access, propose a fork (`gh repo fork --remote`) and push there.
 
 Tell the user the connector is initialized and suggest next step:
-> "Connector **X** initialized with N components. Next: authenticate and run `plan-CLI-tests` to start testing."
+> "Connector **X** initialized with N components. Next: authenticate and run `test-components` to plan and start testing."

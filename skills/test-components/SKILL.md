@@ -1,6 +1,6 @@
 ---
-name: run-CLI-tests
-description: Test and validate Appmixer connector components. Use when user wants to test a component, validate it works, or run test+fix cycle on components.
+name: test-components
+description: Test and validate Appmixer connector components via the appmixer CLI. Creates an ordered test plan first when one is missing. Use when user wants to plan testing, test a component, validate it works, or run a test+fix cycle on components.
 license: MIT
 metadata:
   author: Appmixer
@@ -9,12 +9,12 @@ metadata:
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
 
-# Test Connector Component
+# Test Connector Components
 
 Tests a component with real API calls via the **`appmixer` CLI** and validates
-its output. **You (the agent) do this directly** — resolve real inputs, run the
-CLI, interpret the output, fix on failure, and re-test. There is no sub-agent to
-spawn.
+its output. **You (the agent) do this directly** — plan the test order, resolve
+real inputs, run the CLI, interpret the output, fix on failure, and re-test.
+There is no sub-agent to spawn.
 
 ## Prerequisites
 
@@ -23,18 +23,21 @@ spawn.
 - **Connector npm dependencies** — connectors may declare their own runtime deps
   (e.g. `request-promise` in `microsoft/`); a missing one makes
   `appmixer test component` fail with `Cannot find module`. Install them once per
-  checkout before testing:
+  workspace before testing — if the workspace ships `scripts/npm_install.js`
+  (the appmixer-connectors repo does), run it; otherwise `npm install` in each
+  connector dir that has a `package.json`:
   ```bash
   cd "$APPMIXER_SKILL_CONNECTORS_DIR" && node scripts/npm_install.js
   ```
 - **Auth credentials** — the connector must have valid auth in
   `~/.config/configstore/appmixer.json` (see Step 0).
-- **Connector location** — set `APPMIXER_SKILL_CONNECTORS_DIR` to the `appmixer-connectors`
-  checkout root, or run from inside the repo. When neither applies, read it
-  from `~/.config/appmixer-skills/env`; if that file is missing too, ask the
-  user for the path and write it there (KEY=value, `chmod 600`). Components live at
-  `<connectors>/src/appmixer/<connector>/core/<Component>/`.
-- **Test plan** — a `test-plan.json` (run the `plan-CLI-tests` skill first if absent).
+- **Connector workspace** — set `APPMIXER_SKILL_CONNECTORS_DIR` to the workspace
+  root (any directory containing `src/appmixer/`), or run from inside it. When
+  neither applies, read it from `~/.config/appmixer-skills/env`; if that file is
+  missing too, ask the user for the path and write it there (KEY=value,
+  `chmod 600`). Components live at
+  `<workspace>/src/appmixer/<connector>/core/<Component>/`.
+- **Test plan** — a `test-plan.json` (create it in Step 0a below if absent).
 
 ## The test command
 
@@ -51,6 +54,39 @@ appmixer test component <connectors>/src/appmixer/<connector>/core/<Component> \
   `-p '{"generateOutputPortOptions": true}'` with the same inputs to get the
   schema options instead of live data.
 - Run **one test at a time** and wait for the result before the next.
+
+## Step 0a: Create the test plan (if missing)
+
+If `<workspace>/src/appmixer/<connector>/artifacts/ai-artifacts/test-plan.json`
+does not exist, create it first — an ordered plan with dependency analysis for
+all components. **Only read** component files here — do not run, validate, or
+authenticate anything.
+
+1. **List the components.** Enumerate the directories with a `component.json`
+   under `<workspace>/src/appmixer/<connector>/` (typically under `core/`).
+2. **Understand each component.** Read every `component.json` (and its behavior
+   `.js` when needed) to learn what it does, its inputs, and its outputs.
+3. **Design the test sequence** mimicking how users actually use the service:
+   - **Test dependencies first** — components that create resources come before
+     those that read, update, or delete them.
+   - **Reuse test data** — outputs from earlier tests (e.g. a created ID) feed
+     inputs of later tests.
+   - **Follow natural workflows** — order components the way a user would use
+     them. Example (Google Calendar): `CreateCalendar → ListCalendars →
+     CreateEvent → FindEvents → UpdateEvent → DeleteEvent → DeleteCalendar`.
+4. **Write the plan** to `artifacts/ai-artifacts/test-plan.json` — an ordered
+   array, one entry per component:
+
+   ```json
+   {
+     "plan": [
+       { "name": "ComponentName", "completed": false, "result": {} }
+     ]
+   }
+   ```
+
+   Report: `OK: Test plan with N component(s).` If the user only wanted the
+   plan, stop here.
 
 ## Step 0: Pre-flight auth check (MANDATORY)
 
@@ -174,7 +210,7 @@ Record the result (status, reason) for the component in `test-plan.json`.
 
 If testing leads to fixes:
 
-1. **Commit** to the appropriate branch in `appmixer-connectors` (feature/fix
+1. **Commit** to the appropriate branch in the workspace repo (feature/fix
    branch — never `dev`/`main`).
 2. **Publish** the connector module (`appmixer pack` + `appmixer publish` — credentials from the `APPMIXER_SKILL_*` env vars / `$APPMIXER_ENV` file).
 3. **Push** the branch — confirm the push target (remote URL + branch) with the

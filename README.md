@@ -10,11 +10,10 @@ Give your AI coding agent deep Appmixer connector-development expertise — scaf
 |-------|-------------|
 | **init-connector** | Scaffold a new connector from a GitHub issue — fetch requirements, research the API, write the files |
 | **connector-pipeline** | End-to-end connector development pipeline — from scaffold through tests to publish |
-| **plan-CLI-tests** | Create a test plan for all components in a connector |
-| **run-CLI-tests** | Test and validate connector components with a test+fix cycle |
+| **test-components** | Plan, test and validate connector components with a test+fix cycle |
 | **connector-test-method** | Add a `test(context)` method to trigger components for Flow Test Mode |
 | **review-component-standards** | Read-only audit of a component against Appmixer standards and best practices |
-| **generate-E2E-test-flows** | Generate E2E test flows for a connector (with a 16-rule flow validator) |
+| **generate-e2e-flows** | Generate E2E test flows for a connector (with a 16-rule flow validator) |
 | **upload-e2e-flows** | Publish a connector to a live instance and upload E2E test flows |
 | **run-e2e-flows** | Run E2E flows on a live Appmixer instance, monitor logs, evaluate pass/fail, iterate on fixes |
 
@@ -23,11 +22,11 @@ See [skills/README.md](skills/README.md) for architecture details (how the skill
 ## Prerequisites
 
 - Node.js >= 18
-- A local clone of [appmixer-connectors](https://github.com/clientIO/appmixer-connectors) — the repo the skills read conventions from and write connector code into:
+- A local **connector workspace** — any directory containing `src/appmixer/` that the skills write connector code into. This can be your own (git-managed) workspace, or a clone of [appmixer-connectors](https://github.com/appmixer-ai/appmixer-connectors) (which also serves as a library of real-world example connectors):
   ```bash
-  git clone https://github.com/clientIO/appmixer-connectors.git
+  git clone https://github.com/appmixer-ai/appmixer-connectors.git
   ```
-  Skills commit generated code to feature branches in this clone and push to its `origin`. If you don't have write access to the upstream repo, fork it first (`gh repo fork clientIO/appmixer-connectors --clone`) so pushes go to your fork — the skills ask before the first push of a session either way.
+  The connector design conventions ship with the skills (`skills/_shared/instructions/`) — the workspace does not need to provide them. When the workspace is a git repo, skills commit generated code to feature branches and ask before the first push of a session.
 - For skills that talk to a live Appmixer instance (upload-e2e-flows, run-e2e-flows, connector-pipeline): an Appmixer instance URL + credentials — see [Configuration](#configuration)
 - For `init-connector`: an authenticated `gh` CLI (`gh auth login`) — used to fetch the source issue and push the branch
 
@@ -41,7 +40,7 @@ claude
 /plugin install appmixer@appmixer-agents
 ```
 
-All 9 skills and their shared helpers load automatically.
+All 8 skills and their shared helpers load automatically.
 
 ### Claude Code Plugin (Manual)
 
@@ -89,7 +88,7 @@ Skills read configuration from environment variables (`APPMIXER_SKILL_*`), loade
 
 **Manual path:** copy [skills/.env.example](skills/.env.example) to `~/.config/appmixer-skills/env` and fill in:
 
-- `APPMIXER_SKILL_CONNECTORS_DIR` — absolute path to your `appmixer-connectors` clone (its root, the directory containing `src/appmixer`). This is the minimal config — without a connectors clone the skills have nothing to work on. If unset, skills fall back to searching upward from the current working directory, so starting your agent from inside the clone also works.
+- `APPMIXER_SKILL_CONNECTORS_DIR` — absolute path to your connector workspace (its root, the directory containing `src/appmixer`). This is the minimal config — without a workspace the skills have nothing to work on. If unset, skills fall back to searching upward from the current working directory, so starting your agent from inside the workspace also works.
 - `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD` — the Appmixer API host and credentials (only needed for the live-instance skills).
 
 Precedence: variables exported in your shell always win; `APPMIXER_ENV` can point to an alternate file (useful for switching between instances); `~/.config/appmixer-skills/env` is the default.

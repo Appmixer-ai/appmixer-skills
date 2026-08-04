@@ -42,24 +42,20 @@
         "path": "./skills/connector-test-method"
       },
       {
-        "name": "generate-E2E-test-flows",
-        "path": "./skills/generate-E2E-test-flows"
+        "name": "generate-e2e-flows",
+        "path": "./skills/generate-e2e-flows"
       },
       {
         "name": "init-connector",
         "path": "./skills/init-connector"
       },
       {
-        "name": "plan-CLI-tests",
-        "path": "./skills/plan-CLI-tests"
-      },
-      {
         "name": "review-component-standards",
         "path": "./skills/review-component-standards"
       },
       {
-        "name": "run-CLI-tests",
-        "path": "./skills/run-CLI-tests"
+        "name": "test-components",
+        "path": "./skills/test-components"
       },
       {
         "name": "run-e2e-flows",
