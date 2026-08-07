@@ -1,6 +1,6 @@
 ---
-name: review-component-standards
-description: Review an Appmixer component against standards and best practices. Read-only — produces a list of issues without modifying files. Use when user wants to audit, check, or validate a specific component.
+name: review-connector
+description: Review an Appmixer connector component against standards and best practices. Read-only — produces a list of issues without modifying files. Use when user wants to audit, check, review or validate a connector or a specific component.
 license: MIT
 metadata:
   author: Appmixer
@@ -9,7 +9,7 @@ metadata:
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
 
-# Review Component Standards
+# Review Connector
 
 Audits an Appmixer component against the design standards bundled in this
 skill's `references/` directory. **You (the agent) do the review
@@ -27,6 +27,7 @@ The rules to check live in the `references/` directory next to this SKILL.md:
 | `06-component-behavior.md` | Behavior file (.js) patterns |
 | `07-component-types.md` | Actions, triggers, dynamic components |
 | `08-best-practices.md` | Coding standards, naming, error handling |
+| `10-trigger-test-method.md` | Trigger `test(context)` rules for Flow Test Mode |
 
 Complete example files (component.json, behaviors, auth.js, lib.js) are in
 `references/examples/`. Real-world example connectors (when you want a
@@ -104,6 +105,16 @@ vendor; the first segment names the vendor dir under `src/`).
    `error` — inspector opens fire concurrent bursts that trip API rate limits
    (429). Self-references used only for `generateOutputPortOptions` (static
    options) are exempt and must not call the API at all.
+
+### Triggers only
+1. **`test(context)` present** — triggers should implement `test()` so Flow Test
+   Mode works; its absence is a `warning` (rule `trigger.test-missing`).
+2. **`test()` quality** (per `10-trigger-test-method.md`): shares the
+   request+mapping path with `tick()`/`receive()` (no duplicated URL/auth/query
+   logic); read-only upstream; no state writes (`saveState`/`stateSet`/…);
+   honors `context.properties` filters; emits exactly ONE item via `sendJson`
+   on the correct port; throws (never fabricates synthetic data) when no real
+   example exists.
 
 ### Cross-cutting
 - Naming consistency with sibling components.

@@ -17,15 +17,17 @@ const SRC = path.join(ROOT, 'instructions');
 
 // skill -> list of files/dirs (relative to instructions/) it ships in references/
 const MANIFEST = {
-    'new-connector': [
+    'build-connector': [
         '00-overview.md', '01-connectors.md', '02-authentication.md',
         '03-plugins.md', '04-components.md', '05-component-config.md',
         '06-component-behavior.md', '07-component-types.md',
-        '08-best-practices.md', '09-testing.md', 'examples'
+        '08-best-practices.md', '09-testing.md', '10-trigger-test-method.md',
+        'examples'
     ],
-    'review-component-standards': [
+    'review-connector': [
         '04-components.md', '05-component-config.md', '06-component-behavior.md',
-        '07-component-types.md', '08-best-practices.md', 'examples'
+        '07-component-types.md', '08-best-practices.md', '10-trigger-test-method.md',
+        'examples'
     ]
     // dev branch additionally syncs: 'run-e2e-flows': ['09-testing.md', 'examples/e2e-test-flow.json']
 };

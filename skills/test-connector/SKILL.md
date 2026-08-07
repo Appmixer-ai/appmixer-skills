@@ -1,6 +1,6 @@
 ---
-name: test-components
-description: Test and validate Appmixer connector components via the appmixer CLI. Creates an ordered test plan first when one is missing. Use when user wants to plan testing, test a component, validate it works, or run a test+fix cycle on components.
+name: test-connector
+description: Test and validate an Appmixer connector's components via the appmixer CLI. Creates an ordered test plan first when one is missing. Use when user wants to plan testing, test a component, validate it works, or run a test+fix cycle on components.
 license: MIT
 metadata:
   author: Appmixer

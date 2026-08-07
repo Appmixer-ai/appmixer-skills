@@ -1,17 +1,7 @@
----
-name: connector-test-method
-description: Add a test(context) method to an Appmixer trigger component so Flow Test Mode can emit one realistic, fetchable item. Use when a user wants to implement test(), make a trigger testable in the designer, or roll out Flow Test Mode support across triggers.
-license: MIT
-metadata:
-  author: Appmixer
-  version: "0.1.9"
-  homepage: https://www.appmixer.com
-  repository: https://github.com/Appmixer-ai/appmixer-skills
----
 
-# Connector `test(context)` method
+# Trigger `test(context)` Method
 
-Adds a `test(context)` method to **trigger** components so the designer's Flow Test Mode
+How to add a `test(context)` method to **trigger** components so the designer's Flow Test Mode
 can produce a representative output **without** starting the flow and **without** waiting
 for a real event.
 
@@ -57,7 +47,7 @@ module.exports = {
 
 ## Core principle: `test()` and `tick()`/`receive()` must share code
 
-This is the most important rule and the reason this skill exists. `test()` only has value if
+This is the most important rule and the reason this guide exists. `test()` only has value if
 its output is **byte-for-byte the same shape** as what the trigger emits in production. The way
 to guarantee that — and to keep it true as the connector evolves — is to make `test()` and
 `tick()`/`receive()` **call the same functions**, not re-implement the same logic side by side.
@@ -168,24 +158,18 @@ trigger's `test()`).
 
 ## Verifying your `test()` method
 
-Always run the static checks first:
-
-```bash
-npm run lint
-npm run validate
-```
-
-Then verify the method actually emits a realistic item. Two options:
+Run the workspace's lint/validators first when it provides them (the
+appmixer-connectors repo ships `npm run lint` + `npm run validate`). Then verify the method actually emits a realistic item. Two options:
 
 **Option 1 — Appmixer CLI** (requires a CLI version that supports the `--test` flag; check with
 `appmixer test component --help`):
 
 ```bash
 # one-time: store auth credentials for the connector
-appmixer test auth login ./src/appmixer/<connector>/auth.js
+appmixer test auth login ./src/<vendor>/<connector>/auth.js
 
 # invoke test() directly (skips start/stop/tick/receive, exactly like Flow Test Mode)
-appmixer test component ./src/appmixer/<connector>/<path-to-trigger> --test
+appmixer test component ./src/<vendor>/<connector>/<path-to-trigger> --test
 ```
 
 Without stored auth data the CLI fails before `test()` is even called.
@@ -394,7 +378,7 @@ test(context) {
 - [ ] Honors `context.properties` filters
 - [ ] Emits exactly one item, shape matches `tick()`/`receive()` exactly, correct port name
 - [ ] Throws (not returns null) when no example exists
-- [ ] `npm run lint` + `npm run validate` pass, and `test()` verified via CLI `--test` or
+- [ ] Workspace lint/validators pass (when provided), and `test()` verified via CLI `--test` or
       Flow Test Mode on a live instance (see "Verifying your test() method")
 
 ## Reference connectors

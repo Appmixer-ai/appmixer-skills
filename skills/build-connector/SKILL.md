@@ -1,6 +1,6 @@
 ---
-name: new-connector
-description: Build a new Appmixer connector end-to-end — gather requirements, research the API, scaffold and generate components, then drive testing and publishing via the appmixer CLI. Use when user wants to create/scaffold/build a new connector, add components to an existing one, continue an in-progress connector build, or discusses the connector development workflow. Triggers on "new connector", "create connector", "init connector", "build connector".
+name: build-connector
+description: Build a new Appmixer connector end-to-end — gather requirements, research the API, scaffold and generate components, then drive testing and publishing via the appmixer CLI. Use when user wants to create/scaffold/build a new connector, add components to an existing one, continue an in-progress connector build, or discusses the connector development workflow. Triggers on "new connector", "create connector", "init connector", "build connector", "implement test()", "make trigger testable".
 license: MIT
 metadata:
   author: Appmixer
@@ -9,12 +9,12 @@ metadata:
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
 
-# New Connector
+# Build Connector
 
 Full end-to-end workflow for building an Appmixer connector: requirements →
 scaffold + components → CLI tests → publish. **You (the agent) do the
 scaffolding directly** — research the API and write the files; testing follows
-the `test-components` skill. No sub-agents, no install scripts.
+the `test-connector` skill. No sub-agents, no install scripts.
 
 ## Prerequisites
 
@@ -46,6 +46,7 @@ https://github.com/appmixer-ai/appmixer-connectors.
 | `07-component-types.md` | Actions, triggers, dynamic components |
 | `08-best-practices.md` | Coding standards, naming, error handling |
 | `09-testing.md` | E2E flow design, modifier functions, deterministic patterns |
+| `10-trigger-test-method.md` | Trigger `test(context)` for Flow Test Mode — patterns per trigger group |
 
 Consult these when generating code, debugging failures, or reviewing output.
 
@@ -54,7 +55,7 @@ Consult these when generating code, debugging failures, or reviewing output.
 ```
 Step 1: REQUIREMENTS    → Gather service, API docs, auth type, component list
 Step 2: SCAFFOLD        → Research the API, scaffold + generate components
-Step 3: TEST + FIX      → Authenticate → test loop → finalize            [test-components]
+Step 3: TEST + FIX      → Authenticate → test loop → finalize            [test-connector]
 Step 4: PUBLISH         → Lint, bundle bump, pack & publish via the appmixer CLI
 ```
 
@@ -148,6 +149,11 @@ Rules:
   rate-limited APIs, cache unconditionally in `receive()` (see the Xero
   `withCache` variant in `07-component-types.md`).
 - Do NOT create `package.json` unless the connector genuinely needs npm dependencies.
+- **Every trigger gets a `test(context)` method** so Flow Test Mode can emit one
+  realistic item — follow `references/10-trigger-test-method.md` (thin wrapper
+  over the shared request+mapping path, read-only, no state writes, throw when
+  no real example exists). Also use it when a user asks to add/retrofit
+  `test()` on existing triggers.
 
 ### 2e. Summary
 
@@ -158,7 +164,7 @@ Step 3 (ask first — see below).
 
 ## ⚠️ CLI Tests — Always Ask First
 
-Before running `test-components` (the plan step or the test loop), **always ask the user** whether to proceed.
+Before running `test-connector` (the plan step or the test loop), **always ask the user** whether to proceed.
 
 Never run these automatically — they can take a long time and cost credits. Even when the pipeline suggests it as the next step, stop and confirm:
 
@@ -176,7 +182,7 @@ Ask user to authenticate. API Key connectors: provide key. OAuth: complete flow 
 
 **Ask user first** — confirm before running.
 
-Follow Step 0a of the `test-components` skill — read the connector's component
+Follow Step 0a of the `test-connector` skill — read the connector's component
 definitions and write an ordered `test-plan.json` directly (no sub-agent).
 
 ### 3c. Test + fix loop
@@ -184,13 +190,13 @@ definitions and write an ordered `test-plan.json` directly (no sub-agent).
 **Ask user first** before each component test run.
 
 For each component in the test plan, test sequentially (port 2300 conflict if
-parallel) by following the `test-components` skill (drives `appmixer test component`).
+parallel) by following the `test-connector` skill (drives `appmixer test component`).
 
 On failure → fix the component (edit `component.json` / behavior directly) → re-test. Max 3 iterations per component.
 
 After 3 failures → report to user: skip or investigate manually.
 
-> **Auditing without changing files:** use the `review-component-standards`
+> **Auditing without changing files:** use the `review-connector`
 > skill for a read-only report. Fixing is done by editing the component files
 > directly as part of this loop — apply the standards in this skill's
 > `references/`.
@@ -235,7 +241,7 @@ When a connector already exists and you only need to add one or more new compone
    - Update `component.json`, `component.js`, and any output/transform files to match the new endpoint
    - Register the component in the connector's `package.json` if needed
 3. **Test + Fix** (same as Step 3b–3d) — auth is usually already set up. Follow
-   the `test-components` skill to test only the new components. Max 3 iterations.
+   the `test-connector` skill to test only the new components. Max 3 iterations.
 4. **Publish** — lint, commit, publish, push — same as Git & Publish Rules below.
 
 ---
@@ -243,8 +249,8 @@ When a connector already exists and you only need to add one or more new compone
 ## How the skills execute
 
 No skill spawns a sub-agent or runs bundled scripts — every skill is pure
-instructions you follow directly with your own tools (new-connector,
-test-components, review-component-standards, connector-test-method), driving
+instructions you follow directly with your own tools (build-connector,
+test-connector, review-connector), driving
 the `appmixer` CLI where needed.
 
 ---
