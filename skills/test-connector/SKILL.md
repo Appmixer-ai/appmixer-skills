@@ -1,6 +1,6 @@
 ---
 name: test-connector
-description: Test and validate an Appmixer connector's components via the appmixer CLI. Creates an ordered test plan first when one is missing. Use when user wants to plan testing, test a component, validate it works, or run a test+fix cycle on components.
+description: Test and validate an Appmixer connector via the appmixer CLI — ordered test plan, then a component test+fix cycle (E2E flow testing folds in here once the appmixer CLI ships it). Use when user wants to test a connector, plan testing, test a component, or validate it works.
 license: MIT
 metadata:
   author: Appmixer
@@ -9,10 +9,16 @@ metadata:
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
 
-# Test Connector Components
+# Test Connector
 
-Tests a component with real API calls via the **`appmixer` CLI** and validates
-its output. **You (the agent) do this directly** — plan the test order, resolve
+Tests a connector's components with real API calls via the **`appmixer` CLI**
+and validates their output.
+
+> **Scope:** today this skill covers CLI component tests. End-to-end testing
+> (generate E2E test flows, upload to a live instance, run and evaluate) will
+> fold in here once its tooling ships in the appmixer CLI — until then the E2E
+> skills live on the `dev` branch of this repo.
+ **You (the agent) do this directly** — plan the test order, resolve
 real inputs, run the CLI, interpret the output, fix on failure, and re-test.
 There is no sub-agent to spawn.
 

@@ -8,8 +8,8 @@ Give your AI coding agent deep Appmixer connector-development expertise — scaf
 
 | Skill | What it does |
 |-------|-------------|
-| **build-connector** | Build a connector end-to-end — gather requirements, research the API, scaffold components (incl. trigger `test()` methods), then drive tests and publish |
-| **test-connector** | Plan, test and validate a connector's components with a test+fix cycle |
+| **build-connector** | The end-to-end pipeline: build (requirements → research → scaffold incl. trigger `test()`) → review → test → publish |
+| **test-connector** | Test a connector: CLI component test+fix cycle today; E2E flow testing folds in here once the appmixer CLI ships it |
 | **review-connector** | Read-only audit of connector components against Appmixer standards (incl. trigger `test()` rules) |
 
 Every skill is pure instructions — no bundled scripts, no install steps, no
