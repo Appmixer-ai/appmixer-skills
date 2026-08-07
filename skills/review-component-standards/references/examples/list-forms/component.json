@@ -1,0 +1,64 @@
+{
+    "name": "appmixer.googleForms.core.ListForms",
+    "author": "Appmixer <info@appmixer.com>",
+    "description": "Fetches a list of Google Forms.",
+    "version": "1.0.0",
+    "auth": {
+        "service": "appmixer:googleForms",
+        "scope": [
+            "https://www.googleapis.com/auth/drive.readonly"
+        ]
+    },
+    "quota": {
+        "manager": "appmixer:googleForms",
+        "resources": "forms.api",
+        "scope": {
+            "userId": "{{userId}}"
+        }
+    },
+    "inPorts": [
+        {
+            "name": "in",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "outputType": {
+                        "type": "string"
+                    }
+                }
+            },
+            "inspector": {
+                "inputs": {
+                    "outputType": {
+                        "type": "select",
+                        "label": "Output Type",
+                        "index": 2,
+                        "defaultValue": "array",
+                        "options": [
+                            { "label": "First Item Only", "value": "first" },
+                            { "label": "All items at once", "value": "array" },
+                            { "label": "One item at a time", "value": "object" },
+                            { "label": "Store to CSV file", "value": "file" }
+                        ]
+                    }
+                }
+            }
+        }
+    ],
+    "outPorts": [
+        {
+            "name": "out",
+            "source": {
+                "url": "/component/appmixer/googleForms/core/ListForms?outPort=out",
+                "data": {
+                    "properties": {
+                        "generateOutputPortOptions": true
+                    },
+                    "messages": {
+                        "in/outputType": "inputs/in/outputType"
+                    }
+                }
+            }
+        }
+    ]
+}

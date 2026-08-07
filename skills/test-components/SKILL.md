@@ -1,0 +1,223 @@
+---
+name: test-components
+description: Test and validate Appmixer connector components via the appmixer CLI. Creates an ordered test plan first when one is missing. Use when user wants to plan testing, test a component, validate it works, or run a test+fix cycle on components.
+license: MIT
+metadata:
+  author: Appmixer
+  version: "0.1.9"
+  homepage: https://www.appmixer.com
+  repository: https://github.com/Appmixer-ai/appmixer-skills
+---
+
+# Test Connector Components
+
+Tests a component with real API calls via the **`appmixer` CLI** and validates
+its output. **You (the agent) do this directly** — plan the test order, resolve
+real inputs, run the CLI, interpret the output, fix on failure, and re-test.
+There is no sub-agent to spawn.
+
+## Prerequisites
+
+- **`appmixer` CLI** — installed and configured (`appmixer url` + login). This is
+  an external tool the skill drives; it is a prerequisite, not a bundled dependency.
+- **Connector npm dependencies** — connectors may declare their own runtime deps
+  (e.g. `request-promise` in `microsoft/`); a missing one makes
+  `appmixer test component` fail with `Cannot find module`. Install them once per
+  workspace before testing — if the workspace ships `scripts/npm_install.js`
+  (the appmixer-connectors repo does), run it from the workspace root; otherwise
+  `npm install` in each connector dir that has a `package.json`:
+  ```bash
+  node scripts/npm_install.js
+  ```
+- **Auth credentials** — the connector must have valid auth in
+  `~/.config/configstore/appmixer.json` (see Step 0).
+- **Run from the connector workspace** — the current directory (or a parent)
+  must contain `src/<vendor>/`; components live at
+  `src/<vendor>/<connector>/core/<Component>/`. Only when running from
+  elsewhere, point `APPMIXER_SKILL_CONNECTORS_DIR` at the workspace root
+  (optional override). `<vendor>` is the namespace directory under `src/` — `appmixer` is only the
+  default; a workspace can hold several vendors side by side. Bare connector
+  names are searched across all vendor dirs; when ambiguous, qualify as
+  `<vendor>/<connector>`.
+  Note: the auth configstore keys (`<vendor>:<connector>`) use the vendor from
+  the connector's `service.json` name.
+- **Test plan** — a `test-plan.json` (create it in Step 0a below if absent).
+
+## The test command
+
+Run one component test with real inputs:
+
+```bash
+appmixer test component src/<vendor>/<connector>/core/<Component> \
+  -i '{"in": {<flat input fields>}}'
+```
+
+- Inputs are wrapped in an `"in"` object matching the component's `inPorts`/inspector fields.
+- Exit code `0` = success (output is in stdout); `1` = failure (read stdout/stderr — the error usually names the exact problem).
+- **Dynamic output schema** (List/Find with `outputType`): add
+  `-p '{"generateOutputPortOptions": true}'` with the same inputs to get the
+  schema options instead of live data.
+- Run **one test at a time** and wait for the result before the next.
+
+## Step 0a: Create the test plan (if missing)
+
+If `src/<vendor>/<connector>/artifacts/ai-artifacts/test-plan.json`
+does not exist, create it first — an ordered plan with dependency analysis for
+all components. **Only read** component files here — do not run, validate, or
+authenticate anything.
+
+1. **List the components.** Enumerate the directories with a `component.json`
+   under `src/<vendor>/<connector>/` (typically under `core/`).
+2. **Understand each component.** Read every `component.json` (and its behavior
+   `.js` when needed) to learn what it does, its inputs, and its outputs.
+3. **Design the test sequence** mimicking how users actually use the service:
+   - **Test dependencies first** — components that create resources come before
+     those that read, update, or delete them.
+   - **Reuse test data** — outputs from earlier tests (e.g. a created ID) feed
+     inputs of later tests.
+   - **Follow natural workflows** — order components the way a user would use
+     them. Example (Google Calendar): `CreateCalendar → ListCalendars →
+     CreateEvent → FindEvents → UpdateEvent → DeleteEvent → DeleteCalendar`.
+4. **Write the plan** to `artifacts/ai-artifacts/test-plan.json` — an ordered
+   array, one entry per component:
+
+   ```json
+   {
+     "plan": [
+       { "name": "ComponentName", "completed": false, "result": {} }
+     ]
+   }
+   ```
+
+   Report: `OK: Test plan with N component(s).` If the user only wanted the
+   plan, stop here.
+
+## Step 0: Pre-flight auth check (MANDATORY)
+
+Before testing, verify auth exists — running tests without valid auth wastes time.
+
+```bash
+python3 -c "
+import json, sys
+try:
+    d = json.load(open('$HOME/.config/configstore/appmixer.json'))
+    fields = d.get('<vendor>:<connector>', {}).get('authFields', {})
+    if not fields:
+        print('No auth credentials for <connector>. Ask user for API key/credentials.'); sys.exit(1)
+    print('Auth found:', list(fields.keys()))
+except FileNotFoundError:
+    print('appmixer.json not found. Set up auth first.'); sys.exit(1)
+"
+```
+
+If auth is missing: **STOP and ask the user for credentials.** To save them, add an
+entry to `appmixer.json`:
+
+```json
+{ "<vendor>:<connector>": { "authFields": { "apiKey": "..." }, "profileInfo": {}, "accountName": "test" } }
+```
+
+## Testing workflow
+
+### Step 1: Resolve ALL input dependencies BEFORE testing
+
+The most critical step. Provide **real, valid values for EVERY input** — never
+guess IDs or use placeholders like `"1"`, `"test-id"`.
+
+For each input in the component's `component.json`:
+
+- **Check auth context first** — read `appmixer.json` `authFields`; they often hold
+  real values (`locationId`, `accountId`, …).
+- **Reuse earlier test outputs** — if a prior component (e.g. `CreateDeal`) was
+  tested, its output (in `test-plan.json`) may contain the IDs you need.
+- **Entity-reference inputs** (names ending in `_id` or referencing another entity —
+  `view_id`, `owner_id`, `stage_id`, `pipeline_id`, `account_id`, …) almost always
+  need a real ID from the service. Resolve them **dynamically** — never hardcode
+  tenant-specific IDs from previous outputs:
+  1. **Find components** (`FindXxx`) — preferred, support filtering
+  2. **List components** (`ListXxx`) — fallback
+  3. **Get components** (`GetXxx`) — if you already have an ID
+  4. **Create components** (`CreateXxx`) — create the entity if nothing can discover it
+
+  Examples: `owner_id` → FindUsers/ListUsers; `stage_id` → FindStages/ListDealStages;
+  `pipeline_id` → FindPipelines; `account_id` → FindAccounts.
+- **Inspector `source`** — if an input in `inspector.inputs` has a `source`, it names
+  exactly which component provides valid options; call it.
+- **Simple inputs** (`name`, `email`, `amount`, …) — use realistic test data.
+
+### Step 2: Gather dependency values
+
+Run the appropriate Find/List/Get/Create component (via the test command) for each
+entity-reference input; extract the needed ID (usually the first item).
+
+### Step 3: Run the actual test
+
+Run the component with ALL gathered values plus realistic data for simple inputs.
+
+### Step 4: Validate the output
+
+- Determine pass/fail (criteria below).
+- **Validate the output shape** against the component's declared output:
+  - **Static schema** — `outPorts[].schema`: check the output matches (types,
+    required fields); flag undeclared fields.
+  - **Dynamic schema** — call the test again with `-p '{"generateOutputPortOptions": true}'`
+    and check the generated options.
+  - **No schema** — if the component produces output but declares no schema, that's a
+    finding: the `component.json` should add one.
+
+## Pass / fail criteria
+
+A test **passes** only if a run with `exitCode 0` sends **meaningful data to the
+`out` port**:
+
+- Real data on `out` (not `{}`, not an empty `result: []`), **or**
+- A message to the `notFound` port (a valid negative result).
+
+A run that only generates a schema (`generateOutputPortOptions`) does **not** count
+as a meaningful test on its own. `exitCode != 0`, or only empty `{}` on `out`, is a
+**failure**.
+
+Record the result (status, reason) for the component in `test-plan.json`.
+
+## Critical rules
+
+- Read auth context FIRST; never guess or use placeholder IDs.
+- Resolve ALL entity-reference inputs via Find/List/Get/Create before testing;
+  prefer Find over List.
+- Never hardcode tenant-specific IDs from previous outputs — re-resolve dynamically.
+- Do NOT test required-field validation (unnecessary failures); always pass required fields.
+- One test at a time; wait for each result.
+- On HTTP 400/422, READ the error — it usually names the missing/invalid field. Do
+  NOT blindly retry with the same inputs.
+- When **fixing** a component, first read 2–3 sibling components to match the
+  connector's established patterns (HTTP client, auth, output). Consistency within
+  the connector outweighs any single best practice. Preserve icons; only edit
+  `component.json` / behavior `.js`.
+- **STOP** if the test fails and you're unsure how to fix it; if you know the fix,
+  apply it and re-test.
+- **STOP immediately** on `[ERROR]: Mongo DB not connected!` or
+  `[ERROR]: Request failed with status code 403!`.
+
+## Troubleshooting
+
+| Error | Solution |
+|-------|----------|
+| **404 Not Found** | Resolve a real ID via a Find/List component (prefer Find). |
+| **400 / Invalid ID** | The ID is wrong or tenant-specific — re-resolve via Find/List. |
+| **Validation Error** | Check `component.json` input requirements; adjust test data. |
+| **Auth Failed (401/403)** | Verify the connector's auth is configured (Step 0). |
+| **Rate Limit** | Add delays between tests. |
+| **Output Schema Mismatch** | Actual output ≠ declared schema — fix the component logic or the schema. |
+| **Cannot read properties of undefined (reading 'execute')** | Read 2–3 sibling components and follow their established pattern. |
+
+## After changes
+
+If testing leads to fixes:
+
+1. **Commit** to the appropriate branch in the workspace repo (feature/fix
+   branch — never `dev`/`main`).
+2. **Publish** the connector module (`appmixer pack` + `appmixer publish` via the configured appmixer CLI).
+3. **Push** the branch — confirm the push target (remote URL + branch) with the
+   user before the first push of the session; never force-push. If `origin` is
+   the shared upstream and the user hasn't confirmed direct write access,
+   propose a fork (`gh repo fork --remote`) and push there.

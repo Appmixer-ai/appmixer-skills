@@ -1,0 +1,66 @@
+{
+    "name": "appmixer.service.core.CreateTask",
+    "label": "Create Task",
+    "description": "Create a new task in the service",
+    "inPorts": [
+        {
+            "name": "in",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "title": { "type": "string" },
+                    "description": { "type": "string" },
+                    "priority": { "type": "string" },
+                    "dueDate": { "type": "string", "format": "date" }
+                },
+                "required": ["title"]
+            },
+            "inspector": {
+                "inputs": {
+                    "title": {
+                        "type": "text",
+                        "index": 1,
+                        "label": "Title",
+                        "tooltip": "Task title"
+                    },
+                    "description": {
+                        "type": "textarea",
+                        "index": 2,
+                        "label": "Description",
+                        "tooltip": "Task description"
+                    },
+                    "priority": {
+                        "type": "select",
+                        "index": 3,
+                        "label": "Priority",
+                        "options": [
+                            { "label": "Low", "value": "low" },
+                            { "label": "Medium", "value": "medium" },
+                            { "label": "High", "value": "high" }
+                        ]
+                    },
+                    "dueDate": {
+                        "type": "date",
+                        "index": 4,
+                        "label": "Due Date",
+                        "tooltip": "When the task should be completed"
+                    }
+                }
+            }
+        }
+    ],
+    "outPorts": [
+        {
+            "name": "out",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string", "title": "Task ID", "example": "1001" },
+                    "title": { "type": "string", "title": "Title", "example": "Buy groceries" },
+                    "status": { "type": "string", "title": "Status", "example": "open" },
+                    "created_at": { "type": "string", "format": "date-time", "title": "Created Date", "example": "2025-01-15T10:30:00Z" }
+                }
+            }
+        }
+    ]
+}

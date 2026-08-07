@@ -1,35 +1,102 @@
 # Appmixer Skills for AI Coding Agents
 
-Give your AI coding agent deep Appmixer connector-development expertise — scaffold connectors, run CLI tests, generate and execute E2E test flows, and review components against Appmixer standards. Works with Claude Code via a dedicated plugin, and with Cursor, GitHub Copilot, Windsurf, Cline, and [40+ other agents](https://skills.sh) via the [Open Agent Skills](https://skills.sh) protocol.
+Give your AI coding agent deep Appmixer connector-development expertise — scaffold connectors, run CLI tests, and review components against Appmixer standards. Works with Claude Code via a dedicated plugin, and with Cursor, GitHub Copilot, Windsurf, Cline, and [40+ other agents](https://skills.sh) via the [Open Agent Skills](https://skills.sh) protocol.
 
-> **Recommended:** The Claude Code plugin gives the best experience — all skills and their shared helpers load automatically, with no manual setup.
+> **Recommended:** The Claude Code plugin gives the best experience — all skills load automatically, with no manual setup.
 
 ## Skills
 
 | Skill | What it does |
 |-------|-------------|
-| **init-connector** | Scaffold a new connector from a GitHub issue — fetch requirements, research the API, write the files |
-| **connector-pipeline** | End-to-end connector development pipeline — from scaffold through tests to publish |
-| **plan-CLI-tests** | Create a test plan for all components in a connector |
-| **run-CLI-tests** | Test and validate connector components with a test+fix cycle |
+| **new-connector** | Build a new connector end-to-end — gather requirements, research the API, scaffold components, then drive tests and publish |
+| **test-components** | Plan, test and validate connector components with a test+fix cycle |
 | **connector-test-method** | Add a `test(context)` method to trigger components for Flow Test Mode |
 | **review-component-standards** | Read-only audit of a component against Appmixer standards and best practices |
-| **generate-E2E-test-flows** | Generate E2E test flows for a connector (with a 16-rule flow validator) |
-| **upload-e2e-flows** | Publish a connector to a live instance and upload E2E test flows |
-| **run-e2e-flows** | Run E2E flows on a live Appmixer instance, monitor logs, evaluate pass/fail, iterate on fixes |
 
-See [skills/README.md](skills/README.md) for architecture details (how the skills work, shared helpers, environment variables).
+Every skill is pure instructions — no bundled scripts, no install steps, no
+environment variables. The only external tool the skills drive is the
+[`appmixer` CLI](https://www.npmjs.com/package/appmixer).
+
+> **E2E skills** (generate/upload/run E2E test flows against a live instance)
+> live on the [`dev` branch](https://github.com/Appmixer-ai/appmixer-skills/tree/dev)
+> while their tooling moves into the appmixer CLI — they'll land here as pure
+> instructions once the CLI commands exist.
+
+See [skills/README.md](skills/README.md) for architecture details (how the skills work, the references sync).
+
+## Getting Started
+
+The complete zero-to-first-connector path — nothing else is needed:
+
+**1. Install the skills** (Claude Code shown; other agents: [Installation](#installation)):
+
+```bash
+claude
+/plugin marketplace add Appmixer-ai/appmixer-skills
+/plugin install appmixer@appmixer-agents
+```
+
+**2. Create a workspace** — a folder with `src/<vendor>/` inside. The vendor is your namespace; pick your company name, or just use `appmixer`:
+
+```bash
+mkdir -p my-connectors/src/acme
+cd my-connectors
+```
+
+**3. Start your agent inside the workspace** (that's how the skills find it — no configuration needed):
+
+```bash
+claude
+```
+
+**4. Build your first connector** — describe what you want in plain language:
+
+> Create a new connector for the Cat Facts API (https://catfact.ninja), vendor `acme`, with components GetFact and ListBreeds.
+
+The `new-connector` skill reads the API docs and scaffolds everything:
+
+```
+my-connectors/
+└── src/acme/catfacts/
+    ├── service.json          # name: acme.catfacts
+    ├── bundle.json
+    ├── auth.js
+    ├── quota.js
+    └── core/
+        ├── GetFact/     — component.json + GetFact.js
+        └── ListBreeds/  — component.json + ListBreeds.js
+```
+
+(Cat Facts needs no API key, so it's a good dry run — for a real service the agent asks for credentials when testing starts.)
+
+**5. Test it** — say:
+
+> Test the catfacts components.
+
+Requires the [`appmixer` CLI](https://www.npmjs.com/package/appmixer) (`npm i -g appmixer`); the agent tells you if anything is missing.
+
+**6. (Optional) Publish to your Appmixer instance** — say "publish the catfacts connector"; the agent drives `appmixer pack` + `appmixer publish` (and tells you how to configure the CLI if it isn't yet).
 
 ## Prerequisites
 
 - Node.js >= 18
-- A local clone of [appmixer-connectors](https://github.com/clientIO/appmixer-connectors) — the repo the skills read conventions from and write connector code into:
+- A local **connector workspace** — any directory containing `src/<vendor>/` that the skills write connector code into (`appmixer` is only the default vendor namespace — a workspace can use any vendor, or several side by side). This can be your own (git-managed) workspace, or a clone of [appmixer-connectors](https://github.com/appmixer-ai/appmixer-connectors) (which also serves as a library of real-world example connectors):
   ```bash
-  git clone https://github.com/clientIO/appmixer-connectors.git
+  git clone https://github.com/appmixer-ai/appmixer-connectors.git
   ```
-  Skills commit generated code to feature branches in this clone and push to its `origin`. If you don't have write access to the upstream repo, fork it first (`gh repo fork clientIO/appmixer-connectors --clone`) so pushes go to your fork — the skills ask before the first push of a session either way.
-- For skills that talk to a live Appmixer instance (upload-e2e-flows, run-e2e-flows, connector-pipeline): an Appmixer instance URL + credentials — see [Configuration](#configuration)
-- For `init-connector`: an authenticated `gh` CLI (`gh auth login`) — used to fetch the source issue and push the branch
+  The connector design conventions ship inside the skills (each skill's `references/` directory) — the workspace does not need to provide them. When the workspace is a git repo, skills commit generated code to feature branches and ask before the first push of a session.
+- The [`appmixer` CLI](https://www.npmjs.com/package/appmixer) (`npm i -g appmixer`) — used for component testing and publishing; configure with `appmixer url` + `appmixer login`
+
+## Vendors
+
+Connectors live under `src/<vendor>/<connector>/`, and component names mirror the disk layout: `<vendor>.<connector>.<module>.<Component>`. The `<vendor>` segment is a namespace — **`appmixer` is only the default**; a customer workspace can use its own vendor name, or several vendors side by side. (Built-in `appmixer.utils.*` components — OnStart, Assert, ProcessE2EResults — always keep the `appmixer` vendor; they ship with the engine.)
+
+The skills determine the vendor without extra configuration:
+
+1. **From data** — flow JSONs, component names and file paths all carry the vendor; where one is at hand, nothing is asked.
+2. **From your location** — running from inside `src/<vendor>/` selects that vendor.
+3. **By discovery** — a bare connector name is searched across all vendor dirs; a single match wins, an ambiguous one asks you to qualify it as `<vendor>/<connector>`.
+4. **When scaffolding a new connector**, `new-connector` asks for the vendor if it can't be inferred (default suggestion: `appmixer`).
 
 ## Installation
 
@@ -41,7 +108,7 @@ claude
 /plugin install appmixer@appmixer-agents
 ```
 
-All 9 skills and their shared helpers load automatically.
+All 4 skills load automatically.
 
 ### Claude Code Plugin (Manual)
 
@@ -53,7 +120,7 @@ claude
 
 ### Claude Desktop / Claude.ai
 
-Download the [complete bundle](https://raw.githubusercontent.com/Appmixer-ai/appmixer-skills/main/dist/appmixer-skills.zip) and upload it to your project. Individual skill zips are not provided — the skills share runtime helpers, so they only work as a bundle.
+Each skill directory under `skills/` is self-contained (SKILL.md + `references/`) — zip the ones you want and upload them to your project.
 
 ### Cursor, GitHub Copilot, Windsurf, Cline, and others (via Open Agent Skills)
 
@@ -67,11 +134,11 @@ By default the CLI opens an interactive skill picker (when it can't auto-detect 
 npx skills add Appmixer-ai/appmixer-skills --agent claude-code --skill "*" -y
 ```
 
-Installs all skills into your agent's skills directory. Works with any agent that supports the [Open Agent Skills](https://skills.sh) protocol. Note: this protocol installs only the skill directories, without the shared helpers (`_shared/`, `e2e-shared/`, `scripts/`) the skills build on — the skills handle that themselves: on first use they download the full bundle to `~/.appmixer-skills/` and run from there (`APPMIXER_SKILL_ROOT` points at it; the setup block in each affected SKILL.md does this automatically).
+Installs all skills into your agent's skills directory. Works with any agent that supports the [Open Agent Skills](https://skills.sh) protocol. Each skill directory is fully self-contained — no shared helpers, no post-install downloads.
 
 ### Manual Installation (Any Agent)
 
-Copy the contents of the `skills/` directory into your agent's skills folder (copying everything — including `_shared/`, `e2e-shared/` and `scripts/` — keeps the skills self-contained; if you copy only individual skill folders, they download the full bundle to `~/.appmixer-skills/` on first use instead):
+Copy the skill directories from `skills/` into your agent's skills folder — each one is self-contained:
 
 | Agent | Skills directory |
 |-------|-----------------|
@@ -83,28 +150,20 @@ Copy the contents of the `skills/` directory into your agent's skills folder (co
 
 ## Configuration
 
-Skills read configuration from environment variables (`APPMIXER_SKILL_*`), loaded from `~/.config/appmixer-skills/env` automatically.
+There is none. The skills find the workspace from the directory you run your agent in, and instance access goes through the `appmixer` CLI (`appmixer url` + `appmixer login`).
 
-**Zero-setup path (recommended):** just install and start using a skill. On first use the agent detects the missing configuration, asks you for the values, and writes `~/.config/appmixer-skills/env` itself. Every later session picks it up automatically.
-
-**Manual path:** copy [skills/.env.example](skills/.env.example) to `~/.config/appmixer-skills/env` and fill in:
-
-- `APPMIXER_SKILL_CONNECTORS_DIR` — absolute path to your `appmixer-connectors` clone (its root, the directory containing `src/appmixer`). This is the minimal config — without a connectors clone the skills have nothing to work on. If unset, skills fall back to searching upward from the current working directory, so starting your agent from inside the clone also works.
-- `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD` — the Appmixer API host and credentials (only needed for the live-instance skills).
-
-Precedence: variables exported in your shell always win; `APPMIXER_ENV` can point to an alternate file (useful for switching between instances); `~/.config/appmixer-skills/env` is the default.
-
-Node dependencies are installed automatically by `skills/scripts/ensure-deps.sh` on session start.
+The only knob is `APPMIXER_SKILL_CONNECTORS_DIR` — an optional override for the workspace root when running your agent from outside the workspace (CI, git worktrees).
 
 ## Releasing (maintainers)
 
 ```bash
 npm install
-npm test               # smoke tests: script syntax, env-var contract, no-config failure modes
-npm run release        # bumps version everywhere, updates CHANGELOG, tags, builds dist/
+npm test               # smoke tests: references sync, manifest consistency, example files parse
+npm run release        # bumps version everywhere, updates CHANGELOG, tags
 git push --follow-tags
-gh release create v<VERSION> dist/*-v<VERSION>.zip
 ```
+
+The full skill set including the E2E skills is developed on the `dev` branch; `main` carries only the dependency-free skills.
 
 Versions are kept in sync across `package.json`, `skills/.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and every `SKILL.md` frontmatter via [.versionrc.json](.versionrc.json). Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, …) so the changelog generates itself.
 

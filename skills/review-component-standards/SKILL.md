@@ -11,14 +11,14 @@ metadata:
 
 # Review Component Standards
 
-Audits an Appmixer component against the standards in
-`appmixer-connectors/.github/instructions/`. **You (the agent) do the review
+Audits an Appmixer component against the design standards bundled in this
+skill's `references/` directory. **You (the agent) do the review
 directly** — read the files and produce a structured issue list. There is no
 sub-agent to spawn. **Do NOT modify any files.**
 
 ## Design Reference
 
-The rules to check live in `<connectors>/.github/instructions/`:
+The rules to check live in the `references/` directory next to this SKILL.md:
 
 | File | Content |
 |------|---------|
@@ -28,23 +28,22 @@ The rules to check live in `<connectors>/.github/instructions/`:
 | `07-component-types.md` | Actions, triggers, dynamic components |
 | `08-best-practices.md` | Coding standards, naming, error handling |
 
+Complete example files (component.json, behaviors, auth.js, lib.js) are in
+`references/examples/`. Real-world example connectors (when you want a
+reference implementation): https://github.com/appmixer-ai/appmixer-connectors
+
 ## Prerequisites
 
-- **Connector location** — set `APPMIXER_SKILL_CONNECTORS_DIR` to the `appmixer-connectors`
-  checkout root, or run from inside the repo. When neither applies, read it
-  from `~/.config/appmixer-skills/env`; if that file is missing too, ask the
-  user for the path and write it there (KEY=value, `chmod 600`). Components live at
-  `<connectors>/src/appmixer/<connector>/`.
-- **Design conventions** — the rules this skill checks against are read from
-  `<connectors>/.github/instructions/` (they live in the connectors repo, not in
-  this plugin). Before starting the review, verify that directory exists; if it
-  doesn't, stop and tell the user they need an up-to-date `appmixer-connectors`
-  checkout.
+- **Run from the connector workspace** — the current directory (or a parent)
+  must contain `src/<vendor>/`; components live at
+  `src/<vendor>/<connector>/`. Only when running from elsewhere, point
+  `APPMIXER_SKILL_CONNECTORS_DIR` at the workspace root (optional override).
 
 ## Input
 
 A full component name, e.g. `appmixer.MSPowerBI.core.CreateDashboard`
-(`appmixer.<connector>.<module>.<Component>`).
+(`<vendor>.<connector>.<module>.<Component>` — `appmixer` is only the default
+vendor; the first segment names the vendor dir under `src/`).
 
 ## Review process
 
@@ -65,7 +64,7 @@ A full component name, e.g. `appmixer.MSPowerBI.core.CreateDashboard`
 ## What to check
 
 ### component.json
-1. **name** matches `appmixer.<connector>.<module>.<ComponentName>`.
+1. **name** matches `<vendor>.<connector>.<module>.<ComponentName>` (matching the disk path `src/<vendor>/<connector>/<module>/<ComponentName>/`).
 2. **label** — human-readable, title-case, no redundant connector prefix.
 3. **description** — present, meaningful, not identical to the label.
 4. **icon** — present.
