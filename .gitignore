@@ -1,6 +1,4 @@
 /.idea/
 node_modules/
 .env
-# Versioned dist artifacts live on GitHub Releases; only stable aliases are committed
-dist/*-v*.zip
 .DS_Store
