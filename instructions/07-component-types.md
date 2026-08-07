@@ -35,7 +35,7 @@ Components with `outputType` (Find/List) **MUST** use standardized lib.js helper
 - `sendArrayOutput({ context, outputPortName = 'out', outputType, records })` - handles all output types
 - `getOutputPortOptions(context, outputType, schema, { label })` - dynamic output schema
 
-**Canonical implementation:** Copy from `appmixer-cli/src/ai/src/templates/libs/lib.js`
+**Canonical implementation:** copy [`examples/find-tasks/lib.js`](examples/find-tasks/lib.js)
 
 **Required behavior pattern:**
 ```javascript
@@ -58,8 +58,7 @@ module.exports = {
 **Critical rules:**
 - For the `'array'` outputType, always use `result` as the array output field name and include the total count: `{ result: records, count: records.length }`
 - Never use `records` or custom field names for consistency
-- lib.js MUST exist in connector root if component has outputType
-- Run `npm run validate-outputtype` to check compliance
+- lib.js MUST exist in connector root if component has outputType — follow this rule even when the workspace has no tooling to enforce it
 
 ### List (Items) Components
 

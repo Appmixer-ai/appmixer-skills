@@ -23,12 +23,12 @@ several vendors can live side by side. Component names mirror the disk layout:
 
 ```
 src/
-├── <vendor>/           # Source code for connectors (default vendor: appmixer)
-│   └── <connector>/
-└── examples/           # Example components (not for production)
-test/
-├── utils.js           # Appmixer stub for testing
-└── [test files]
+└── <vendor>/           # Source code for connectors (default vendor: appmixer)
+    └── <connector>/
 ```
+
+(Reference workspaces like the appmixer-connectors repo may carry extra
+tooling — test runners, validators, example components — but none of it is
+required.)
 
 ---

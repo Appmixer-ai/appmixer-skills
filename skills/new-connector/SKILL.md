@@ -205,14 +205,15 @@ Ask user about consistently failing components: remove or keep?
 
 Run after Step 3 is complete (component list final).
 
-1. **Lint + workspace validator** — catch errors early (run from the workspace
-   root):
+1. **Lint + workspace validator** — catch errors early. This step is **optional
+   and workspace-provided**: run it only when the workspace ships the tooling
+   (an eslint config, a `scripts/validate.js` — the appmixer-connectors repo
+   has both); a bare customer workspace has neither and that is fine — skip to
+   publishing.
    ```bash
+   # from the workspace root, only if the workspace provides these
    npm install   # only needed once
    ./node_modules/.bin/eslint src/<vendor>/<connector>/ --ext .js
-   # workspace-wide connector standards (MakeApiCall presence, required-input
-   # guards, dynamic outPort sources, output examples, bundle bumps, …) — only
-   # when the workspace ships this validator (the appmixer-connectors repo does)
    node scripts/validate.js --connector <connector>
    ```
    Fix every validator failure before proceeding (warnings: use judgement). Common

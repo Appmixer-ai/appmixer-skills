@@ -7,13 +7,15 @@
 - Use `assert` from Node.js for assertions
 - Name test files with `.test.js` extension (e.g., `AIAgent.test.js`)
 
-When working on a single connector, you can run tests with:
+When working on a single connector, run its tests with mocha directly:
 
 ```bash
-npm run test-unit -- src/<vendor>/<connector_name>/artifacts/test/*.test.js
+npx mocha src/<vendor>/<connector_name>/artifacts/test/*.test.js
 ```
 
-The test suite automatically discovers and runs all test files in the `artifacts/test/` directories across all connectors.
+(Workspaces may ship their own test runner script — e.g. the appmixer-connectors
+repo's `npm run test-unit` discovers all `artifacts/test/` files — but plain
+mocha works everywhere.)
 
 ### End-to-End (E2E) Test Flows
 
