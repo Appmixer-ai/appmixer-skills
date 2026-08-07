@@ -18,6 +18,59 @@ Give your AI coding agent deep Appmixer connector-development expertise — scaf
 
 See [skills/README.md](skills/README.md) for architecture details (how the skills work, shared helpers, environment variables).
 
+## Getting Started
+
+The complete zero-to-first-connector path — nothing else is needed:
+
+**1. Install the skills** (Claude Code shown; other agents: [Installation](#installation)):
+
+```bash
+claude
+/plugin marketplace add Appmixer-ai/appmixer-skills
+/plugin install appmixer@appmixer-agents
+```
+
+**2. Create a workspace** — a folder with `src/<vendor>/` inside. The vendor is your namespace; pick your company name, or just use `appmixer`:
+
+```bash
+mkdir -p my-connectors/src/acme
+cd my-connectors
+```
+
+**3. Start your agent inside the workspace** (that's how the skills find it — no configuration needed):
+
+```bash
+claude
+```
+
+**4. Build your first connector** — describe what you want in plain language:
+
+> Create a new connector for the Cat Facts API (https://catfact.ninja), vendor `acme`, with components GetFact and ListBreeds.
+
+The `new-connector` skill reads the API docs and scaffolds everything:
+
+```
+my-connectors/
+└── src/acme/catfacts/
+    ├── service.json          # name: acme.catfacts
+    ├── bundle.json
+    ├── auth.js
+    ├── quota.js
+    └── core/
+        ├── GetFact/     — component.json + GetFact.js
+        └── ListBreeds/  — component.json + ListBreeds.js
+```
+
+(Cat Facts needs no API key, so it's a good dry run — for a real service the agent asks for credentials when testing starts.)
+
+**5. Test it** — say:
+
+> Test the catfacts components.
+
+Requires the [`appmixer` CLI](https://www.npmjs.com/package/appmixer) (`npm i -g appmixer`); the agent tells you if anything is missing.
+
+**6. (Optional) Publish + run E2E flows on a live instance** — the first time a live-instance skill runs, the agent asks for your Appmixer API URL and credentials and saves them to `~/.config/appmixer-skills/env` itself. No manual config file editing.
+
 ## Prerequisites
 
 - Node.js >= 18
