@@ -5,30 +5,33 @@
 import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
+import { findConnectorDir } from '../../_shared/vendors.js';
 
 function testFlowsDir(connectorsDir, connector) {
-    return path.join(connectorsDir, 'src', 'appmixer', connector, 'artifacts', 'test-flows');
+    // connector may be bare or vendor-qualified; the vendor dir is discovered
+    return path.join(findConnectorDir(connectorsDir, connector).dir, 'artifacts', 'test-flows');
 }
 
-// Derive the connectors repo root from a flow.json path by anchoring on the `src/appmixer` segment.
-// e.g. /repo/src/appmixer/microsoft/dynamics/test-flow-contact.json → /repo
+// Derive the workspace root from a flow.json path by anchoring on the `src/<vendor>` segment.
+// e.g. /repo/src/acme/crm/test-flow-contact.json → /repo ("appmixer" is just the default vendor).
 export function deriveConnectorsDir(flowPath) {
     const abs = path.resolve(flowPath);
-    const marker = `${path.sep}src${path.sep}appmixer${path.sep}`;
-    const idx = abs.indexOf(marker);
-    if (idx === -1) throw new Error(`Flow path is not under src/appmixer: ${abs}`);
+    const marker = `${path.sep}src${path.sep}`;
+    const idx = abs.lastIndexOf(marker);
+    if (idx === -1) throw new Error(`Flow path is not under src/<vendor>: ${abs}`);
     return abs.slice(0, idx);
 }
 
 // Derive the set of dotted connector prefixes from the flow's component types (authoritative — handles
-// nested like microsoft.dynamics and multi-connector flows). Excludes appmixer.utils.* infrastructure.
-// type `appmixer.microsoft.dynamics.CreateContact` → prefix `microsoft.dynamics`.
+// nested like appmixer.microsoft.dynamics and multi-connector/multi-vendor flows). Excludes
+// appmixer.utils.* infrastructure. Prefixes keep the vendor segment:
+// type `acme.crm.core.CreateContact` → prefix `acme.crm`.
 export function deriveConnectorPrefixes(flowJson) {
     const prefixes = new Set();
     for (const comp of Object.values(flowJson.flow || {})) {
         const type = comp.type || '';
-        if (!type.startsWith('appmixer.') || type.startsWith('appmixer.utils.')) continue;
-        prefixes.add(type.split('.').slice(1, -1).join('.'));
+        if (type.startsWith('appmixer.utils.') || type.split('.').length < 3) continue;
+        prefixes.add(type.split('.').slice(0, -1).join('.'));
     }
     return [...prefixes];
 }

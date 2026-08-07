@@ -38,11 +38,11 @@ bash "$APPMIXER_SKILL_ROOT/scripts/ensure-deps.sh"
 ## Prerequisites
 
 - **Run from the connector workspace** — the current directory (or a parent)
-  must contain `src/appmixer/`; the connector is built at
-  `src/appmixer/<connector>/`. Only when running from elsewhere, point
+  must contain `src/<vendor>/`; the connector is built at
+  `src/<vendor>/<connector>/`. Only when running from elsewhere, point
   `APPMIXER_SKILL_CONNECTORS_DIR` at the workspace root (optional override).
   If no workspace exists yet, ask the user where to create one (`mkdir -p
-  <dir>/src/appmixer`) and continue from there.
+  <dir>/src/<vendor>`) and continue from there.
 - **Design conventions** — bundled in this skill's own `references/` directory;
   no extra setup needed to read them.
 
@@ -80,7 +80,7 @@ Step 6: RUN E2E FLOWS   → Execute flows & auto-fix on live instance        [ru
 ```
 
 Progress is tracked in
-`src/appmixer/<connector>/artifacts/ai-artifacts/pipeline-state.json` —
+`src/<vendor>/<connector>/artifacts/ai-artifacts/pipeline-state.json` —
 read it to know where to resume if the pipeline was interrupted.
 
 ---
@@ -91,6 +91,13 @@ Collect everything needed directly from the user and the service's public docs �
 there is no external ticket to fetch. Ask for whatever is missing:
 
 - **Connector name** — lowercase, alphanumeric (e.g. `pipedrive`). Ask if ambiguous.
+- **Vendor** — the namespace directory under `src/` the connector belongs to
+  (component names become `<vendor>.<connector>.<module>.<Component>`).
+  Determine it in this order: (1) the user named it explicitly; (2) the cwd is
+  inside `src/<vendor>/` — use that; (3) the workspace has exactly one vendor
+  dir — use it; (4) otherwise ask the user (default suggestion: `appmixer`).
+  Workspaces can hold several vendors side by side — never assume `appmixer`
+  when other vendor dirs exist.
 - **API docs URL** — the service's API reference (or an OpenAPI/Swagger spec).
 - **Auth type** — API key, OAuth 2.0, … (derivable from the docs if not stated).
 - **Component list** — which actions/triggers to build. If the user doesn't have
@@ -98,7 +105,7 @@ there is no external ticket to fetch. Ask for whatever is missing:
   the most useful triggers) and confirm it before generating.
 
 **Abort if the connector already exists** —
-check `src/appmixer/<connector>/service.json`. If it exists and the
+check `src/<vendor>/<connector>/service.json`. If it exists and the
 user wants more components, use the "Adding New Components" flow below instead.
 
 ## Step 2: Scaffold + Generate Components
@@ -124,9 +131,9 @@ from it.
 
 ### 2c. Scaffold core files
 
-Under `src/appmixer/<connector>/`:
+Under `src/<vendor>/<connector>/`:
 
-1. **service.json** — name `appmixer.<connector>`, label from the requirements,
+1. **service.json** — name `<vendor>.<connector>`, label from the requirements,
    category `"applications"`, version `"1.0.0"`.
 2. **bundle.json** — same name, version `"1.0.0"`,
    `changelog: { "1.0.0": ["Initial release."] }`.
@@ -135,7 +142,7 @@ Under `src/appmixer/<connector>/`:
 
 ### 2d. Generate components
 
-For each component, under `src/appmixer/<connector>/core/<ComponentName>/`:
+For each component, under `src/<vendor>/<connector>/core/<ComponentName>/`:
 
 1. **component.json** — proper inPorts, outPorts (typed schema with `example` on
    every leaf property), auth, quota, icon.
@@ -218,7 +225,7 @@ fixes until clean:
 
 ```bash
 node "$APPMIXER_SKILL_ROOT"/generate-e2e-flows/validate.js \
-    src/appmixer/<connector>/artifacts/test-flows
+    src/<vendor>/<connector>/artifacts/test-flows
 ```
 
 Only run after Step 3 is complete (component list final).
@@ -238,7 +245,7 @@ Run after Step 4 generates test flow JSONs. Publishes the connector and uploads 
    from the workspace root):
    ```bash
    npm install   # only needed once
-   ./node_modules/.bin/eslint src/appmixer/<connector>/ --ext .js
+   ./node_modules/.bin/eslint src/<vendor>/<connector>/ --ext .js
    # workspace-wide connector standards (MakeApiCall presence, required-input
    # guards, dynamic outPort sources, output examples, bundle bumps, …) — only
    # when the workspace ships this validator (the appmixer-connectors repo does)

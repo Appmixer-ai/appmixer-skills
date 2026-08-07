@@ -5,7 +5,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { sourceIn, transformIn } from './flowutil.js';
+import { sourceIn, transformIn, isConnectorComp } from './flowutil.js';
 
 // ---------------------------------------------------------------------------
 // Schema loading
@@ -164,7 +164,7 @@ export const validateAssertFieldSpecificity = (flowJson, connectorsDir) => {
             const sourceComp = flowJson.flow[sourceId];
             if (!sourceComp) continue;
             const sourceType = sourceComp.type || '';
-            if (!sourceType.startsWith('appmixer.') || sourceType.startsWith('appmixer.utils.')) continue;
+            if (!isConnectorComp(sourceType)) continue;
 
             const schema = loadComponentSchema(sourceType, connectorsDir);
             if (!schema) continue;
@@ -289,7 +289,7 @@ export const validateAssertCoverage = (flowJson, connectorsDir) => {
     for (const [compId, comp] of Object.entries(flowJson.flow)) {
         const type = comp.type || '';
         if (UTIL_PREFIXES.some(p => type.startsWith(p))) continue;
-        if (!type.startsWith('appmixer.')) continue;
+        if (!isConnectorComp(type)) continue;
 
         const schema = loadComponentSchema(type, connectorsDir);
         if (!schema) continue;
@@ -314,7 +314,7 @@ export const inputCoverageValidation = (flowJson, connectorsDir) => {
     for (const [compId, comp] of Object.entries(flowJson.flow)) {
         const type = comp.type || '';
         if (UTIL_PREFIXES.some(p => type.startsWith(p))) continue;
-        if (!type.startsWith('appmixer.')) continue;
+        if (!isConnectorComp(type)) continue;
 
         const schema = loadComponentSchema(type, connectorsDir);
         if (!schema) continue;

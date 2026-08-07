@@ -6,9 +6,8 @@
  */
 import fs from 'fs';
 import path from 'path';
-import { components } from './lib/flowutil.js';
+import { components, isConnectorComp } from './lib/flowutil.js';
 
-const isConnectorComp = (t) => t && t.startsWith('appmixer.') && !t.startsWith('appmixer.utils.');
 
 // Recursively find component.json files and map each to its dotted type.
 // Triggers (trigger:true) are excluded — they are entry-point components covered
@@ -17,7 +16,7 @@ const isConnectorComp = (t) => t && t.startsWith('appmixer.') && !t.startsWith('
 // source helpers (e.g. ListTemplates, GenerateIssuesOutput) that back dropdowns/
 // variable pickers and are never standalone E2E flow nodes, so demanding coverage
 // for them is wrong.
-function discoverTypes(vendorDir, appmixerRoot) {
+function discoverTypes(connectorDir, srcRoot) {
     const out = [];
     const walk = (dir) => {
         for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -32,12 +31,12 @@ function discoverTypes(vendorDir, appmixerRoot) {
                     isPrivate = cj.private === true;
                 } catch { /* ignore */ }
                 if (isTrigger || isPrivate) continue;
-                const rel = path.relative(appmixerRoot, path.dirname(p));
-                out.push('appmixer.' + rel.split(path.sep).join('.'));
+                const rel = path.relative(srcRoot, path.dirname(p));
+                out.push(rel.split(path.sep).join('.'));
             }
         }
     };
-    if (fs.existsSync(vendorDir)) walk(vendorDir);
+    if (fs.existsSync(connectorDir)) walk(connectorDir);
     return out;
 }
 
@@ -49,22 +48,23 @@ export const run = (ctx) => {
         ctx.addWarning(null, 'skipped: APPMIXER_SKILL_CONNECTORS_DIR not set, cannot list connector components');
         return;
     }
-    const appmixerRoot = path.join(ctx.connectorsDir, 'appmixer');
+    const srcRoot = ctx.connectorsDir;
 
-    // Used types + vendors across all flows.
+    // Used types + <vendor>/<connector> pairs across all flows.
     const used = new Set();
-    const vendors = new Set();
+    const connectors = new Set();
     for (const { json } of ctx.flows) {
         for (const [, comp] of components(json)) {
             if (!isConnectorComp(comp.type)) continue;
             used.add(comp.type);
-            vendors.add(comp.type.split('.')[1]);
+            const [vendor, connector] = comp.type.split('.');
+            connectors.add(`${vendor}/${connector}`);
         }
     }
-    if (vendors.size === 0) return;
+    if (connectors.size === 0) return;
 
-    for (const vendor of vendors) {
-        const all = discoverTypes(path.join(appmixerRoot, vendor), appmixerRoot);
+    for (const pair of connectors) {
+        const all = discoverTypes(path.join(srcRoot, ...pair.split('/')), srcRoot);
         const missing = all.filter((t) => !used.has(t));
         for (const t of missing) {
             ctx.addWarning(null, `component "${t}" is not covered by any E2E flow`);

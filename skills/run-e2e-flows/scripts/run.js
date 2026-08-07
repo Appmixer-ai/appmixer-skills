@@ -41,7 +41,7 @@ local file and rebinds accounts on every run.
 Connector publish (appmixer pack/publish) is NOT done here — publish the connector first (via the
 upload-e2e-flows skill or manually) so its components are available on the instance.
 
-  path-to-flow.json   Local E2E flow JSON under <repo>/src/appmixer/<connector>/...
+  path-to-flow.json   Local E2E flow JSON under <workspace>/src/<vendor>/<connector>/...
   baseUrl             Optional Appmixer API base URL (default: APPMIXER_SKILL_API_URL)
 
 Exit codes: 0 = flow passed | 1 = hard failure (config/budget) | 2 = NEEDS_FIX (agent fixes + re-runs)

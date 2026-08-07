@@ -114,6 +114,19 @@ cd "$PROJECT"
 OUT=$("${CLEAN[@]}" APPMIXER_SKILL_CONNECTORS_DIR="$CONNECTORS" node -e "import('$PLUGIN/_shared/resolveConnectorsDir.js').then(m => console.log(m.resolveConnectorsDir()))" 2>&1)
 check "APPMIXER_SKILL_CONNECTORS_DIR overrides cwd" "$CONNECTORS" "$OUT"
 
+# Custom-vendor workspace: src/acme/crm (no src/appmixer at all) — the resolver
+# must recognize it via the connector manifest, and findConnectorDir must locate
+# the connector across vendor dirs.
+VENDOR_WS="$WORK/vendor-ws"
+mkdir -p "$VENDOR_WS/src/acme/crm"
+echo '{"name":"acme.crm"}' > "$VENDOR_WS/src/acme/crm/service.json"
+cd "$VENDOR_WS/src/acme/crm"
+OUT=$("${CLEAN[@]}" node -e "import('$PLUGIN/_shared/resolveConnectorsDir.js').then(m => console.log(m.resolveConnectorsDir()))" 2>&1)
+check "resolveConnectorsDir accepts a custom-vendor workspace" "$VENDOR_WS" "$OUT"
+OUT=$("${CLEAN[@]}" node -e "import('$PLUGIN/_shared/vendors.js').then(m => { const r = m.findConnectorDir('$VENDOR_WS', 'crm'); console.log(r.vendor + ':' + r.dir); })" 2>&1)
+check "findConnectorDir discovers the vendor of a bare connector name" "acme:$VENDOR_WS/src/acme/crm" "$OUT"
+cd "$PROJECT"
+
 cat > "$WORK/test.env" <<'EOF'
 APPMIXER_SKILL_API_URL=https://api.example-nonexistent.test
 APPMIXER_SKILL_USERNAME=u@example.com

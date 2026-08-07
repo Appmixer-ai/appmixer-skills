@@ -43,14 +43,14 @@ export const cleanFlowForComparison = (flow) => {
 
 /**
  * Extract connector name from E2E flow name.
- * Patterns: "E2E box - ...", "box E2E", "appmixer.box ..."
+ * Patterns: "E2E box - ...", "box E2E", "<vendor>.box ..."
  */
 export const extractConnectorFromFlowName = (flowName) => {
     if (!flowName) return null;
     const patterns = [
         /e2e[_\s-]+(\w+)/i,
         /(\w+)[_\s-]+e2e/i,
-        /appmixer\.(\w+)/i,
+        /[\w-]+\.(\w+)/,
     ];
     for (const p of patterns) {
         const m = flowName.match(p);

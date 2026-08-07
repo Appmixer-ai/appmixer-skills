@@ -6,7 +6,6 @@
  */
 import { components, shortType } from './lib/flowutil.js';
 
-const isConnectorComp = (t) => t && t.startsWith('appmixer.') && !t.startsWith('appmixer.utils.');
 
 export const name = 'create-without-cleanup';
 export const description = 'Flow that Creates a resource should also Delete it (warning)';

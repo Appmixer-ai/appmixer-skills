@@ -3,21 +3,21 @@
 ### Unit Tests
 
 - Use `mocha` for unit tests
-- Place tests in `src/appmixer/<connector_name>/artifacts/test/` directory (colocated with connector source)
+- Place tests in `src/<vendor>/<connector_name>/artifacts/test/` directory (colocated with connector source)
 - Use `assert` from Node.js for assertions
 - Name test files with `.test.js` extension (e.g., `AIAgent.test.js`)
 
 When working on a single connector, you can run tests with:
 
 ```bash
-npm run test-unit -- src/appmixer/<connector_name>/artifacts/test/*.test.js
+npm run test-unit -- src/<vendor>/<connector_name>/artifacts/test/*.test.js
 ```
 
 The test suite automatically discovers and runs all test files in the `artifacts/test/` directories across all connectors.
 
 ### End-to-End (E2E) Test Flows
 
-E2E test flows are automated workflow tests stored as `test-flow*.json` files in the connector's root directory (`src/appmixer/<connector_name>/`). These flows test the complete integration by executing components in a realistic sequence.
+E2E test flows are automated workflow tests stored as `test-flow*.json` files in the connector's root directory (`src/<vendor>/<connector_name>/`). These flows test the complete integration by executing components in a realistic sequence.
 
 **Important**: Connectors should have **multiple smaller test flows** rather than one large flow. Each flow should test a specific feature or workflow (e.g., `test-flow-crud.json`, `test-flow-search.json`, `test-flow-webhooks.json`). This approach makes tests easier to maintain, debug, and understand.
 
@@ -739,7 +739,7 @@ See [`examples/e2e-test-flow.json`](examples/e2e-test-flow.json).
     - Identify what to assert
 
 3. **Create JSON File**
-    - Name: `src/appmixer/<connector>/test-flow-<feature>.json`
+    - Name: `src/<vendor>/<connector>/test-flow-<feature>.json`
     - Use descriptive feature names: `crud`, `search`, `webhooks`, `list`, etc.
 
 4. **Add Required Components**

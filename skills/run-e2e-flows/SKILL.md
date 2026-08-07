@@ -197,7 +197,7 @@ timeouts — `assertsFired`/`assertsSilent` (component IDs). Then:
 Iterate the runner over each flow file and collect the `RESULT |` lines:
 
 ```bash
-for f in src/appmixer/<connector>/artifacts/test-flows/test-flow-*.json; do
+for f in src/<vendor>/<connector>/artifacts/test-flows/test-flow-*.json; do
     node .../run-e2e-flows/scripts/run.js "$f" | tee -a /tmp/e2e-run.log
 done
 grep '^RESULT |' /tmp/e2e-run.log

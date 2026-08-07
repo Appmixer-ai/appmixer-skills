@@ -14,9 +14,8 @@
  */
 import fs from 'fs';
 import path from 'path';
-import { components } from './lib/flowutil.js';
+import { components, isConnectorComp } from './lib/flowutil.js';
 
-const isConnectorComp = (t) => t && t.startsWith('appmixer.') && !t.startsWith('appmixer.utils.');
 
 export const name = 'no-private-component-node';
 export const description = 'Private (source-helper) components must not be standalone flow nodes';
@@ -26,13 +25,13 @@ export const run = (ctx) => {
         ctx.addWarning(null, 'skipped: APPMIXER_SKILL_CONNECTORS_DIR not set, cannot read component.json private flags');
         return;
     }
-    const appmixerRoot = path.join(ctx.connectorsDir, 'appmixer');
+    const srcRoot = ctx.connectorsDir;
     const cache = {};
     const isPrivate = (type) => {
         if (type in cache) return cache[type];
-        const rel = type.split('.').slice(1).join(path.sep); // jira/issues/ListField
+        const rel = type.split('.').join(path.sep); // appmixer/jira/issues/ListField
         let priv = false;
-        try { priv = JSON.parse(fs.readFileSync(path.join(appmixerRoot, rel, 'component.json'), 'utf8')).private === true; } catch { /* ignore */ }
+        try { priv = JSON.parse(fs.readFileSync(path.join(srcRoot, rel, 'component.json'), 'utf8')).private === true; } catch { /* ignore */ }
         return (cache[type] = priv);
     };
 

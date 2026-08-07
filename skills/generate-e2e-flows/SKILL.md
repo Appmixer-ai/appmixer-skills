@@ -57,14 +57,15 @@ bash "$APPMIXER_SKILL_ROOT/scripts/ensure-deps.sh"
    rejects it) and components without `errorHandling`. If a flow you are looking
    at disagrees with the template, the template wins.
 3. **Read each component's `component.json`** under
-   `src/appmixer/<connector>/...` to get the REAL input
+   `src/<vendor>/<connector>/...` (`<vendor>` = the namespace dir under `src/`;
+   `appmixer` is only the default) to get the REAL input
    schema and output port name(s) — do not guess them.
 4. **Write** each flow to
-   `src/appmixer/<connector>/artifacts/test-flows/test-flow-<name>.json`.
+   `src/<vendor>/<connector>/artifacts/test-flows/test-flow-<name>.json`.
 5. **Validate**:
    ```bash
    node "$APPMIXER_SKILL_ROOT/generate-e2e-flows/validate.js" \
-     src/appmixer/<connector>/artifacts/test-flows
+     src/<vendor>/<connector>/artifacts/test-flows
    ```
    Fix every reported failure and re-run until it prints `Validation passed`.
    Warnings are informational (improve them when easy, but they don't block).

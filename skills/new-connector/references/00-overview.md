@@ -15,12 +15,16 @@ Appmixer is a workflow engine with a web user interface that allows end-users to
 ## Workspace Structure
 
 Connectors are developed in a local workspace — any directory containing
-`src/appmixer/` (the vendor segment `appmixer` is a namespace convention; a
-customer workspace can use its own vendor name):
+`src/<vendor>/<connector>/`. The `<vendor>` segment is a namespace: `appmixer`
+is only the default, a customer workspace can use its own vendor name(s), and
+several vendors can live side by side. Component names mirror the disk layout:
+`<vendor>.<connector>.<module>.<Component>` ↔
+`src/<vendor>/<connector>/<module>/<Component>/`.
 
 ```
 src/
-├── appmixer/           # Source code for connectors
+├── <vendor>/           # Source code for connectors (default vendor: appmixer)
+│   └── <connector>/
 └── examples/           # Example components (not for production)
 test/
 ├── utils.js           # Appmixer stub for testing

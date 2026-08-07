@@ -32,10 +32,15 @@ There is no sub-agent to spawn.
 - **Auth credentials** — the connector must have valid auth in
   `~/.config/configstore/appmixer.json` (see Step 0).
 - **Run from the connector workspace** — the current directory (or a parent)
-  must contain `src/appmixer/`; components live at
-  `src/appmixer/<connector>/core/<Component>/`. Only when running from
+  must contain `src/<vendor>/`; components live at
+  `src/<vendor>/<connector>/core/<Component>/`. Only when running from
   elsewhere, point `APPMIXER_SKILL_CONNECTORS_DIR` at the workspace root
-  (optional override).
+  (optional override). `<vendor>` is the namespace directory under `src/` — `appmixer` is only the
+  default; a workspace can hold several vendors side by side. Bare connector
+  names are searched across all vendor dirs; when ambiguous, qualify as
+  `<vendor>/<connector>`.
+  Note: the auth configstore keys (`<vendor>:<connector>`) use the vendor from
+  the connector's `service.json` name.
 - **Test plan** — a `test-plan.json` (create it in Step 0a below if absent).
 
 ## The test command
@@ -43,7 +48,7 @@ There is no sub-agent to spawn.
 Run one component test with real inputs:
 
 ```bash
-appmixer test component src/appmixer/<connector>/core/<Component> \
+appmixer test component src/<vendor>/<connector>/core/<Component> \
   -i '{"in": {<flat input fields>}}'
 ```
 
@@ -56,13 +61,13 @@ appmixer test component src/appmixer/<connector>/core/<Component> \
 
 ## Step 0a: Create the test plan (if missing)
 
-If `src/appmixer/<connector>/artifacts/ai-artifacts/test-plan.json`
+If `src/<vendor>/<connector>/artifacts/ai-artifacts/test-plan.json`
 does not exist, create it first — an ordered plan with dependency analysis for
 all components. **Only read** component files here — do not run, validate, or
 authenticate anything.
 
 1. **List the components.** Enumerate the directories with a `component.json`
-   under `src/appmixer/<connector>/` (typically under `core/`).
+   under `src/<vendor>/<connector>/` (typically under `core/`).
 2. **Understand each component.** Read every `component.json` (and its behavior
    `.js` when needed) to learn what it does, its inputs, and its outputs.
 3. **Design the test sequence** mimicking how users actually use the service:
@@ -96,7 +101,7 @@ python3 -c "
 import json, sys
 try:
     d = json.load(open('$HOME/.config/configstore/appmixer.json'))
-    fields = d.get('appmixer:<connector>', {}).get('authFields', {})
+    fields = d.get('<vendor>:<connector>', {}).get('authFields', {})
     if not fields:
         print('No auth credentials for <connector>. Ask user for API key/credentials.'); sys.exit(1)
     print('Auth found:', list(fields.keys()))
@@ -109,7 +114,7 @@ If auth is missing: **STOP and ask the user for credentials.** To save them, add
 entry to `appmixer.json`:
 
 ```json
-{ "appmixer:<connector>": { "authFields": { "apiKey": "..." }, "profileInfo": {}, "accountName": "test" } }
+{ "<vendor>:<connector>": { "authFields": { "apiKey": "..." }, "profileInfo": {}, "accountName": "test" } }
 ```
 
 ## Testing workflow

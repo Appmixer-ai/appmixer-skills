@@ -209,15 +209,17 @@ export class AppmixerClient {
         return stripped;
     }
 
-    // Best-effort: first existing account for any of the connector prefixes. Tries the dotted service
-    // (appmixer:microsoft.dynamics) and the top-level service (appmixer:microsoft) since nested
-    // connectors often authenticate at the top level. Lists GET /accounts (the reliable listing
-    // endpoint) and filters here.
+    // Best-effort: first existing account for any of the connector prefixes (vendor-qualified,
+    // e.g. 'appmixer.microsoft.dynamics'). Tries the dotted service (<vendor>:microsoft.dynamics)
+    // and the top-level service (<vendor>:microsoft) since nested connectors often authenticate
+    // at the top level. Lists GET /accounts (the reliable listing endpoint) and filters here.
     async getFirstAccount(connectorPrefixes) {
         const services = new Set();
         for (const p of connectorPrefixes) {
-            services.add(`appmixer:${p}`);
-            services.add(`appmixer:${p.split('.')[0]}`);
+            const [vendor, ...rest] = p.split('.');
+            if (!rest.length) continue;
+            services.add(`${vendor}:${rest.join('.')}`);
+            services.add(`${vendor}:${rest[0]}`);
         }
         const data = await listAccounts(await this.api());
         const accounts = Array.isArray(data) ? data : (data?.accounts || []);
@@ -238,7 +240,7 @@ export class AppmixerClient {
 
     // Bind an account to every connector component in the flow. Required after any PUT update
     // (newly written nodes are unbound) and the deterministic remedy for TokenError.
-    // `connectorPrefixes` is the set of dotted prefixes derived from the flow (e.g. ['microsoft.dynamics']),
+    // `connectorPrefixes` is the set of dotted prefixes derived from the flow (e.g. ['appmixer.microsoft.dynamics']),
     // so this works for nested and multi-connector flows alike.
     // Precedence per component: explicit override (APPMIXER_SKILL_ACCOUNT_ID — operator intent,
     // beats everything, incl. flow-authored accounts, which may be stale/dead) >
@@ -252,7 +254,7 @@ export class AppmixerClient {
     async reassignAccounts(flowId, connectorPrefixes, overrideAccountId = null) {
         const flow = await this.getFlow(flowId);
         const components = flow.flow || {};
-        const isConnectorComp = type => connectorPrefixes.some(p => type?.startsWith(`appmixer.${p}.`));
+        const isConnectorComp = type => connectorPrefixes.some(p => type?.startsWith(`${p}.`));
 
         const liveIds = await this.listAccountIds();
         const flowAccount = (comp) => {

@@ -49,12 +49,12 @@ function designerUrl(baseUrl, flowId) {
 }
 
 // Required OAuth scopes of a component, read from its component.json on disk.
-// Type appmixer.microsoft.calendar.ListEvents → src/appmixer/microsoft/calendar/ListEvents/component.json.
+// Type <vendor>.<connector>.<module>.<Component> → src/<vendor>/<connector>/<module>/<Component>/component.json.
 function requiredScopes(connectorsDir, componentType) {
     try {
         const parts = (componentType || '').split('.');
-        if (parts[0] !== 'appmixer' || parts.length < 3) return null;
-        const file = path.join(connectorsDir, 'src', 'appmixer', ...parts.slice(1), 'component.json');
+        if (parts.length < 3 || (componentType || '').startsWith('appmixer.utils.')) return null;
+        const file = path.join(connectorsDir, 'src', ...parts, 'component.json');
         const json = JSON.parse(fs.readFileSync(file, 'utf-8'));
         return json.auth?.scope || null;
     } catch { return null; }

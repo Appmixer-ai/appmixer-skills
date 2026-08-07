@@ -21,7 +21,7 @@ See [skills/README.md](skills/README.md) for architecture details (how the skill
 ## Prerequisites
 
 - Node.js >= 18
-- A local **connector workspace** — any directory containing `src/appmixer/` that the skills write connector code into. This can be your own (git-managed) workspace, or a clone of [appmixer-connectors](https://github.com/appmixer-ai/appmixer-connectors) (which also serves as a library of real-world example connectors):
+- A local **connector workspace** — any directory containing `src/<vendor>/` that the skills write connector code into (`appmixer` is only the default vendor namespace — a workspace can use any vendor, or several side by side). This can be your own (git-managed) workspace, or a clone of [appmixer-connectors](https://github.com/appmixer-ai/appmixer-connectors) (which also serves as a library of real-world example connectors):
   ```bash
   git clone https://github.com/appmixer-ai/appmixer-connectors.git
   ```
@@ -87,7 +87,7 @@ Skills read configuration from environment variables (`APPMIXER_SKILL_*`), loade
 **Manual path:** copy [skills/.env.example](skills/.env.example) to `~/.config/appmixer-skills/env` and fill in:
 
 - `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD` — the Appmixer API host and credentials (only needed for the live-instance skills).
-- `APPMIXER_SKILL_CONNECTORS_DIR` — optional override for the workspace root. Normally you just start your agent from inside the workspace (a directory containing `src/appmixer`) and the skills find it from the cwd; set this only when running from elsewhere (CI, git worktrees).
+- `APPMIXER_SKILL_CONNECTORS_DIR` — optional override for the workspace root. Normally you just start your agent from inside the workspace (a directory containing `src/<vendor>/`) and the skills find it from the cwd; set this only when running from elsewhere (CI, git worktrees).
 
 Precedence: variables exported in your shell always win; `APPMIXER_ENV` can point to an alternate file (useful for switching between instances); `~/.config/appmixer-skills/env` is the default.
 

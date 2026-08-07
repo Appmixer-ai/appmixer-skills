@@ -19,7 +19,7 @@
  *   node validate.js <path>
  * <path> may be a single flow JSON file OR a directory of test-flow-*.json files.
  * connectorsDir (for coverage validators) comes from $APPMIXER_SKILL_CONNECTORS_DIR/src,
- * or is derived from <path> itself (its src/appmixer ancestor) when unset.
+ * or is derived from <path> itself (its src/<vendor> ancestor) when unset.
  */
 
 import fs from 'fs';
@@ -41,14 +41,15 @@ if (!target || target === '-h' || target === '--help') {
     process.exit(target ? 0 : 1);
 }
 
-// connectorsDir = the src/appmixer parent (used by the coverage validators to
-// load component.json). Resolution order:
+// connectorsDir = the workspace src/ dir (used by the coverage validators to
+// load component.json by type: <vendor>.<connector>.… → src/<vendor>/<connector>/…).
+// Resolution order:
 //   1) $APPMIXER_SKILL_CONNECTORS_DIR/src
-//   2) derive from the validated path itself — it lives under <repo>/src/appmixer/…
+//   2) derive from the validated path itself — it lives under <workspace>/src/<vendor>/…
 //   3) null → coverage validators skip with a warning
 function deriveConnectorsSrc(p) {
-    const marker = `${path.sep}src${path.sep}appmixer${path.sep}`;
-    const i = (p + path.sep).indexOf(marker);
+    const marker = `${path.sep}src${path.sep}`;
+    const i = (p + path.sep).lastIndexOf(marker);
     return i === -1 ? null : path.join(p.slice(0, i), 'src');
 }
 const connectorsDir = process.env.APPMIXER_SKILL_CONNECTORS_DIR

@@ -35,14 +35,15 @@ reference implementation): https://github.com/appmixer-ai/appmixer-connectors
 ## Prerequisites
 
 - **Run from the connector workspace** — the current directory (or a parent)
-  must contain `src/appmixer/`; components live at
-  `src/appmixer/<connector>/`. Only when running from elsewhere, point
+  must contain `src/<vendor>/`; components live at
+  `src/<vendor>/<connector>/`. Only when running from elsewhere, point
   `APPMIXER_SKILL_CONNECTORS_DIR` at the workspace root (optional override).
 
 ## Input
 
 A full component name, e.g. `appmixer.MSPowerBI.core.CreateDashboard`
-(`appmixer.<connector>.<module>.<Component>`).
+(`<vendor>.<connector>.<module>.<Component>` — `appmixer` is only the default
+vendor; the first segment names the vendor dir under `src/`).
 
 ## Review process
 
@@ -63,7 +64,7 @@ A full component name, e.g. `appmixer.MSPowerBI.core.CreateDashboard`
 ## What to check
 
 ### component.json
-1. **name** matches `appmixer.<connector>.<module>.<ComponentName>`.
+1. **name** matches `<vendor>.<connector>.<module>.<ComponentName>` (matching the disk path `src/<vendor>/<connector>/<module>/<ComponentName>/`).
 2. **label** — human-readable, title-case, no redundant connector prefix.
 3. **description** — present, meaningful, not identical to the label.
 4. **icon** — present.

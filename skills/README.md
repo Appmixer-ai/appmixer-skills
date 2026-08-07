@@ -27,7 +27,7 @@ see `.env.example`. Node deps are installed by `scripts/ensure-deps.sh` (idempot
 ### The connector workspace
 
 The skills scaffold, test and review connectors inside a local **workspace** —
-any directory containing `src/appmixer/`. Run your agent from inside it; the
+any directory containing `src/<vendor>/<connector>/` (`appmixer` is only the default vendor namespace; several vendors can live side by side). Run your agent from inside it; the
 skills and scripts resolve the workspace root by walking up from the cwd
 (`skills/_shared/resolveConnectorsDir.js` is the shared resolver).
 `APPMIXER_SKILL_CONNECTORS_DIR` is an optional override for running from
@@ -91,4 +91,4 @@ as its first line — read it to confirm you're talking to the right instance.
 
 The connector workspace is resolved from the current working directory
 (`resolveConnectorsDir.js` walks up looking for a directory containing
-`src/appmixer`); `APPMIXER_SKILL_CONNECTORS_DIR`, when set, overrides it.
+`src/<vendor>/` with connectors); `APPMIXER_SKILL_CONNECTORS_DIR`, when set, overrides it.

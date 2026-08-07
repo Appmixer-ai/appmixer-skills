@@ -38,6 +38,7 @@ import {
 } from '../../_shared/appmixerApi/flows.js';
 import { listAccounts, createAccount, assignComponentAccount } from '../../_shared/appmixerApi/accounts.js';
 import { resolveConnectorsDir } from '../../_shared/resolveConnectorsDir.js';
+import { findConnectorDir } from '../../_shared/vendors.js';
 
 // The env file decides WHICH INSTANCE every command talks to. Precedence: exported
 // vars > APPMIXER_ENV file > ~/.config/appmixer-skills/env. A wrong target looks
@@ -162,8 +163,9 @@ async function carryComponentVersions(client, flowId, payload) {
 }
 
 function flowsDirFor(connector) {
+    // connector may be bare ("crm") or vendor-qualified ("acme/crm" / "acme.crm")
     const root = resolveConnectorsDir();
-    const dir = join(root, 'src', 'appmixer', connector, 'artifacts', 'test-flows');
+    const dir = join(findConnectorDir(root, connector).dir, 'artifacts', 'test-flows');
     if (!existsSync(dir)) throw new Error(`Directory not found: ${dir}`);
     return dir;
 }
@@ -256,9 +258,10 @@ async function main() {
         }
 
         case 'create-account': {
-            const [connector, authJson] = args;
-            if (!connector || !authJson) throw new Error('Usage: create-account <connector> <auth-json>');
-            const service = `appmixer:${connector}`;
+            const [connectorRef, authJson] = args;
+            if (!connectorRef || !authJson) throw new Error('Usage: create-account <[vendor/]connector> <auth-json>');
+            const { vendor, connector, dir: connectorDir } = findConnectorDir(resolveConnectorsDir(), connectorRef);
+            const service = `${vendor}:${connector}`;
             const token = JSON.parse(authJson);
 
             // The engine validates OAuth2 scopes on POST /accounts and reads them
@@ -267,9 +270,8 @@ async function main() {
             // connector's auth.js — the same source the CLI used for the consent.
             if (!token.scope) {
                 try {
-                    const connectorsDir = resolveConnectorsDir();
                     const authModule = (await import(
-                        join(connectorsDir, 'src', 'appmixer', connector, 'auth.js'))).default;
+                        join(connectorDir, 'auth.js'))).default;
                     const definition = typeof authModule.definition === 'function'
                         ? authModule.definition() : authModule.definition;
                     if (Array.isArray(definition?.scope)) {

@@ -6,6 +6,11 @@ export const shortType = (t) => (t || '?').split('.').pop();
 
 export const isUtil = (t) => (t || '').startsWith('appmixer.utils.');
 
+// A connector component: any <vendor>.<connector>[.<module>].<Component> type
+// that is not appmixer.utils.* infrastructure ("appmixer" is only the default
+// vendor — custom-vendor workspaces produce e.g. acme.crm.core.CreateContact).
+export const isConnectorComp = (t) => !!t && !isUtil(t) && t.split('.').length >= 3;
+
 // [id, comp] for each component in a flow document.
 export function* components(json) {
     for (const entry of Object.entries(json.flow || {})) yield entry;
