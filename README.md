@@ -28,6 +28,17 @@ See [skills/README.md](skills/README.md) for architecture details (how the skill
   The connector design conventions ship inside the skills (each skill's `references/` directory) — the workspace does not need to provide them. When the workspace is a git repo, skills commit generated code to feature branches and ask before the first push of a session.
 - For skills that talk to a live Appmixer instance (upload-e2e-flows, run-e2e-flows, new-connector): an Appmixer instance URL + credentials — see [Configuration](#configuration)
 
+## Vendors
+
+Connectors live under `src/<vendor>/<connector>/`, and component names mirror the disk layout: `<vendor>.<connector>.<module>.<Component>`. The `<vendor>` segment is a namespace — **`appmixer` is only the default**; a customer workspace can use its own vendor name, or several vendors side by side. (Built-in `appmixer.utils.*` components — OnStart, Assert, ProcessE2EResults — always keep the `appmixer` vendor; they ship with the engine.)
+
+The skills determine the vendor without extra configuration:
+
+1. **From data** — flow JSONs, component names and file paths all carry the vendor; where one is at hand, nothing is asked.
+2. **From your location** — running from inside `src/<vendor>/` selects that vendor.
+3. **By discovery** — a bare connector name (e.g. `upload-all crm`) is searched across all vendor dirs; a single match wins, an ambiguous one asks you to qualify it as `<vendor>/<connector>` (also accepted: `<vendor>.<connector>`).
+4. **When scaffolding a new connector**, `new-connector` asks for the vendor if it can't be inferred (default suggestion: `appmixer`).
+
 ## Installation
 
 ### Claude Code Plugin ⭐ Recommended

@@ -29,7 +29,11 @@ see `.env.example`. Node deps are installed by `scripts/ensure-deps.sh` (idempot
 The skills scaffold, test and review connectors inside a local **workspace** —
 any directory containing `src/<vendor>/<connector>/` (`appmixer` is only the default vendor namespace; several vendors can live side by side). Run your agent from inside it; the
 skills and scripts resolve the workspace root by walking up from the cwd
-(`skills/_shared/resolveConnectorsDir.js` is the shared resolver).
+(`skills/_shared/resolveConnectorsDir.js` is the shared resolver). The vendor
+of a bare connector name is discovered across vendor dirs by
+`skills/_shared/vendors.js` (`findConnectorDir`) — ambiguous matches must be
+qualified as `<vendor>/<connector>`; component types carry the vendor as their
+first segment, so flow-driven tooling derives it from data.
 `APPMIXER_SKILL_CONNECTORS_DIR` is an optional override for running from
 elsewhere (CI, git worktrees). A clone of
 [appmixer-connectors](https://github.com/appmixer-ai/appmixer-connectors) works
