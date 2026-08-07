@@ -1,6 +1,6 @@
 ---
 name: new-connector
-description: Build a new Appmixer connector end-to-end — gather requirements, research the API, scaffold and generate components, then drive testing, E2E flows and publishing. Use when user wants to create/scaffold/build a new connector, add components to an existing one, continue an in-progress connector build, or discusses the connector development workflow. Triggers on "new connector", "create connector", "init connector", "build connector".
+description: Build a new Appmixer connector end-to-end — gather requirements, research the API, scaffold and generate components, then drive testing and publishing via the appmixer CLI. Use when user wants to create/scaffold/build a new connector, add components to an existing one, continue an in-progress connector build, or discusses the connector development workflow. Triggers on "new connector", "create connector", "init connector", "build connector".
 license: MIT
 metadata:
   author: Appmixer
@@ -12,28 +12,9 @@ metadata:
 # New Connector
 
 Full end-to-end workflow for building an Appmixer connector: requirements →
-scaffold + components → CLI tests → E2E flows → publish → live runs. **You (the
-agent) do the scaffolding directly** — research the API and write the files;
-the later steps delegate to the dedicated skills (`test-components`,
-`generate-e2e-flows`, `upload-e2e-flows`, `run-e2e-flows`). No sub-agents.
-
-Before running any step, ensure Node dependencies are installed (idempotent, skips if already present):
-
-```bash
-export APPMIXER_SKILL_ROOT="${APPMIXER_SKILL_ROOT:-${CLAUDE_PLUGIN_ROOT:-$HOME/.appmixer-skills/appmixer}}"
-if [ ! -d "$APPMIXER_SKILL_ROOT/_shared" ]; then
-    # per-skill installs (npx skills, manual copy) ship only the skill dirs —
-    # fetch the full bundle with the shared helpers once
-    curl -fsSL -o /tmp/appmixer-skills.zip https://raw.githubusercontent.com/Appmixer-ai/appmixer-skills/main/dist/appmixer-skills.zip \
-        || { echo "ERROR: cannot download the appmixer-skills bundle (GitHub unreachable)." >&2
-             echo "Offline alternatives: install the Claude Code plugin, or copy the full" >&2
-             echo "skills directory (with _shared/) and export APPMIXER_SKILL_ROOT to it." >&2
-             exit 1; }
-    mkdir -p "$HOME/.appmixer-skills" && unzip -oq /tmp/appmixer-skills.zip -d "$HOME/.appmixer-skills" && rm /tmp/appmixer-skills.zip
-    export APPMIXER_SKILL_ROOT="$HOME/.appmixer-skills/appmixer"
-fi
-bash "$APPMIXER_SKILL_ROOT/scripts/ensure-deps.sh"
-```
+scaffold + components → CLI tests → publish. **You (the agent) do the
+scaffolding directly** — research the API and write the files; testing follows
+the `test-components` skill. No sub-agents, no install scripts.
 
 ## Prerequisites
 
@@ -74,10 +55,13 @@ Consult these when generating code, debugging failures, or reviewing output.
 Step 1: REQUIREMENTS    → Gather service, API docs, auth type, component list
 Step 2: SCAFFOLD        → Research the API, scaffold + generate components
 Step 3: TEST + FIX      → Authenticate → test loop → finalize            [test-components]
-Step 4: E2E TEST FLOWS  → Generate test flow JSONs for final component set [generate-e2e-flows]
-Step 5: UPLOAD E2E FLOWS → Publish connector, upload flows, validate       [upload-e2e-flows]
-Step 6: RUN E2E FLOWS   → Execute flows & auto-fix on live instance        [run-e2e-flows]
+Step 4: PUBLISH         → Lint, bundle bump, pack & publish via the appmixer CLI
 ```
+
+E2E test flows (generate → upload → run on a live instance) are handled by the
+e2e skills, which currently live on the `dev` branch of this repo while their
+tooling moves into the appmixer CLI. Until they land here, the pipeline ends
+with Step 4.
 
 Progress is tracked in
 `src/<vendor>/<connector>/artifacts/ai-artifacts/pipeline-state.json` —
@@ -217,32 +201,12 @@ Ask user about consistently failing components: remove or keep?
 
 ---
 
-## Step 4: E2E Test Flows
+## Step 4: Publish
 
-Follow the `generate-e2e-flows` skill — the agent writes the flow JSONs
-directly (per the skill's rules + `test-flow-template.json`), then validates and
-fixes until clean:
+Run after Step 3 is complete (component list final).
 
-```bash
-node "$APPMIXER_SKILL_ROOT"/generate-e2e-flows/validate.js \
-    src/<vendor>/<connector>/artifacts/test-flows
-```
-
-Only run after Step 3 is complete (component list final).
-
----
-
-## Step 5: Upload E2E Flows
-
-Run after Step 4 generates test flow JSONs. Publishes the connector and uploads flows to the live instance.
-
-**Prerequisites:**
-- Test flow JSONs in `artifacts/test-flows/` (from Step 4)
-- Auth credentials configured (from Step 3a)
-- Configuration providing `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD` — from exported vars, the `APPMIXER_ENV` file, or `~/.config/appmixer-skills/env` (in that precedence). If missing, ask the user for the values and write `~/.config/appmixer-skills/env` (KEY=value lines, `chmod 600`) first.
-
-1. **Lint + workspace validator** before publishing — catch errors early (run
-   from the workspace root):
+1. **Lint + workspace validator** — catch errors early (run from the workspace
+   root):
    ```bash
    npm install   # only needed once
    ./node_modules/.bin/eslint src/<vendor>/<connector>/ --ext .js
@@ -254,27 +218,8 @@ Run after Step 4 generates test flow JSONs. Publishes the connector and uploads 
    Fix every validator failure before proceeding (warnings: use judgement). Common
    lint issues: trailing spaces, `max-len` (120 char limit), extra blank lines.
 
-2. **Publish + upload flows:** follow the `upload-e2e-flows` skill (pack/publish,
-   stores, auth account, upload, account assignment, validation).
-
----
-
-## Step 6: Run E2E Flows
-
-Run after Step 5. Executes the uploaded flows and evaluates results.
-
-Run each flow with the deterministic runner and act on its exit code:
-
-```bash
-node "$APPMIXER_SKILL_ROOT"/run-e2e-flows/scripts/run.js <path-to-flow.json>
-```
-
-- exit `0` — passed, next flow
-- exit `2` — `NEEDS_FIX` brief printed: diagnose, fix the flow JSON on disk,
-  re-run (max 5 iterations per flow)
-- exit `1` — hard failure: investigate / report
-
-See the `run-e2e-flows` skill for full details on the fix rules, monitoring, and gotchas.
+2. **Publish** — follow the Git & Publish Rules below (bundle bump → pack →
+   publish via the appmixer CLI).
 
 ---
 
@@ -290,20 +235,16 @@ When a connector already exists and you only need to add one or more new compone
    - Register the component in the connector's `package.json` if needed
 3. **Test + Fix** (same as Step 3b–3d) — auth is usually already set up. Follow
    the `test-components` skill to test only the new components. Max 3 iterations.
-4. **E2E test flows (if needed)** — follow the `generate-e2e-flows` skill;
-   generate flows only for the NEW components (do not regenerate existing flows
-   and risk breaking them), then validate.
-5. **Publish** — lint, commit, publish, push — same as Git & Publish Rules below.
+4. **Publish** — lint, commit, publish, push — same as Git & Publish Rules below.
 
 ---
 
 ## How the skills execute
 
-No skill spawns a sub-agent. Each skill is either pure instructions you follow
-directly (new-connector, test-components, review-component-standards,
-generate-e2e-flows) or instructions plus a deterministic helper script you
-drive (`run-e2e-flows/scripts/run.js`, `e2e-shared/scripts/appmixer-flow.mjs`,
-`generate-e2e-flows/validate.js`).
+No skill spawns a sub-agent or runs bundled scripts — every skill is pure
+instructions you follow directly with your own tools (new-connector,
+test-components, review-component-standards, connector-test-method), driving
+the `appmixer` CLI where needed.
 
 ---
 
@@ -327,12 +268,14 @@ After every meaningful change (component created, refactored, fixed):
    - Fixes/improvements: `fix/<connector>-<description>` or the current feature branch
    - Use descriptive commit messages
 
-2. **Publish** to the Appmixer instance (credentials from the `APPMIXER_SKILL_*` env vars / `$APPMIXER_ENV` file; run from the workspace root):
+2. **Publish** to the Appmixer instance via the appmixer CLI (run from the
+   workspace root; ask the user for the instance URL/login if the CLI is not
+   configured yet):
    ```bash
-   appmixer url $APPMIXER_SKILL_API_URL
-   appmixer login -u $APPMIXER_SKILL_USERNAME -p $APPMIXER_SKILL_PASSWORD
-   appmixer pack <connector-module-path>
-   appmixer publish
+   appmixer url <api-url>
+   appmixer login <username>
+   cd src/<vendor> && appmixer pack <connector>
+   appmixer publish <vendor>.<connector>.zip
    ```
    Publish the whole module (not individual components) when there's a service dependency.
 
@@ -351,5 +294,3 @@ After every meaningful change (component created, refactored, fixed):
 - **Step 2 (scaffold):** Single run, one long job
 - **Step 3c (test/fix):** Sequential — port 2300 conflict if parallel
 - **Step 3c (fix-only, no test run):** Can parallelize 3–5 at a time (no port conflict)
-- **Step 4 (test flows):** Single run
-- **Step 6 (run e2e):** Sequential per flow (start → wait → evaluate before next)

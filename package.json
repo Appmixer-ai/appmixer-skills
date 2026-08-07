@@ -38,10 +38,6 @@
         "path": "./skills/connector-test-method"
       },
       {
-        "name": "generate-e2e-flows",
-        "path": "./skills/generate-e2e-flows"
-      },
-      {
         "name": "new-connector",
         "path": "./skills/new-connector"
       },
@@ -52,14 +48,6 @@
       {
         "name": "test-components",
         "path": "./skills/test-components"
-      },
-      {
-        "name": "run-e2e-flows",
-        "path": "./skills/run-e2e-flows"
-      },
-      {
-        "name": "upload-e2e-flows",
-        "path": "./skills/upload-e2e-flows"
       }
     ]
   },

@@ -216,7 +216,7 @@ If testing leads to fixes:
 
 1. **Commit** to the appropriate branch in the workspace repo (feature/fix
    branch — never `dev`/`main`).
-2. **Publish** the connector module (`appmixer pack` + `appmixer publish` — credentials from the `APPMIXER_SKILL_*` env vars / `$APPMIXER_ENV` file).
+2. **Publish** the connector module (`appmixer pack` + `appmixer publish` via the configured appmixer CLI).
 3. **Push** the branch — confirm the push target (remote URL + branch) with the
    user before the first push of the session; never force-push. If `origin` is
    the shared upstream and the user hasn't confirmed direct write access,

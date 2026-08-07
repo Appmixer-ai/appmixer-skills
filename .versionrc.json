@@ -1,8 +1,5 @@
 {
   "commitAll": true,
-  "scripts": {
-    "postbump": "bash build.sh && git add dist/appmixer-skills.zip"
-  },
   "bumpFiles": [
     { "filename": "package.json", "type": "json" },
     { "filename": "package-lock.json", "type": "json" },
@@ -10,11 +7,8 @@
     { "filename": ".claude-plugin/marketplace.json", "updater": "scripts/marketplace-version.js" },
     { "filename": "skills/new-connector/SKILL.md", "updater": "scripts/skill-version.js" },
     { "filename": "skills/connector-test-method/SKILL.md", "updater": "scripts/skill-version.js" },
-    { "filename": "skills/generate-e2e-flows/SKILL.md", "updater": "scripts/skill-version.js" },
     { "filename": "skills/review-component-standards/SKILL.md", "updater": "scripts/skill-version.js" },
-    { "filename": "skills/test-components/SKILL.md", "updater": "scripts/skill-version.js" },
-    { "filename": "skills/run-e2e-flows/SKILL.md", "updater": "scripts/skill-version.js" },
-    { "filename": "skills/upload-e2e-flows/SKILL.md", "updater": "scripts/skill-version.js" }
+    { "filename": "skills/test-components/SKILL.md", "updater": "scripts/skill-version.js" }
   ],
   "packageFiles": [
     { "filename": "package.json", "type": "json" }

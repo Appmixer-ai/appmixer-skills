@@ -26,10 +26,8 @@ const MANIFEST = {
     'review-component-standards': [
         '04-components.md', '05-component-config.md', '06-component-behavior.md',
         '07-component-types.md', '08-best-practices.md', 'examples'
-    ],
-    'run-e2e-flows': [
-        '09-testing.md', 'examples/e2e-test-flow.json'
     ]
+    // dev branch additionally syncs: 'run-e2e-flows': ['09-testing.md', 'examples/e2e-test-flow.json']
 };
 
 const check = process.argv.includes('--check');
