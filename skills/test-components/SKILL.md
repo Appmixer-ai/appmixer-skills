@@ -24,19 +24,18 @@ There is no sub-agent to spawn.
   (e.g. `request-promise` in `microsoft/`); a missing one makes
   `appmixer test component` fail with `Cannot find module`. Install them once per
   workspace before testing — if the workspace ships `scripts/npm_install.js`
-  (the appmixer-connectors repo does), run it; otherwise `npm install` in each
-  connector dir that has a `package.json`:
+  (the appmixer-connectors repo does), run it from the workspace root; otherwise
+  `npm install` in each connector dir that has a `package.json`:
   ```bash
-  cd "$APPMIXER_SKILL_CONNECTORS_DIR" && node scripts/npm_install.js
+  node scripts/npm_install.js
   ```
 - **Auth credentials** — the connector must have valid auth in
   `~/.config/configstore/appmixer.json` (see Step 0).
-- **Connector workspace** — set `APPMIXER_SKILL_CONNECTORS_DIR` to the workspace
-  root (any directory containing `src/appmixer/`), or run from inside it. When
-  neither applies, read it from `~/.config/appmixer-skills/env`; if that file is
-  missing too, ask the user for the path and write it there (KEY=value,
-  `chmod 600`). Components live at
-  `<workspace>/src/appmixer/<connector>/core/<Component>/`.
+- **Run from the connector workspace** — the current directory (or a parent)
+  must contain `src/appmixer/`; components live at
+  `src/appmixer/<connector>/core/<Component>/`. Only when running from
+  elsewhere, point `APPMIXER_SKILL_CONNECTORS_DIR` at the workspace root
+  (optional override).
 - **Test plan** — a `test-plan.json` (create it in Step 0a below if absent).
 
 ## The test command
@@ -44,7 +43,7 @@ There is no sub-agent to spawn.
 Run one component test with real inputs:
 
 ```bash
-appmixer test component <connectors>/src/appmixer/<connector>/core/<Component> \
+appmixer test component src/appmixer/<connector>/core/<Component> \
   -i '{"in": {<flat input fields>}}'
 ```
 
@@ -57,13 +56,13 @@ appmixer test component <connectors>/src/appmixer/<connector>/core/<Component> \
 
 ## Step 0a: Create the test plan (if missing)
 
-If `<workspace>/src/appmixer/<connector>/artifacts/ai-artifacts/test-plan.json`
+If `src/appmixer/<connector>/artifacts/ai-artifacts/test-plan.json`
 does not exist, create it first — an ordered plan with dependency analysis for
 all components. **Only read** component files here — do not run, validate, or
 authenticate anything.
 
 1. **List the components.** Enumerate the directories with a `component.json`
-   under `<workspace>/src/appmixer/<connector>/` (typically under `core/`).
+   under `src/appmixer/<connector>/` (typically under `core/`).
 2. **Understand each component.** Read every `component.json` (and its behavior
    `.js` when needed) to learn what it does, its inputs, and its outputs.
 3. **Design the test sequence** mimicking how users actually use the service:

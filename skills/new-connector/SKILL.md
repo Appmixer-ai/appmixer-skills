@@ -37,10 +37,12 @@ bash "$APPMIXER_SKILL_ROOT/scripts/ensure-deps.sh"
 
 ## Prerequisites
 
-- **Connector workspace** — set `APPMIXER_SKILL_CONNECTORS_DIR` to the workspace
-  root (any directory containing `src/appmixer/`), or run from inside it. When
-  neither applies, read it from `~/.config/appmixer-skills/env`; if that file is
-  missing too, ask the user for the path and write it there (KEY=value, `chmod 600`).
+- **Run from the connector workspace** — the current directory (or a parent)
+  must contain `src/appmixer/`; the connector is built at
+  `src/appmixer/<connector>/`. Only when running from elsewhere, point
+  `APPMIXER_SKILL_CONNECTORS_DIR` at the workspace root (optional override).
+  If no workspace exists yet, ask the user where to create one (`mkdir -p
+  <dir>/src/appmixer`) and continue from there.
 - **Design conventions** — bundled in this skill's own `references/` directory;
   no extra setup needed to read them.
 
@@ -78,7 +80,7 @@ Step 6: RUN E2E FLOWS   → Execute flows & auto-fix on live instance        [ru
 ```
 
 Progress is tracked in
-`<workspace>/src/appmixer/<connector>/artifacts/ai-artifacts/pipeline-state.json` —
+`src/appmixer/<connector>/artifacts/ai-artifacts/pipeline-state.json` —
 read it to know where to resume if the pipeline was interrupted.
 
 ---
@@ -96,7 +98,7 @@ there is no external ticket to fetch. Ask for whatever is missing:
   the most useful triggers) and confirm it before generating.
 
 **Abort if the connector already exists** —
-check `<workspace>/src/appmixer/<connector>/service.json`. If it exists and the
+check `src/appmixer/<connector>/service.json`. If it exists and the
 user wants more components, use the "Adding New Components" flow below instead.
 
 ## Step 2: Scaffold + Generate Components
@@ -216,7 +218,7 @@ fixes until clean:
 
 ```bash
 node "$APPMIXER_SKILL_ROOT"/generate-e2e-flows/validate.js \
-    $APPMIXER_SKILL_CONNECTORS_DIR/src/appmixer/<connector>/artifacts/test-flows
+    src/appmixer/<connector>/artifacts/test-flows
 ```
 
 Only run after Step 3 is complete (component list final).
@@ -230,11 +232,11 @@ Run after Step 4 generates test flow JSONs. Publishes the connector and uploads 
 **Prerequisites:**
 - Test flow JSONs in `artifacts/test-flows/` (from Step 4)
 - Auth credentials configured (from Step 3a)
-- Configuration providing `APPMIXER_SKILL_CONNECTORS_DIR`, `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD` — from exported vars, the `APPMIXER_ENV` file, or `~/.config/appmixer-skills/env` (in that precedence). If missing, ask the user for the values and write `~/.config/appmixer-skills/env` (KEY=value lines, `chmod 600`) first.
+- Configuration providing `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD` — from exported vars, the `APPMIXER_ENV` file, or `~/.config/appmixer-skills/env` (in that precedence). If missing, ask the user for the values and write `~/.config/appmixer-skills/env` (KEY=value lines, `chmod 600`) first.
 
-1. **Lint + workspace validator** before publishing — catch errors early:
+1. **Lint + workspace validator** before publishing — catch errors early (run
+   from the workspace root):
    ```bash
-   cd $APPMIXER_SKILL_CONNECTORS_DIR
    npm install   # only needed once
    ./node_modules/.bin/eslint src/appmixer/<connector>/ --ext .js
    # workspace-wide connector standards (MakeApiCall presence, required-input
@@ -318,9 +320,8 @@ After every meaningful change (component created, refactored, fixed):
    - Fixes/improvements: `fix/<connector>-<description>` or the current feature branch
    - Use descriptive commit messages
 
-2. **Publish** to the Appmixer instance (credentials from the `APPMIXER_SKILL_*` env vars / `$APPMIXER_ENV` file):
+2. **Publish** to the Appmixer instance (credentials from the `APPMIXER_SKILL_*` env vars / `$APPMIXER_ENV` file; run from the workspace root):
    ```bash
-   cd $APPMIXER_SKILL_CONNECTORS_DIR
    appmixer url $APPMIXER_SKILL_API_URL
    appmixer login -u $APPMIXER_SKILL_USERNAME -p $APPMIXER_SKILL_PASSWORD
    appmixer pack <connector-module-path>

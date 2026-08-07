@@ -86,8 +86,8 @@ Skills read configuration from environment variables (`APPMIXER_SKILL_*`), loade
 
 **Manual path:** copy [skills/.env.example](skills/.env.example) to `~/.config/appmixer-skills/env` and fill in:
 
-- `APPMIXER_SKILL_CONNECTORS_DIR` — absolute path to your connector workspace (its root, the directory containing `src/appmixer`). This is the minimal config — without a workspace the skills have nothing to work on. If unset, skills fall back to searching upward from the current working directory, so starting your agent from inside the workspace also works.
 - `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD` — the Appmixer API host and credentials (only needed for the live-instance skills).
+- `APPMIXER_SKILL_CONNECTORS_DIR` — optional override for the workspace root. Normally you just start your agent from inside the workspace (a directory containing `src/appmixer`) and the skills find it from the cwd; set this only when running from elsewhere (CI, git worktrees).
 
 Precedence: variables exported in your shell always win; `APPMIXER_ENV` can point to an alternate file (useful for switching between instances); `~/.config/appmixer-skills/env` is the default.
 

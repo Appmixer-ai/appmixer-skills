@@ -34,11 +34,10 @@ reference implementation): https://github.com/appmixer-ai/appmixer-connectors
 
 ## Prerequisites
 
-- **Connector workspace** — set `APPMIXER_SKILL_CONNECTORS_DIR` to the workspace
-  root (any directory containing `src/appmixer/`), or run from inside it. When
-  neither applies, read it from `~/.config/appmixer-skills/env`; if that file is
-  missing too, ask the user for the path and write it there (KEY=value,
-  `chmod 600`). Components live at `<workspace>/src/appmixer/<connector>/`.
+- **Run from the connector workspace** — the current directory (or a parent)
+  must contain `src/appmixer/`; components live at
+  `src/appmixer/<connector>/`. Only when running from elsewhere, point
+  `APPMIXER_SKILL_CONNECTORS_DIR` at the workspace root (optional override).
 
 ## Input
 

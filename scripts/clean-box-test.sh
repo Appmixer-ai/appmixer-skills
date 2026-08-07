@@ -71,9 +71,10 @@ if [[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" || -n "${ANTHROPIC_API_KEY:-}" ]]; then
         npx -y skills add Appmixer-ai/appmixer-skills --agent claude-code --skill "*" -y >/dev/null 2>&1
         claude -p --dangerously-skip-permissions --max-turns 15 \
           "Use the generate-e2e-flows skill to generate test flows for the \"asana\" connector. Do exactly what the skill says. If a prerequisite is missing, say precisely what is missing and what I should do, then stop." 2>&1')
-    # A clean box has no connectors checkout and no config: the agent must surface
-    # the connectors-dir prerequisite, not invent paths or crash.
-    check "agent surfaces the missing connectors checkout" "APPMIXER_SKILL_CONNECTORS_DIR" "$OUT"
+    # A clean box has no connector workspace and no config: the agent must surface
+    # the workspace prerequisite (run from a dir containing src/appmixer), not
+    # invent paths or crash.
+    check "agent surfaces the missing connector workspace" "src/appmixer" "$OUT"
     echo "── agent transcript (tail) ──"; echo "$OUT" | tail -15
 else
     echo "skip agent scenario: set CLAUDE_CODE_OAUTH_TOKEN (claude setup-token) or ANTHROPIC_API_KEY"

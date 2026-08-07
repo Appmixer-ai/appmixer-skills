@@ -21,15 +21,17 @@ Code session) — no skill spawns its own LLM sub-agent. Two shapes:
    - `generate-e2e-flows/validate.js` — flow validator (16 rules, incl. the
      mandatory `errorHandling: { autoRetry: false, onError: "stopFlow" }`)
 
-Configuration comes from env vars (`APPMIXER_SKILL_*`, `APPMIXER_SKILL_CONNECTORS_DIR`, …) —
+Configuration comes from env vars (`APPMIXER_SKILL_*`) —
 see `.env.example`. Node deps are installed by `scripts/ensure-deps.sh` (idempotent).
 
 ### The connector workspace
 
 The skills scaffold, test and review connectors inside a local **workspace** —
-any directory containing `src/appmixer/`. Set `APPMIXER_SKILL_CONNECTORS_DIR` to
-its root, or run from inside it (`skills/_shared/resolveConnectorsDir.js` is the
-shared resolver). A clone of
+any directory containing `src/appmixer/`. Run your agent from inside it; the
+skills and scripts resolve the workspace root by walking up from the cwd
+(`skills/_shared/resolveConnectorsDir.js` is the shared resolver).
+`APPMIXER_SKILL_CONNECTORS_DIR` is an optional override for running from
+elsewhere (CI, git worktrees). A clone of
 [appmixer-connectors](https://github.com/appmixer-ai/appmixer-connectors) works
 as a workspace and doubles as a library of real-world example connectors, but a
 customer's own workspace works just as well.
@@ -61,8 +63,8 @@ mkdir -p ~/.config/appmixer-skills
 cp <plugin-dir>/.env.example ~/.config/appmixer-skills/env   # then fill in
 ```
 
-Required: `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`,
-`APPMIXER_SKILL_PASSWORD`, `APPMIXER_SKILL_CONNECTORS_DIR`. No LLM API keys are
+Required (live-instance skills only): `APPMIXER_SKILL_API_URL`,
+`APPMIXER_SKILL_USERNAME`, `APPMIXER_SKILL_PASSWORD`. No LLM API keys are
 needed — the skills run directly in the host agent. Full list: `.env.example`.
 
 Note: `APPMIXER_SKILL_ROOT` points at the full skills directory (the one
@@ -87,6 +89,6 @@ into `process.env` with this precedence:
 `appmixer-flow.mjs` prints the effective config file + target instance on stderr
 as its first line — read it to confirm you're talking to the right instance.
 
-`APPMIXER_SKILL_CONNECTORS_DIR` — if unset by any of the above,
-`resolveConnectorsDir.js` walks up from the current working directory looking
-for a directory containing `src/appmixer`.
+The connector workspace is resolved from the current working directory
+(`resolveConnectorsDir.js` walks up looking for a directory containing
+`src/appmixer`); `APPMIXER_SKILL_CONNECTORS_DIR`, when set, overrides it.
