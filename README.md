@@ -107,14 +107,14 @@ claude
 /plugin install appmixer@appmixer-agents
 ```
 
-All 3 skills load automatically.
+All 3 skills load automatically, namespaced as `appmixer:build-connector`, `appmixer:test-connector`, `appmixer:review-connector`.
 
 ### Claude Code Plugin (Manual)
 
 ```bash
 git clone https://github.com/Appmixer-ai/appmixer-skills.git
 claude
-/plugin add /path/to/appmixer-skills/skills
+/plugin add /path/to/appmixer-skills
 ```
 
 ### Claude Desktop / Claude.ai
@@ -164,7 +164,7 @@ git push --follow-tags
 
 The full skill set including the E2E skills is developed on the `dev` branch; `main` carries only the dependency-free skills.
 
-Versions are kept in sync across `package.json`, `skills/.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and every `SKILL.md` frontmatter via [.versionrc.json](.versionrc.json). Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, …) so the changelog generates itself.
+Versions are kept in sync across `package.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and every `SKILL.md` frontmatter via [.versionrc.json](.versionrc.json). Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, …) so the changelog generates itself.
 
 ## License
 

@@ -10,7 +10,7 @@
       "type": "json"
     },
     {
-      "filename": "skills/.claude-plugin/plugin.json",
+      "filename": ".claude-plugin/plugin.json",
       "type": "json"
     },
     {
