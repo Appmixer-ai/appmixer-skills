@@ -116,12 +116,24 @@ except FileNotFoundError:
 "
 ```
 
-If auth is missing: **STOP and ask the user for credentials.** To save them, add an
-entry to `appmixer.json`:
+If auth is missing: **set it up via the CLI — never write `appmixer.json` by hand**
+(the CLI stores more than `authFields` — e.g. `authFilePath` — and hand-written
+entries break `appmixer test component` in non-obvious ways). Run:
 
-```json
-{ "<vendor>:<connector>": { "authFields": { "apiKey": "..." }, "profileInfo": {}, "accountName": "test" } }
+```bash
+# API key connectors:
+appmixer test auth login src/<vendor>/<connector>/auth.js
+
+# OAuth 2.0 connectors (client credentials required, scope optional):
+appmixer test auth login src/<vendor>/<connector>/auth.js \
+  -c <clientId> -s <clientSecret> [-o scope1,scope2]
 ```
+
+The command starts a local server and opens a browser where the user enters the
+auth fields (API key) or completes the OAuth consent — this part is the user's,
+so tell them what to expect. You can prepare and run the command for them, but
+wait until it exits before testing. For OAuth this browser flow is the ONLY way
+to obtain tokens. Verify success by re-running the pre-flight check above.
 
 ## Testing workflow
 
@@ -203,6 +215,27 @@ Record the result (status, reason) for the component in `test-plan.json`.
   apply it and re-test.
 - **STOP immediately** on `[ERROR]: Mongo DB not connected!` or
   `[ERROR]: Request failed with status code 403!`.
+
+## Known CLI limitations (version ≤ 2.3.4)
+
+Check the installed version with `appmixer --version`. On 2.3.4 and older:
+
+- **`context.staticCache` / `context.lock` are not implemented** — any component
+  code path that touches them fails with `TypeError: Missing static cache` (thrown
+  when `.get()`/`.set()` is called, not on property access). This is a CLI
+  limitation, NOT a component bug: connectors MUST still implement the caching
+  patterns required by the design rules (dynamic sources, `getProjectApiToken`-style
+  lookups). Until the CLI ships staticCache support, cached code paths simply
+  cannot be exercised via `appmixer test component` — test the component's
+  non-cached path if it has one, otherwise record the component as
+  `not-cli-testable (staticCache)` in `test-plan.json` and verify it on a live
+  instance instead. Do NOT rewrite a component just to dodge this error.
+- **No `--test` flag** — a trigger's `test(context)` method cannot be invoked via
+  the CLI. Verify trigger behavior by running the real `tick()` loop (run the
+  component with `-p` properties and a short `-t` tick period, create a matching
+  resource mid-run via the service API, and watch for the emitted message);
+  `test()` itself is then verified by code review or Flow Test Mode on a live
+  instance.
 
 ## Troubleshooting
 
