@@ -4,7 +4,7 @@ description: Review an Appmixer connector component against standards and best p
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.2.1"
+  version: "0.2.2"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
