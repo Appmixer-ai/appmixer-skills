@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.2.1](https://github.com/Appmixer-ai/appmixer-skills/compare/v0.2.0...v0.2.1) (2026-08-10)
+
+
+### Bug Fixes
+
+* plugin root = repo root so Claude Code discovers skills (appmixer:<skill>) ([#5](https://github.com/Appmixer-ai/appmixer-skills/issues/5)) ([c3033e9](https://github.com/Appmixer-ai/appmixer-skills/commit/c3033e99578e07cae4dc12211ad451a2401bbf4b))
+
 ## [0.2.0](https://github.com/Appmixer-ai/appmixer-skills/compare/v0.1.9...v0.2.0) (2026-08-10)
 
 
