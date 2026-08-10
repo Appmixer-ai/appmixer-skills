@@ -34,20 +34,16 @@
   "agents": {
     "skills": [
       {
-        "name": "connector-test-method",
-        "path": "./skills/connector-test-method"
+        "name": "build-connector",
+        "path": "./skills/build-connector"
       },
       {
-        "name": "new-connector",
-        "path": "./skills/new-connector"
+        "name": "review-connector",
+        "path": "./skills/review-connector"
       },
       {
-        "name": "review-component-standards",
-        "path": "./skills/review-component-standards"
-      },
-      {
-        "name": "test-components",
-        "path": "./skills/test-components"
+        "name": "test-connector",
+        "path": "./skills/test-connector"
       }
     ]
   },

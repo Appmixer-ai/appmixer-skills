@@ -8,8 +8,8 @@ and a skill-by-skill overview see the [root README](../README.md).
 Every skill is **pure instructions for the host agent** (e.g. a Claude Code
 session) — no skill spawns its own LLM sub-agent, runs bundled scripts, or
 reads environment variables. `SKILL.md` describes the procedure and the agent
-executes it directly with its own tools: `new-connector`, `test-components`,
-`review-component-standards`, `connector-test-method`. Where a real tool is
+executes it directly with its own tools: `build-connector`, `test-connector`,
+`review-connector`. Where a real tool is
 needed (component testing, publishing), the skills drive the external
 [`appmixer` CLI](https://www.npmjs.com/package/appmixer) — the only
 prerequisite.
@@ -40,7 +40,7 @@ connectors, but a customer's own workspace works just as well.
 ## Design conventions (references sync)
 
 The connector **design conventions** ship inside the skills that use them
-(`new-connector`, `review-component-standards`), in each skill's `references/`
+(`build-connector`, `review-connector`), in each skill's `references/`
 directory — including complete example files in `references/examples/`. The
 canonical source is `instructions/` at the repo root;
 `node scripts/sync-references.mjs` copies it into the skills (the smoke test

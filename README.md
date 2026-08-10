@@ -8,10 +8,9 @@ Give your AI coding agent deep Appmixer connector-development expertise — scaf
 
 | Skill | What it does |
 |-------|-------------|
-| **new-connector** | Build a new connector end-to-end — gather requirements, research the API, scaffold components, then drive tests and publish |
-| **test-components** | Plan, test and validate connector components with a test+fix cycle |
-| **connector-test-method** | Add a `test(context)` method to trigger components for Flow Test Mode |
-| **review-component-standards** | Read-only audit of a component against Appmixer standards and best practices |
+| **build-connector** | The end-to-end pipeline: build (requirements → research → scaffold incl. trigger `test()`) → review → test → publish |
+| **test-connector** | Test a connector: CLI component test+fix cycle today; E2E flow testing folds in here once the appmixer CLI ships it |
+| **review-connector** | Read-only audit of connector components against Appmixer standards (incl. trigger `test()` rules) |
 
 Every skill is pure instructions — no bundled scripts, no install steps, no
 environment variables. The only external tool the skills drive is the
@@ -53,7 +52,7 @@ claude
 
 > Create a new connector for the Cat Facts API (https://catfact.ninja), vendor `acme`, with components GetFact and ListBreeds.
 
-The `new-connector` skill reads the API docs and scaffolds everything:
+The `build-connector` skill reads the API docs and scaffolds everything:
 
 ```
 my-connectors/
@@ -96,7 +95,7 @@ The skills determine the vendor without extra configuration:
 1. **From data** — flow JSONs, component names and file paths all carry the vendor; where one is at hand, nothing is asked.
 2. **From your location** — running from inside `src/<vendor>/` selects that vendor.
 3. **By discovery** — a bare connector name is searched across all vendor dirs; a single match wins, an ambiguous one asks you to qualify it as `<vendor>/<connector>`.
-4. **When scaffolding a new connector**, `new-connector` asks for the vendor if it can't be inferred (default suggestion: `appmixer`).
+4. **When scaffolding a new connector**, `build-connector` asks for the vendor if it can't be inferred (default suggestion: `appmixer`).
 
 ## Installation
 
@@ -108,7 +107,7 @@ claude
 /plugin install appmixer@appmixer-agents
 ```
 
-All 4 skills load automatically.
+All 3 skills load automatically.
 
 ### Claude Code Plugin (Manual)
 

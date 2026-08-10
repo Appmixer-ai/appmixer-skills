@@ -1,16 +1,39 @@
 {
   "commitAll": true,
   "bumpFiles": [
-    { "filename": "package.json", "type": "json" },
-    { "filename": "package-lock.json", "type": "json" },
-    { "filename": "skills/.claude-plugin/plugin.json", "type": "json" },
-    { "filename": ".claude-plugin/marketplace.json", "updater": "scripts/marketplace-version.js" },
-    { "filename": "skills/new-connector/SKILL.md", "updater": "scripts/skill-version.js" },
-    { "filename": "skills/connector-test-method/SKILL.md", "updater": "scripts/skill-version.js" },
-    { "filename": "skills/review-component-standards/SKILL.md", "updater": "scripts/skill-version.js" },
-    { "filename": "skills/test-components/SKILL.md", "updater": "scripts/skill-version.js" }
+    {
+      "filename": "package.json",
+      "type": "json"
+    },
+    {
+      "filename": "package-lock.json",
+      "type": "json"
+    },
+    {
+      "filename": "skills/.claude-plugin/plugin.json",
+      "type": "json"
+    },
+    {
+      "filename": ".claude-plugin/marketplace.json",
+      "updater": "scripts/marketplace-version.js"
+    },
+    {
+      "filename": "skills/build-connector/SKILL.md",
+      "updater": "scripts/skill-version.js"
+    },
+    {
+      "filename": "skills/review-connector/SKILL.md",
+      "updater": "scripts/skill-version.js"
+    },
+    {
+      "filename": "skills/test-connector/SKILL.md",
+      "updater": "scripts/skill-version.js"
+    }
   ],
   "packageFiles": [
-    { "filename": "package.json", "type": "json" }
+    {
+      "filename": "package.json",
+      "type": "json"
+    }
   ]
 }
