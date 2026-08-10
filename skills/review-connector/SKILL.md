@@ -122,23 +122,25 @@ vendor; the first segment names the vendor dir under `src/`).
 
 ## Output format
 
-```json
-{
-  "component": "<full component name>",
-  "componentType": "<action|get|list|find|trigger>",
-  "summary": "<one-sentence purpose>",
-  "issues": [
-    {
-      "severity": "error|warning|info",
-      "category": "component.json|behavior|naming|schema|auth|pattern",
-      "rule": "<short id, e.g. schema.type-missing>",
-      "message": "<clear description>",
-      "suggestion": "<how to fix it>"
-    }
-  ],
-  "passedChecks": ["<checks that passed>"]
-}
-```
+Report the findings as readable Markdown — no JSON. Structure:
+
+1. **Header line** — component (or connector) name, detected type, one-sentence
+   purpose, and the issue count by severity (e.g. `0 errors, 2 warnings, 3 info`).
+2. **Issues table** — one row per finding, most severe first:
+
+   | Severity | Component | Rule | Finding | Suggested fix |
+   |----------|-----------|------|---------|---------------|
+   | warning | FindPersons | source.required-inputs-missing | generateOutputPortOptions source doesn't supply required `projectId` | add `"in/projectId": "dummy"` to `source.data.messages` |
+
+   - `Rule` is a short kebab-case id (e.g. `schema.type-missing`) so findings are
+     easy to reference in a follow-up ("fix the two source.* warnings").
+   - Group identical findings that hit multiple components into ONE row listing
+     the components — don't repeat the same finding per component.
+   - When reviewing a whole connector, keep a single table for all components.
+3. **Passed checks** — a short bullet list of what was verified and found OK, so
+   a clean review is distinguishable from a shallow one.
+
+If there are no findings, say so explicitly and still list the passed checks.
 
 | Severity | Meaning |
 |----------|---------|

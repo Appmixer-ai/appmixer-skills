@@ -187,7 +187,11 @@ Never run these automatically — they can take a long time and cost credits. Ev
 
 ### CLI-1. Auth (REQUIRED — human step)
 
-Ask user to authenticate. API Key connectors: provide key. OAuth: complete flow via Appmixer instance.
+Authenticate via the CLI — run `appmixer test auth login src/<vendor>/<connector>/auth.js`
+(OAuth 2.0: add `-c <clientId> -s <clientSecret>` and optionally `-o scope1,scope2`).
+The command opens a browser where the user enters the API key fields or completes the
+OAuth consent — wait for them to finish. Never write `~/.config/configstore/appmixer.json`
+by hand; the CLI stores extra keys (e.g. `authFilePath`) that hand-written entries miss.
 
 ### CLI-2. Test plan
 

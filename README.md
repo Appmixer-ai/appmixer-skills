@@ -16,6 +16,70 @@ Every skill is pure instructions — no bundled scripts, no install steps, no
 environment variables. The only external tool the skills drive is the
 [`appmixer` CLI](https://www.npmjs.com/package/appmixer).
 
+### build-connector
+
+Drives the whole connector lifecycle: gathers requirements, reads the service's
+API docs, scaffolds `service.json`/`auth.js`/`quota.js` and every component
+(actions, triggers with `test()` for Flow Test Mode, dynamic dropdown sources
+with caching), then hands off to review, testing, and publishing. Also handles
+smaller jobs inside an existing connector — adding components or retrofitting a
+`test()` method onto a trigger. Progress persists in
+`artifacts/ai-artifacts/pipeline-state.json`, so an interrupted build resumes
+where it stopped.
+
+Example prompts:
+
+> Create an Appmixer connector for PostHog under vendor `acme`. Auth is a
+> Personal API key; I want CaptureEvent, FindPersons, ListFeatureFlags and a
+> NewAnnotation trigger.
+
+> Add a DeleteContact component to the existing `acme.crm` connector.
+
+> The `NewTicket` trigger in our freshdesk connector has no `test()` method —
+> add one so Flow Test Mode works.
+
+> Continue building the posthog connector where we left off.
+
+### test-connector
+
+Tests components with real API calls via `appmixer test component`. Writes a
+dependency-ordered test plan first (create → find → get → update → delete, so
+earlier outputs feed later inputs), resolves every entity-reference input to a
+real ID (never placeholders), then runs the test+fix loop — on failure it reads
+the error, fixes the component, and re-tests (max 3 iterations per component).
+Results land in `artifacts/ai-artifacts/test-plan.json`. Auth is set up through
+`appmixer test auth login` (the browser step is yours). Heads-up: tests spend
+API credits, so the agent always asks before running them.
+
+Example prompts:
+
+> Test the posthog connector.
+
+> Write a test plan for `acme.posthog` but don't run anything yet.
+
+> Test just the CaptureEvent component.
+
+> FindPersons failed with a 400 — figure out why and fix it.
+
+### review-connector
+
+Read-only audit — produces a findings table (severity, rule id, suggested fix)
+plus a list of passed checks, and never modifies files. Checks component.json
+contracts (typed output schemas with examples, inspector/schema type pairing),
+behavior patterns (required-input asserts, outputType helpers, pagination),
+dynamic-source rules (text inputs, caching, error suppression), and trigger
+`test()` quality. Useful standalone on connectors the agent didn't build —
+e.g. before publishing a hand-written or legacy connector.
+
+Example prompts:
+
+> Review the `acme.posthog` connector.
+
+> Audit `acme.posthog.core.NewAnnotation` against the trigger rules.
+
+> Review our old salesforce connector and tell me what would block publishing —
+> don't change anything.
+
 > **E2E skills** (generate/upload/run E2E test flows against a live instance)
 > live on the [`dev` branch](https://github.com/Appmixer-ai/appmixer-skills/tree/dev)
 > while their tooling moves into the appmixer CLI — they'll land here as pure
