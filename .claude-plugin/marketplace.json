@@ -9,7 +9,7 @@
     {
       "name": "appmixer",
       "description": "Appmixer connector development skills: scaffold/build connectors, CLI component tests, and component review against Appmixer standards. Pure instructions — the appmixer CLI is the only external tool.",
-      "version": "0.1.9",
+      "version": "0.2.0",
       "source": "./skills",
       "author": {
         "name": "Appmixer",

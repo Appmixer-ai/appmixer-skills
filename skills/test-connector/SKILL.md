@@ -4,7 +4,7 @@ description: Test and validate an Appmixer connector via the appmixer CLI — or
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.1.9"
+  version: "0.2.0"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
