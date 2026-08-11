@@ -1,0 +1,71 @@
+{
+    "type": "object",
+    "patternProperties": {
+        "^[\\w\\s-]+$": {
+            "$ref": "#/definitions/componentDescriptor"
+        }
+    },
+    "definitions": {
+        "config": {
+            "type": ["object", "null"],
+            "additionalProperties": true,
+            "properties": {
+                "properties": { "type": "object" },
+                "auth": { "type": "object" },
+                "transform": { "type": "object" }
+            }
+        },
+        "source": {
+            "type": "object",
+            "patternProperties": {
+                "^[\\w]+$": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^[\\w\\s-]+$": {
+                            "oneOf": [
+                                {
+                                    "type": "string",
+                                    "pattern": "^[\\w]+$"
+                                },
+                                {
+                                    "type": "array",
+                                    "uniqueItems": true,
+                                    "minItems": 1
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "componentDescriptor": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "pattern": "^[\\w]+\\.[\\w]+\\.[\\w]+\\.[\\w]+$"
+                },
+                "label": { "type": "string" },
+                "x": { "type": "number" },
+                "y": { "type": "number" },
+                "manifest": {},
+                "source": { "$ref": "#/definitions/source" },
+                "config": { "$ref": "#/definitions/config" },
+                "version": { "type": "string" },
+                "errorHandling": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "autoRetry": { "type": "boolean" },
+                        "maxRetries": { "type": "integer", "minimum": 0 },
+                        "onError": { "enum": ["errorPort", "stopFlow", "storeUnprocessed"] }
+                    }
+                }
+            },
+            "required": [
+                "type"
+            ]
+        }
+    }
+}

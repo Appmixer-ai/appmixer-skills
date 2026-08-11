@@ -1,6 +1,6 @@
 {
   "name": "appmixer",
-  "description": "Appmixer connector development skills: scaffold/build connectors, CLI component tests, and component review against Appmixer standards. Pure instructions — the appmixer CLI is the only external tool.",
+  "description": "Appmixer connector development skills: scaffold/build connectors, CLI component tests, E2E flow testing on a live instance, and component review against Appmixer standards. The appmixer CLI is the only external tool; E2E testing ships temporary Node helper scripts until the CLI absorbs them.",
   "version": "0.2.2",
   "license": "MIT",
   "author": {

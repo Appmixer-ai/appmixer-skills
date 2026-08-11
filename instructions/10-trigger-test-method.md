@@ -161,8 +161,11 @@ trigger's `test()`).
 Run the workspace's lint/validators first when it provides them (the
 appmixer-connectors repo ships `npm run lint` + `npm run validate`). Then verify the method actually emits a realistic item. Two options:
 
-**Option 1 — Appmixer CLI** (requires a CLI version that supports the `--test` flag; check with
-`appmixer test component --help`):
+**Option 1 — Appmixer CLI** (requires a CLI version **newer than 2.3.4** — the `--test` flag is
+not implemented in 2.3.4 and older; check `appmixer --version` and
+`appmixer test component --help`. On older CLIs skip to Option 2, or verify the trigger's
+production path by running its real `tick()` loop with a short `-t` period and creating a
+matching resource mid-run):
 
 ```bash
 # one-time: store auth credentials for the connector

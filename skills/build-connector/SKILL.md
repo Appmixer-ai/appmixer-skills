@@ -47,6 +47,7 @@ https://github.com/appmixer-ai/appmixer-connectors.
 | `08-best-practices.md` | Coding standards, naming, error handling |
 | `09-testing.md` | E2E flow design, modifier functions, deterministic patterns |
 | `10-trigger-test-method.md` | Trigger `test(context)` for Flow Test Mode — patterns per trigger group |
+| `11-e2e-flow-generation.md` | Generating E2E test flows into `artifacts/test-flows/` (used by Step 3b) |
 
 Consult these when generating code, debugging failures, or reviewing output.
 
@@ -56,14 +57,15 @@ Consult these when generating code, debugging failures, or reviewing output.
 Step 1: BUILD      → Requirements → research the API → scaffold + components  (this skill)
 Step 2: REVIEW     → Audit against standards, fix findings              [review-connector]
 Step 3a: TEST CLI  → Authenticate → component test loop → finalize      [test-connector]
-Step 3b: TEST E2E  → E2E flows on a live instance                       [test-connector — coming]
+Step 3b: TEST E2E  → generate flows (this skill) → upload + run          [test-connector]
 Step 4: PUBLISH    → Lint, bundle bump, pack & publish via the appmixer CLI
 ```
 
-Step 3b (generate → upload → run E2E flows) will become part of the
-`test-connector` skill once its tooling lands in the appmixer CLI; until then
-it lives on the `dev` branch of this repo and the pipeline here goes
-3a → 4.
+Step 3b: flow *generation* is this skill's job
+(`references/11-e2e-flow-generation.md`); uploading and running the flows on a
+live instance belongs to `test-connector` (its `references/12-e2e-upload.md`
+and `13-e2e-run.md`). The E2E tooling is scripted for now and moves into the
+appmixer CLI over time.
 
 Progress is tracked in
 `src/<vendor>/<connector>/artifacts/ai-artifacts/pipeline-state.json` —
@@ -217,12 +219,14 @@ Ask user about consistently failing components: remove or keep?
 
 ---
 
-## Step 3b: Test E2E (coming to `test-connector`)
+## Step 3b: Test E2E
 
-End-to-end testing — generate E2E test flows, publish to a live instance,
-run and evaluate them — will fold into the `test-connector` skill once the
-required tooling ships in the appmixer CLI. Until then those skills live on
-the `dev` branch of this repo; on `main` continue with Step 4.
+Generate E2E test flows into `src/<vendor>/<connector>/artifacts/test-flows/`
+following `references/11-e2e-flow-generation.md` (coverage rules, template,
+validator loop). Then hand off to the `test-connector` skill, which publishes
+the connector, uploads the flows, and runs them on a live instance (its
+`references/12-e2e-upload.md` and `13-e2e-run.md`). Skip this step if the user
+has no live instance — continue with Step 4.
 
 ---
 

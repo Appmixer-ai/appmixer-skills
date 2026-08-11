@@ -9,12 +9,14 @@ Give your AI coding agent deep Appmixer connector-development expertise — scaf
 | Skill | What it does |
 |-------|-------------|
 | **build-connector** | The end-to-end pipeline: build (requirements → research → scaffold incl. trigger `test()`) → review → test → publish |
-| **test-connector** | Test a connector: CLI component test+fix cycle today; E2E flow testing folds in here once the appmixer CLI ships it |
+| **test-connector** | Test a connector: CLI component test+fix cycle, plus E2E flow testing on a live instance (upload flows, run, evaluate, fix loop) |
 | **review-connector** | Read-only audit of connector components against Appmixer standards (incl. trigger `test()` rules) |
 
-Every skill is pure instructions — no bundled scripts, no install steps, no
-environment variables. The only external tool the skills drive is the
-[`appmixer` CLI](https://www.npmjs.com/package/appmixer).
+The build and review skills are pure instructions; the only external tool they
+drive is the [`appmixer` CLI](https://www.npmjs.com/package/appmixer). E2E
+flow testing (part of `test-connector`) additionally ships Node helper scripts
+(`skills/test-connector/scripts/` + the shared `skills/_shared/` library) — a
+temporary layer that shrinks away as this tooling moves into the appmixer CLI.
 
 ### build-connector
 
@@ -51,6 +53,11 @@ Results land in `artifacts/ai-artifacts/test-plan.json`. Auth is set up through
 `appmixer test auth login` (the browser step is yours). Heads-up: tests spend
 API credits, so the agent always asks before running them.
 
+Also covers **E2E flow testing on a live Appmixer instance**: publishes the
+connector, uploads the flow JSONs from `artifacts/test-flows/` (generated
+during the build), binds auth accounts, then runs each flow with a
+deterministic runner and drives the fix loop until the flows pass.
+
 Example prompts:
 
 > Test the posthog connector.
@@ -58,6 +65,8 @@ Example prompts:
 > Write a test plan for `acme.posthog` but don't run anything yet.
 
 > Test just the CaptureEvent component.
+
+> Upload and run the E2E flows for `acme.posthog`.
 
 > FindPersons failed with a 400 — figure out why and fix it.
 
