@@ -403,15 +403,20 @@ async function main() {
                 const dcv = fetched.dynamicComponentVariables || [];
                 for (const [id, compData] of Object.entries(fetched.components || {})) {
                     const offered = new Set();
-                    for (const [senderId, ports] of Object.entries(compData.links?.in || {})) {
-                        for (const [port, pdata] of Object.entries(ports || {})) {
-                            const vars = pdata?.variables || {};
-                            for (const i of vars.refs || []) {
-                                if (dcv[i]) offered.add(stripBraces(dcv[i].value));
-                            }
-                            for (const v of collectValues({ s: vars.static, d: vars.dynamic }, [])) offered.add(v);
-                            if (vars.errors && (!Array.isArray(vars.errors) || vars.errors.length)) {
-                                fetchErrors.push(`${id} <- ${senderId}.${port}: ${JSON.stringify(vars.errors)}`);
+                    // links are keyed by the TARGET inPort name — usually "in", but
+                    // components define their own (salesforce CreateContact -> "contact",
+                    // CreateLead -> "lead"). Iterate every target port, not just "in".
+                    for (const linkPorts of Object.values(compData.links || {})) {
+                        for (const [senderId, ports] of Object.entries(linkPorts || {})) {
+                            for (const [port, pdata] of Object.entries(ports || {})) {
+                                const vars = pdata?.variables || {};
+                                for (const i of vars.refs || []) {
+                                    if (dcv[i]) offered.add(stripBraces(dcv[i].value));
+                                }
+                                for (const v of collectValues({ s: vars.static, d: vars.dynamic }, [])) offered.add(v);
+                                if (vars.errors && (!Array.isArray(vars.errors) || vars.errors.length)) {
+                                    fetchErrors.push(`${id} <- ${senderId}.${port}: ${JSON.stringify(vars.errors)}`);
+                                }
                             }
                         }
                     }
