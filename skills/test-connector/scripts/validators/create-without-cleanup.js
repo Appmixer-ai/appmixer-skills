@@ -4,8 +4,7 @@
  * Create* component but no Delete* component. (09-testing "Deterministic Test
  * Design" → Create + Delete cleanup) — warning only (cleanup may live elsewhere).
  */
-import { components, shortType } from './lib/flowutil.js';
-
+import { components, shortType, isConnectorComp } from './lib/flowutil.js';
 
 export const name = 'create-without-cleanup';
 export const description = 'Flow that Creates a resource should also Delete it (warning)';
