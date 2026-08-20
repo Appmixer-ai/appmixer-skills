@@ -239,8 +239,9 @@ Check the installed version with `appmixer --version`. On 2.3.4 and older:
   non-cached path if it has one, otherwise record the component as
   `not-cli-testable (staticCache)` in `test-plan.json` and verify it on a live
   instance instead. Do NOT rewrite a component just to dodge this error.
-- **No `--test` flag** — a trigger's `test(context)` method cannot be invoked via
-  the CLI. Verify trigger behavior by running the real `tick()` loop (run the
+- **No `--test` flag on ≤ 2.3.4** — a trigger's `test(context)` method can be
+  invoked via `appmixer test component <dir> --test` from CLI **2.6.0**. On
+  older CLIs verify trigger behavior by running the real `tick()` loop (run the
   component with `-p` properties and a short `-t` tick period, create a matching
   resource mid-run via the service API, and watch for the emitted message);
   `test()` itself is then verified by code review or Flow Test Mode on a live
