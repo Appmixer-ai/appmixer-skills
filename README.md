@@ -53,9 +53,10 @@ Results land in `artifacts/ai-artifacts/test-plan.json`. Auth is set up through
 API credits, so the agent always asks before running them.
 
 Also covers **E2E flow testing on a live Appmixer instance**: publishes the
-connector, uploads the flow JSONs from `artifacts/test-flows/` (generated
-during the build), binds auth accounts, then runs each flow with a
-deterministic runner and drives the fix loop until the flows pass.
+connector, imports the flow JSONs from `artifacts/test-flows/` (generated
+during the build) with `appmixer e2e import` — which binds auth accounts and
+validates variables — then runs each flow with `appmixer e2e run --fix` and
+drives the fix loop until the flows pass.
 
 Example prompts:
 
@@ -88,9 +89,27 @@ Example prompts:
 > Review our old salesforce connector and tell me what would block publishing —
 > don't change anything.
 
-> **E2E testing** (generate/import/run E2E test flows against a live instance)
-> is pure instructions too — the tooling lives in the appmixer CLI as the
-> `appmixer e2e` command family.
+## E2E flow testing
+
+End-to-end testing against a live Appmixer instance is pure instructions too —
+all the tooling is the CLI's built-in `appmixer e2e` command family. Flows live
+in the workspace under `src/<vendor>/<connector>/artifacts/test-flows/` and are
+identified on the instance by customFields
+(`category=E2E_test_flow`, `connector=<vendor>:<connector>`, `name=<test case>`),
+so the agent loop is:
+
+```sh
+appmixer e2e import src/<vendor>/<connector>/artifacts/test-flows   # validate, upload,
+                                                                    # stores, accounts
+appmixer e2e list -c <vendor>:<connector> --json                    # flow IDs
+appmixer e2e run <flowId> --fix     # run + watch; exit 2 = FIX BRIEF → the agent
+                                    # edits the flow JSON, re-imports, re-runs
+appmixer e2e results -c <vendor>:<connector>                        # stored results
+```
+
+Flow *generation* rules ship with `build-connector`
+(`references/11-e2e-flow-generation.md`); upload/run procedures with
+`test-connector` (`references/12-e2e-upload.md`, `references/13-e2e-run.md`).
 
 See [skills/README.md](skills/README.md) for architecture details (how the skills work, the references sync).
 
@@ -220,9 +239,14 @@ Copy the skill directories from `skills/` into your agent's skills folder — ea
 
 ## Configuration
 
-There is none. The skills find the workspace from the directory you run your agent in, and instance access goes through the `appmixer` CLI (`appmixer url` + `appmixer login`).
+Almost none. The skills find the workspace from the directory you run your agent in, and instance access goes through the `appmixer` CLI (`appmixer url` + `appmixer login`).
 
-The only knob is `APPMIXER_SKILL_CONNECTORS_DIR` — an optional override for the workspace root when running your agent from outside the workspace (CI, git worktrees).
+Optional knobs, all environment variables:
+
+- `APPMIXER_SKILL_CONNECTORS_DIR` — workspace root override when running your agent from outside the workspace (CI, git worktrees).
+- `APPMIXER_SKILL_API_URL` / `APPMIXER_SKILL_USERNAME` / `APPMIXER_SKILL_PASSWORD` — credentials for the E2E commands; the CLI loads them from exported vars, the file `$APPMIXER_ENV` points to, or `~/.config/appmixer-skills/env` (the skills offer to write that file on first E2E use). Without them the E2E commands fall back to the CLI's own `appmixer url` + `appmixer login` session.
+- `APPMIXER_SKILL_ACCOUNT_ID` — pins the auth account bound to connector components during `appmixer e2e import`.
+- `APPMIXER_SKILL_UI_URL` — designer base URL, used to print clickable flow links in E2E results.
 
 ## Releasing (maintainers)
 
