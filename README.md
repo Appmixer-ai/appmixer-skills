@@ -14,8 +14,8 @@ Give your AI coding agent deep Appmixer connector-development expertise — scaf
 
 All three skills are pure instructions; the only external tool they drive is
 the [`appmixer` CLI](https://www.npmjs.com/package/appmixer) — including E2E
-flow testing, which uses the CLI's built-in flow validator
-(`appmixer flow validate`) and deterministic runner (`appmixer flow run-e2e`).
+flow testing, which uses the CLI's built-in `appmixer e2e` command family
+(`import`, `run`, `list`, `results`, `export`, `validate`, `rm`).
 
 ### build-connector
 
@@ -88,10 +88,9 @@ Example prompts:
 > Review our old salesforce connector and tell me what would block publishing —
 > don't change anything.
 
-> **E2E skills** (generate/upload/run E2E test flows against a live instance)
-> live on the [`dev` branch](https://github.com/Appmixer-ai/appmixer-skills/tree/dev)
-> while their tooling moves into the appmixer CLI — they'll land here as pure
-> instructions once the CLI commands exist.
+> **E2E testing** (generate/import/run E2E test flows against a live instance)
+> is pure instructions too — the tooling lives in the appmixer CLI as the
+> `appmixer e2e` command family.
 
 See [skills/README.md](skills/README.md) for architecture details (how the skills work, the references sync).
 
@@ -233,8 +232,6 @@ npm test               # smoke tests: references sync, manifest consistency, exa
 npm run release        # bumps version everywhere, updates CHANGELOG, tags
 git push --follow-tags
 ```
-
-The full skill set including the E2E skills is developed on the `dev` branch; `main` carries only the dependency-free skills.
 
 Versions are kept in sync across `package.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and every `SKILL.md` frontmatter via [.versionrc.json](.versionrc.json). Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, …) so the changelog generates itself.
 

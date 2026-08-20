@@ -6,7 +6,7 @@ you run a deterministic validator and fix anything it flags, looping until clean
 
 > **Tooling:** the validator and the canonical flow template ship with the
 > `appmixer` CLI (`npm i -g appmixer`) — no other setup is needed. Check the
-> CLI is recent enough with `appmixer flow validate --help`.
+> CLI is recent enough with `appmixer e2e validate --help`.
 
 ## How it works
 
@@ -32,13 +32,14 @@ you run a deterministic validator and fix anything it flags, looping until clean
    `src/<vendor>/<connector>/artifacts/test-flows/test-flow-<name>.json`.
 5. **Validate**:
    ```bash
-   appmixer flow validate src/<vendor>/<connector>/artifacts/test-flows
+   appmixer e2e validate src/<vendor>/<connector>/artifacts/test-flows
    ```
    Fix every reported failure and re-run until it prints `Validation passed`.
    Warnings are informational (improve them when easy, but they don't block).
-   (A file or directory argument runs the local validator suite; a flow ID
-   would validate server-side instead. `--connectors-dir <dir>` points the
-   coverage rules at the workspace when running from elsewhere.)
+   (`--ruleset basic` limits the run to the generic flow rules; server-side
+   validation of a live flow is `appmixer flow validate <flowId>`.
+   `--connectors-dir <dir>` points the coverage rules at the workspace when
+   running from elsewhere.)
 
 ## Critical rules (the validator enforces these)
 
@@ -71,10 +72,10 @@ you run a deterministic validator and fix anything it flags, looping until clean
    component. Enforced by `inport-key-match`.
 
 0d. **Don't invent `config.properties.account`** in newly generated flows —
-   binding happens at run time (the `appmixer flow run-e2e` runner /
-   `APPMIXER_SKILL_ACCOUNT_ID`). Flows downloaded from a live instance
-   (`download-E2E-flows.js`) DO carry that instance's account IDs — leave them
-   in place; the runner ignores IDs that don't exist on the target instance and
+   binding happens at import time (`appmixer e2e import` /
+   `APPMIXER_SKILL_ACCOUNT_ID`). Flows exported from a live instance
+   (`appmixer e2e export`) DO carry that instance's account IDs — leave them
+   in place; the import ignores IDs that don't exist on the target instance and
    rebinds a live account instead.
 
 1. **Flow name starts with `E2E `** and is descriptive.

@@ -41,7 +41,7 @@ echo "── no stale script-era references ────────────
 E2E_OK=1
 # the E2E tooling moved into the appmixer CLI — nothing may reference the
 # removed script layer (or pre-consolidation skill layouts) anywhere in skills/
-if grep -rn "e2e-shared\|generate-e2e-flows\|run-e2e-flows/\|upload-e2e-flows\|_shared\|appmixerApi\|appmixer-flow\.mjs\|ensure-deps\.sh\|APPMIXER_SKILL_ROOT\|test-connector/scripts" \
+if grep -rn "e2e-shared\|generate-e2e-flows\|run-e2e-flows/\|upload-e2e-flows\|_shared\|appmixerApi\|appmixer-flow\.mjs\|ensure-deps\.sh\|APPMIXER_SKILL_ROOT\|test-connector/scripts\|flow run-e2e\|download-E2E-flows\|flow validate src/\|flow validate <file" \
         "$REPO_ROOT/skills" "$REPO_ROOT/instructions" --include='*.md' --include='*.js' --include='*.mjs' > /dev/null 2>&1; then
     E2E_OK=0; echo "  stale references to the removed script layer (grep the patterns above)"
 fi

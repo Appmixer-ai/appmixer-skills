@@ -64,8 +64,8 @@ Step 4: PUBLISH    → Lint, bundle bump, pack & publish via the appmixer CLI
 Step 3b: flow *generation* is this skill's job
 (`references/11-e2e-flow-generation.md`); uploading and running the flows on a
 live instance belongs to `test-connector` (its `references/12-e2e-upload.md`
-and `13-e2e-run.md`). The E2E tooling is scripted for now and moves into the
-appmixer CLI over time.
+and `13-e2e-run.md`). All E2E tooling ships with the appmixer CLI
+(`appmixer e2e import|run|list|results|export|validate|rm`).
 
 Progress is tracked in
 `src/<vendor>/<connector>/artifacts/ai-artifacts/pipeline-state.json` —
@@ -224,8 +224,9 @@ Ask user about consistently failing components: remove or keep?
 Generate E2E test flows into `src/<vendor>/<connector>/artifacts/test-flows/`
 following `references/11-e2e-flow-generation.md` (coverage rules, template,
 validator loop). Then hand off to the `test-connector` skill, which publishes
-the connector, uploads the flows, and runs them on a live instance (its
-`references/12-e2e-upload.md` and `13-e2e-run.md`). Skip this step if the user
+the connector, imports the flows (`appmixer e2e import`) and runs them on a
+live instance (`appmixer e2e run` — its `references/12-e2e-upload.md` and
+`13-e2e-run.md`). Skip this step if the user
 has no live instance — continue with Step 4.
 
 ---

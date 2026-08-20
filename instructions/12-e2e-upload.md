@@ -1,17 +1,19 @@
 # Publish & Prepare for E2E
 
 Publish a connector to a live Appmixer instance and prepare it for E2E runs
-(auth account, validation). Flow upload itself is handled by the E2E runner
-(`appmixer flow run-e2e`, see `13-e2e-run.md`) — it createOrUpdates every flow
-from the local JSON on each run, injects the E2E stores and binds accounts.
+(auth account, validation). Flow upload is `appmixer e2e import`'s job — it
+createOrUpdates every flow from the local JSON by its E2E identity
+(customFields `category`/`connector`/`name`), injects the E2E stores, binds
+accounts (+ validity preflight) and validates variables server-side. Running
+is `appmixer e2e run` (see `13-e2e-run.md`).
 
 ## Prerequisites
 
 - **`appmixer` CLI** — installed (`npm i -g appmixer`) at a version that has
-  `appmixer flow validate` / `appmixer flow run-e2e` (check with `--help`).
+  the `e2e` commands (check with `appmixer e2e --help`).
 - Configuration — `~/.config/appmixer-skills/env`, an `APPMIXER_ENV` file, or exported vars (see below)
 - **Run from the connector workspace** — the current directory (or a parent)
-  contains `src/<vendor>/<connector>/`; the runner and validators resolve the
+  contains `src/<vendor>/<connector>/`; the e2e commands resolve the
   workspace from the cwd. `APPMIXER_SKILL_CONNECTORS_DIR` is an optional override for
   running from elsewhere (see the worktree section below). `<vendor>` is the namespace directory under `src/` — `appmixer` is only the
   default; a workspace can hold several vendors side by side. Bare connector
@@ -77,14 +79,16 @@ cd src/<vendor>   # from the workspace root
 appmixer pack <connector>
 appmixer publish <vendor>.<connector>.zip   # pack outputs <vendor>.<connector>.zip
 
-# 2. Validate flow JSONs locally
-appmixer flow validate src/<vendor>/<connector>/artifacts/test-flows
-
-# 3. Make sure an auth account exists for the connector (Step 2)
+# 2. Make sure an auth account exists for the connector (Step 2)
 appmixer account ls --json
 
-# 4. Run — upload, store injection and account binding happen inside the runner
-appmixer flow run-e2e src/<vendor>/<connector>/artifacts/test-flows   # see 13-e2e-run.md
+# 3. Import the flows — local validation, upload, store injection, account
+#    binding and server-side variable validation in one step (exit 1 = fix first)
+appmixer e2e import src/<vendor>/<connector>/artifacts/test-flows
+
+# 4. Run each flow by its ID (see 13-e2e-run.md)
+appmixer e2e list -c <vendor>:<connector> --json
+appmixer e2e run <flowId> --fix
 ```
 
 ## Workflow
@@ -213,23 +217,32 @@ AxiosError whose `config.url` points at the service (trigger `start()` calls), o
 components fail mid-run with 401/403. When several accounts exist for the service,
 test each and pin the working one with `APPMIXER_SKILL_ACCOUNT_ID`.
 
-### Step 3: Flow Upload & Account Binding — the Runner Does It
+### Step 3: Flow Upload & Account Binding — `appmixer e2e import` Does It
 
-`appmixer flow run-e2e` (see `13-e2e-run.md`) handles the whole
-upload-and-bind cycle on every run:
+`appmixer e2e import <file|dir>` handles the whole upload-and-bind cycle:
 
-- **createOrUpdate by name**: if a flow with the same name exists it is stopped
-  and updated in place (`?forceUpdate=true`); flows are never deleted and
-  recreated.
-- Tags `customFields.category: "E2E_test_flow"` and a description, strips
-  server-only fields, enforces fail-fast `errorHandling`.
+- **createOrUpdate by identity**: flows are identified on the instance by
+  customFields `category: "E2E_test_flow"`, `connector` (a ref like
+  `appmixer:google:gdrive`, derived from the file path or given via
+  `--connector`) and `name` (the flow's test-case name). A matching flow is
+  stopped and updated in place (`?forceUpdate=true`); flows are never deleted
+  and recreated. Legacy flows carrying only the category are matched by
+  display name and adopted (the identity fields are written on update).
+- Sets a description, strips server-only fields, enforces fail-fast
+  `errorHandling`.
 - **E2E stores**: creates `E2E Failed Tests` / `E2E Succeeded Tests` if missing
   and injects their IDs into ProcessE2EResults.
 - **Account binding**: binds an account to every connector component
-  (precedence: `APPMIXER_SKILL_ACCOUNT_ID` override > the component's own
-  `config.properties.account` > first flow-authored account that exists on the
-  instance > first existing account of the service), and re-binds after every
-  update — a plain flow PUT always drops bindings.
+  (precedence: `--account <id>` / `APPMIXER_SKILL_ACCOUNT_ID` override > the
+  component's own `config.properties.account` > first flow-authored account
+  that exists on the instance > first existing account of the service), then
+  validity-tests every bound account — a plain flow PUT always drops bindings,
+  which is why re-import after every edit is the rule.
+- **Server-side variable validation**: checks every transform variable against
+  what the designer's variables-fetch endpoint offers ("red chip" detection).
+  Any INVALID variable fails the import with exit 1.
+- Local validation (`appmixer e2e validate` rules) runs first by default;
+  `--no-validate` skips it.
 
 **Uploading without running** (rare — e.g. handing a flow to someone in the
 designer): `appmixer flow import <file>` creates the flow as-is — no E2E
@@ -238,12 +251,12 @@ accounts in the designer by hand (or bind per component:
 `appmixer auth bind <componentId> <accountId>`).
 
 **Account IDs in flow JSONs are tolerated but instance-specific.** Flows
-downloaded from a live instance carry that instance's
+exported from a live instance (`appmixer e2e export`) carry that instance's
 `config.properties.account` values — do not strip them (they keep the file in
-sync with the download output), but never rely on them either: they are
+sync with the export output), but never rely on them either: they are
 meaningless on any other tenant and rot when accounts are deleted. Binding is
-always re-done at run time by the runner, which ignores flow-authored IDs that
-don't exist on the target instance and rebinds a live account
+always re-done at import time, which ignores flow-authored IDs that don't
+exist on the target instance and rebinds a live account
 (`APPMIXER_SKILL_ACCOUNT_ID` overrides everything).
 
 **⚠️ Recipients are NOT injected.** If you want ProcessE2EResults to notify
@@ -253,10 +266,11 @@ someone, set `recipients` in the flow JSON's ProcessE2EResults lambda yourself.
 
 #### 4a: Validate Flow JSONs Locally
 
-Run structural + coverage validation on test flow JSONs before uploading:
+`appmixer e2e import` runs this automatically; run it standalone while
+iterating on flow JSONs:
 
 ```bash
-appmixer flow validate src/<vendor>/<connector>/artifacts/test-flows
+appmixer e2e validate src/<vendor>/<connector>/artifacts/test-flows
 ```
 
 This catches issues like:
@@ -274,10 +288,11 @@ This catches issues like:
 
 3. **Wrong `view_id` for Find* components** — If a component uses a view-based search (e.g. `FindDeals`), the generated flow may use `view_id: 1`. Always verify a valid view ID exists.
 
-#### 4b: Validate Variable References (After Upload)
+#### 4b: Validate Variable References (Automatic at Import)
 
-Once a flow exists on the instance (e.g. after the first runner attempt),
-**check that all variable references are resolvable**:
+`appmixer e2e import` performs this check automatically after upload and fails
+with exit 1 on any INVALID variable (with hints about what IS offered). For a
+manual deep-dive on a live flow:
 
 ```bash
 appmixer flow variables "$FLOW_ID" --json
@@ -312,13 +327,13 @@ export APPMIXER_TOKEN=$(node -e "console.log(require(require('os').homedir()+'/.
 
 ## Running Outside the Workspace (worktrees, CI)
 
-The runner and validators resolve the workspace by walking up from the cwd (or
+The e2e commands resolve the workspace by walking up from the cwd (or
 from the flow path). When you must run from elsewhere — or target a specific
 git worktree different from your cwd — set the override explicitly:
 
 ```bash
 export APPMIXER_SKILL_CONNECTORS_DIR=/path/to/worktree
-# appmixer flow validate also takes --connectors-dir <dir>
+# appmixer e2e validate / import / export also take --connectors-dir <dir>
 ```
 
 ## Stale Worker OAuth State After Re-authentication
@@ -384,14 +399,15 @@ for i in items:
 
 ## Known Gotchas
 
-### Stores are created by the runner
+### Stores are created at import
 The `E2E Failed Tests` and `E2E Succeeded Tests` stores must exist with their
-IDs injected into ProcessE2EResults — `appmixer flow run-e2e` creates and
-injects them automatically on every run; there is nothing to do manually.
-(`appmixer store ls` / `appmixer store create <name>` exist for manual work.)
+IDs injected into ProcessE2EResults — `appmixer e2e import` creates and
+injects them automatically; there is nothing to do manually.
+(`appmixer store ls` / `appmixer store create <name>` exist for manual work;
+`appmixer e2e results [--clean]` reads/prunes the stored per-test-case results.)
 
 ### Flows must be stopped before PUT update
-`PUT /flows/:flowId` rejects updates on running flows. The runner handles this automatically (stop → update → re-bind accounts). Never update a running flow manually without stopping first.
+`PUT /flows/:flowId` rejects updates on running flows. `appmixer e2e import` handles this automatically (stop → update → re-bind accounts). Never update a running flow manually without stopping first.
 
 ### Dynamic output ports show "Raw Output" — fix source URL
 If the variables check shows a component only exposes "Raw Output" instead of individual fields, the component's `generateOutputPortOptions` is failing. Common causes:

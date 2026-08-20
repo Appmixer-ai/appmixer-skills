@@ -19,7 +19,7 @@ mocha works everywhere.)
 
 ### End-to-End (E2E) Test Flows
 
-E2E test flows are automated workflow tests stored as `test-flow*.json` files in the connector's root directory (`src/<vendor>/<connector_name>/`). These flows test the complete integration by executing components in a realistic sequence.
+E2E test flows are automated workflow tests stored as `test-flow-*.json` files in the connector's `artifacts/test-flows/` directory (`src/<vendor>/<connector_name>/artifacts/test-flows/`). These flows test the complete integration by executing components in a realistic sequence.
 
 **Important**: Connectors should have **multiple smaller test flows** rather than one large flow. Each flow should test a specific feature or workflow (e.g., `test-flow-crud.json`, `test-flow-search.json`, `test-flow-webhooks.json`). This approach makes tests easier to maintain, debug, and understand.
 
@@ -811,10 +811,9 @@ See [`examples/e2e-test-flow.json`](examples/e2e-test-flow.json).
 
 #### Reference Test Flows
 
-Good examples to reference:
-- `src/appmixer/googleDocs/test-flow.json` - Document CRUD operations
-- `src/appmixer/monday/test-flow.json` - Board management
-- `src/appmixer/jira/test-flow.json` - Issue tracking
-- `src/appmixer/hubspot/test-flow-create-deal.json` - CRM operations
+Good examples to reference (under each connector's `artifacts/test-flows/`):
+- `src/appmixer/googleDocs/artifacts/test-flows/` - Document CRUD operations
+- `src/appmixer/todoist/artifacts/test-flows/` - Task/project/label workflows
+- `src/appmixer/hubspot/artifacts/test-flows/` - CRM operations
 
 ---
