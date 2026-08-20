@@ -15,15 +15,12 @@ a flow that already lives on the instance.
 
 ## Prerequisites
 
-- **`appmixer` CLI** — installed (`npm i -g appmixer`) at a version that has
-  the `e2e` commands (check with `appmixer e2e run --help`).
-- Configuration: `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`,
-  `APPMIXER_SKILL_PASSWORD` — the commands load them from exported vars, the
-  `APPMIXER_ENV` file, or `~/.config/appmixer-skills/env` (in that precedence).
-  If none provide them, ask the user for the values and write
-  `~/.config/appmixer-skills/env` (KEY=value lines, `chmod 600`), then continue.
-  (Without any of these, the commands fall back to the CLI's own
-  `appmixer url` + `appmixer login` session.)
+- **`appmixer` CLI** — installed (`npm i -g appmixer`) at version **2.6.0 or
+  newer** (check with `appmixer e2e run --help`). The ONLY dependency — no
+  other tooling, no required environment variable.
+- **CLI configured** — `appmixer url` + `appmixer login` as the e2e user (see
+  `12-e2e-upload.md` Prerequisites; that doc also lists the optional
+  `APPMIXER_TOKEN`/`APPMIXER_SKILL_*` env overrides for CI).
 - Connector published on the instance; an auth account exists for it
 - Flows imported (`appmixer e2e import` — see `12-e2e-upload.md`)
 - **Design conventions** — the fix loop consults
@@ -89,12 +86,12 @@ run `appmixer e2e import` (which binds accounts and validity-tests them).
   means the bound account's token lacks the component's required scopes (read
   from its `component.json`). The runner hard-fails with the exact scopes —
   pass that to the user; only a human OAuth re-consent fixes it. After the
-  re-consent, pin the new account with `APPMIXER_SKILL_ACCOUNT_ID=<accountId>`
-  (or `appmixer e2e import --account <accountId>`) if the old scope-less
-  account still exists next to it.
+  re-consent, pin the new account with `appmixer e2e import --account
+  <accountId>` if the old scope-less account still exists next to it.
 
-**`APPMIXER_SKILL_ACCOUNT_ID` is authoritative:** when set, `appmixer e2e
-import` overrides flow-authored `config.properties.account` values both in the
+**A pinned account is authoritative:** with `appmixer e2e import --account
+<accountId>` (or the `APPMIXER_SKILL_ACCOUNT_ID` env override), the import
+overrides flow-authored `config.properties.account` values both in the
 uploaded flow definition and in the auth grants — a stale account hardcoded in
 the flow JSON can never shadow it. (Unpinned imports keep flow-authored
 accounts — that is how multi-account flows work — but only when the ID exists

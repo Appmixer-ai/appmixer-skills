@@ -174,7 +174,7 @@ Requires the [`appmixer` CLI](https://www.npmjs.com/package/appmixer) (`npm i -g
   git clone https://github.com/appmixer-ai/appmixer-connectors.git
   ```
   The connector design conventions ship inside the skills (each skill's `references/` directory) — the workspace does not need to provide them. When the workspace is a git repo, skills commit generated code to feature branches and ask before the first push of a session.
-- The [`appmixer` CLI](https://www.npmjs.com/package/appmixer) (`npm i -g appmixer`) — used for component testing and publishing; configure with `appmixer url` + `appmixer login`
+- The [`appmixer` CLI](https://www.npmjs.com/package/appmixer) (`npm i -g appmixer`; version 2.6.0+ for E2E flow testing) — used for component testing, publishing and E2E runs; configure with `appmixer url` + `appmixer login`
 
 ## Vendors
 
@@ -239,14 +239,9 @@ Copy the skill directories from `skills/` into your agent's skills folder — ea
 
 ## Configuration
 
-Almost none. The skills find the workspace from the directory you run your agent in, and instance access goes through the `appmixer` CLI (`appmixer url` + `appmixer login`).
+There is none. The skills find the workspace from the directory you run your agent in, and ALL instance access — including E2E testing — goes through the `appmixer` CLI session (`appmixer url` + `appmixer login`). No environment variable is required.
 
-Optional knobs, all environment variables:
-
-- `APPMIXER_SKILL_CONNECTORS_DIR` — workspace root override when running your agent from outside the workspace (CI, git worktrees).
-- `APPMIXER_SKILL_API_URL` / `APPMIXER_SKILL_USERNAME` / `APPMIXER_SKILL_PASSWORD` — credentials for the E2E commands; the CLI loads them from exported vars, the file `$APPMIXER_ENV` points to, or `~/.config/appmixer-skills/env` (the skills offer to write that file on first E2E use). Without them the E2E commands fall back to the CLI's own `appmixer url` + `appmixer login` session.
-- `APPMIXER_SKILL_ACCOUNT_ID` — pins the auth account bound to connector components during `appmixer e2e import`.
-- `APPMIXER_SKILL_UI_URL` — designer base URL, used to print clickable flow links in E2E results.
+Two optional CLI-level knobs exist (documented in the [CLI README](https://github.com/Appmixer-ai/appmixer-cli#configuration--authentication)): `APPMIXER_SKILL_CONNECTORS_DIR` overrides the workspace root when running your agent from outside the workspace (CI, git worktrees; the e2e commands also take `--connectors-dir`), and `APPMIXER_TOKEN` provides a pre-obtained JWT for accounts that cannot `appmixer login` (SSO).
 
 ## Releasing (maintainers)
 

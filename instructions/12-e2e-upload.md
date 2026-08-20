@@ -9,67 +9,40 @@ is `appmixer e2e run` (see `13-e2e-run.md`).
 
 ## Prerequisites
 
-- **`appmixer` CLI** — installed (`npm i -g appmixer`) at a version that has
-  the `e2e` commands (check with `appmixer e2e --help`).
-- Configuration — `~/.config/appmixer-skills/env`, an `APPMIXER_ENV` file, or exported vars (see below)
+- **`appmixer` CLI** — installed (`npm i -g appmixer`) at version **2.6.0 or
+  newer** (the first with the `e2e` commands; check with `appmixer e2e --help`).
+  This is the ONLY dependency — there is no other tooling and no required
+  environment variable.
+- **CLI configured against the target instance:**
+  ```bash
+  appmixer url https://api.your-instance.com
+  appmixer login your@email.com          # the e2e user — see Step 1
+  ```
+  If the CLI is not configured yet, ask the user for the API URL and the e2e
+  user's credentials and run the two commands. Every command in this skill
+  (publish, `e2e import/run/...`) uses this session.
 - **Run from the connector workspace** — the current directory (or a parent)
   contains `src/<vendor>/<connector>/`; the e2e commands resolve the
-  workspace from the cwd. `APPMIXER_SKILL_CONNECTORS_DIR` is an optional override for
-  running from elsewhere (see the worktree section below). `<vendor>` is the namespace directory under `src/` — `appmixer` is only the
-  default; a workspace can hold several vendors side by side. Bare connector
-  names are searched across all vendor dirs; when ambiguous, qualify as
+  workspace from the cwd (`--connectors-dir <dir>` overrides it when running
+  from elsewhere — see the worktree section below). `<vendor>` is the
+  namespace directory under `src/` — `appmixer` is only the default; a
+  workspace can hold several vendors side by side. Bare connector names are
+  searched across all vendor dirs; when ambiguous, qualify as
   `<vendor>/<connector>`.
 - Test flow JSON files in `artifacts/test-flows/` (generated per `11-e2e-flow-generation.md`, shipped with `build-connector`)
-- Appmixer CLI configured (`appmixer url` + login)
 
-**Configuration**
+**⚠️ Instance check:** the CLI session decides WHICH INSTANCE every command
+talks to; a wrong one looks like auth breakage (fresh tokens get 401 "Invalid
+JWT", flow/store listings return foreign IDs/empty lists). Before anything
+else, confirm `appmixer url` prints the instance you expect — abort if it
+doesn't.
 
-The CLI's E2E commands load configuration themselves, in this precedence:
-exported `APPMIXER_SKILL_*` variables → the file `APPMIXER_ENV` points to → the
-default `~/.config/appmixer-skills/env`.
-
-**First-run setup:** when none of those sources provide the required values, ask
-the user for them and write `~/.config/appmixer-skills/env` yourself
-(`mkdir -p ~/.config/appmixer-skills`, KEY=value lines, `chmod 600`), then
-continue — every later session picks it up automatically.
-
-**⚠️ Instance check:** the effective config decides WHICH INSTANCE every command
-talks to; a wrong source looks like auth breakage (fresh tokens get 401 "Invalid
-JWT", flow/store listings return foreign IDs/empty lists). Before anything else,
-confirm `APPMIXER_SKILL_API_URL` (from the parsed env, below) and `appmixer url`
-both point at the instance you expect — abort if they don't.
-
-The config file must contain:
-
-```
-APPMIXER_SKILL_API_URL=https://api.appmixer.com
-APPMIXER_SKILL_USERNAME=your@email.com
-APPMIXER_SKILL_PASSWORD=yourpassword
-```
-
-For the shell steps in this skill (appmixer CLI login etc.), export the same
-values — **never `source` the file directly**: passwords with `&`, `|`, `!`
-etc. break the shell parse (`parse error near…`). Export via a safe parser
-instead:
-
-```bash
-: "${APPMIXER_ENV:=$HOME/.config/appmixer-skills/env}"
-test -f "$APPMIXER_ENV" || { echo "Config not found: $APPMIXER_ENV — run first-run setup"; exit 1; }
-eval "$(python3 -c "
-import shlex
-for line in open('$APPMIXER_ENV'):
-    line = line.strip()
-    if not line or line.startswith('#') or '=' not in line: continue
-    k, v = line.split('=', 1)
-    print(f'export {k}={shlex.quote(v)}')
-")"
-: "${APPMIXER_SKILL_API_URL:?APPMIXER_SKILL_API_URL missing in $APPMIXER_ENV}"
-: "${APPMIXER_SKILL_USERNAME:?APPMIXER_SKILL_USERNAME missing in $APPMIXER_ENV}"
-: "${APPMIXER_SKILL_PASSWORD:?APPMIXER_SKILL_PASSWORD missing in $APPMIXER_ENV}"
-test -n "$(ls -d "${APPMIXER_SKILL_CONNECTORS_DIR:-.}"/src/*/ 2>/dev/null)" || { echo "Not in a connector workspace (no src/<vendor>/): run from the workspace root or set APPMIXER_SKILL_CONNECTORS_DIR"; exit 1; }
-```
-
-Only `APPMIXER_SKILL_*` names are supported.
+> **Optional env overrides (CI, dedicated e2e user):** the e2e commands also
+> honor `APPMIXER_TOKEN` (pre-obtained JWT) and the `APPMIXER_SKILL_*`
+> variables (`_API_URL`, `_USERNAME`, `_PASSWORD`, `_ACCOUNT_ID`,
+> `_CONNECTORS_DIR`, `_UI_URL`) — CLI features documented in the CLI README.
+> When any are exported they take precedence over the CLI session; make sure
+> they point at the same instance and user, or unset them.
 
 ## Quick Start
 
@@ -96,15 +69,16 @@ appmixer e2e run <flowId> --fix
 ### Step 1: Publish Connector
 
 **⚠️ Components are per-user copies.** `appmixer publish`/`remove` act on the copies
-owned by whoever the CLI is logged in as — if that is NOT the e2e user
-(`APPMIXER_SKILL_USERNAME`), the publish looks successful but the e2e user's designer,
-flows and API keep serving **their own stale copy**. ALWAYS align the CLI login with
-the e2e user before publishing (idempotent, do it every session — "already logged in"
-may mean logged in as someone else):
+owned by whoever the CLI is logged in as — if that is NOT the user who runs the
+E2E flows, the publish looks successful but the e2e user's designer, flows and
+API keep serving **their own stale copy**. ALWAYS make sure the CLI login is
+the e2e user before publishing (idempotent, do it every session — "already
+logged in" may mean logged in as someone else):
 
 ```bash
-appmixer url "$APPMIXER_SKILL_API_URL"    # values via the python-parsed env, see Prerequisites
-printf '%s\n' "$APPMIXER_SKILL_PASSWORD" | appmixer login "$APPMIXER_SKILL_USERNAME"
+appmixer url https://api.your-instance.com
+appmixer login <e2e-user@email>     # prompts for the password
+# non-interactive alternative: printf '%s\n' "$PASSWORD" | appmixer login <e2e-user@email>
 ```
 
 **Run the workspace validators for the WHOLE connector first** (when the
@@ -143,10 +117,11 @@ existing version appends a copy): that is harmless **only when all copies are
 byte-identical AND carry your marker** — otherwise remove + publish again:
 
 ```bash
-# Reuse the CLI's stored login token (aligned with the e2e user in Step 1)
+# Reuse the CLI's stored login token and API URL (aligned with the e2e user in Step 1)
 TOKEN=$(node -e "console.log(require(require('os').homedir()+'/.config/configstore/appmixer.json').token)")
+BASE_URL=$(node -e "console.log(require(require('os').homedir()+'/.config/configstore/appmixer.json')['appmixer-url'].default.url)")
 curl -s -H "Authorization: Bearer $TOKEN" \
-  "$APPMIXER_SKILL_API_URL/components/<vendor>.<connector>.<module>.<Component>" -o /tmp/comp.zip
+  "$BASE_URL/components/<vendor>.<connector>.<module>.<Component>" -o /tmp/comp.zip
 python3 - <<'EOF'
 import zipfile
 z = zipfile.ZipFile('/tmp/comp.zip')
@@ -206,7 +181,8 @@ designer does:
 
 ```bash
 TOKEN=$(node -e "console.log(require(require('os').homedir()+'/.config/configstore/appmixer.json').token)")
-curl -s -X POST "$APPMIXER_SKILL_API_URL/component/<vendor>/<connector>/<module>/<ListComponent>?outPort=out" \
+BASE_URL=$(node -e "console.log(require(require('os').homedir()+'/.config/configstore/appmixer.json')['appmixer-url'].default.url)")
+curl -s -X POST "$BASE_URL/component/<vendor>/<connector>/<module>/<ListComponent>?outPort=out" \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"componentId":"<any-component-id-with-this-account>","flowId":"<flowId>"}'
 # Options/data back = token really works. 401/403 (Bad_OAuth_Token, INVALID_SESSION_ID) = dead account.
@@ -215,7 +191,7 @@ curl -s -X POST "$APPMIXER_SKILL_API_URL/component/<vendor>/<connector>/<module>
 Dead-account symptom downstream: flow START fails with 400 wrapping an inner 401
 AxiosError whose `config.url` points at the service (trigger `start()` calls), or
 components fail mid-run with 401/403. When several accounts exist for the service,
-test each and pin the working one with `APPMIXER_SKILL_ACCOUNT_ID`.
+test each and pin the working one with `appmixer e2e import --account <accountId>`.
 
 ### Step 3: Flow Upload & Account Binding — `appmixer e2e import` Does It
 
@@ -257,7 +233,7 @@ sync with the export output), but never rely on them either: they are
 meaningless on any other tenant and rot when accounts are deleted. Binding is
 always re-done at import time, which ignores flow-authored IDs that don't
 exist on the target instance and rebinds a live account
-(`APPMIXER_SKILL_ACCOUNT_ID` overrides everything).
+(`appmixer e2e import --account <accountId>` overrides everything).
 
 **⚠️ Recipients are NOT injected.** If you want ProcessE2EResults to notify
 someone, set `recipients` in the flow JSON's ProcessE2EResults lambda yourself.
@@ -313,16 +289,15 @@ into that array; entry values look like `{{{$.<id>.<port>.<field>}}}`.
 
 **NEVER assert on Raw Output** (`$.comp-id.out`) — it always contains something, making the assertion meaningless. Always test specific fields (e.g. `$.comp-id.out.ManualJournalID` notEmpty).
 
-## Auth Token — When `/user/auth` Returns 403
+## Auth — When `appmixer login` Is Not Possible
 
-The E2E commands authenticate with `APPMIXER_SKILL_USERNAME`/`PASSWORD` via
-`POST /user/auth`. If that returns 403 (e.g. password has special chars, or an
-SSO-only account), provide a pre-obtained token via the `APPMIXER_TOKEN` env
-var — the client then skips `/user/auth` entirely:
+With the default setup the e2e commands reuse the CLI's stored login token —
+no extra auth happens. For an account that cannot `appmixer login` (SSO-only,
+or `POST /user/auth` rejects the password), provide a pre-obtained JWT via the
+`APPMIXER_TOKEN` env var — it takes precedence over everything:
 
 ```bash
-# Reuse the appmixer CLI's stored token
-export APPMIXER_TOKEN=$(node -e "console.log(require(require('os').homedir()+'/.config/configstore/appmixer.json').token)")
+export APPMIXER_TOKEN=<jwt>
 ```
 
 ## Running Outside the Workspace (worktrees, CI)
@@ -332,8 +307,9 @@ from the flow path). When you must run from elsewhere — or target a specific
 git worktree different from your cwd — set the override explicitly:
 
 ```bash
-export APPMIXER_SKILL_CONNECTORS_DIR=/path/to/worktree
-# appmixer e2e validate / import / export also take --connectors-dir <dir>
+appmixer e2e import  <dir> --connectors-dir /path/to/worktree
+appmixer e2e validate <dir> --connectors-dir /path/to/worktree
+# or once per shell: export APPMIXER_SKILL_CONNECTORS_DIR=/path/to/worktree
 ```
 
 ## Stale Worker OAuth State After Re-authentication
@@ -413,7 +389,7 @@ injects them automatically; there is nothing to do manually.
 If the variables check shows a component only exposes "Raw Output" instead of individual fields, the component's `generateOutputPortOptions` is failing. Common causes:
 1. **The source call fails server-side** — reproduce it directly (the way the designer does) and read the actual error:
    ```bash
-   curl -s -X POST "$APPMIXER_SKILL_API_URL/component/<vendor>/<connector>/<module>/<SourceComponent>?outPort=out" \
+   curl -s -X POST "$BASE_URL/component/<vendor>/<connector>/<module>/<SourceComponent>?outPort=out" \
      -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
      -d '{"messages":{"in":{...}},"transform":"./transformers#...","componentId":"<comp-id>","flowId":"<flow-id>"}'
    ```

@@ -72,8 +72,8 @@ you run a deterministic validator and fix anything it flags, looping until clean
    component. Enforced by `inport-key-match`.
 
 0d. **Don't invent `config.properties.account`** in newly generated flows —
-   binding happens at import time (`appmixer e2e import` /
-   `APPMIXER_SKILL_ACCOUNT_ID`). Flows exported from a live instance
+   binding happens at import time (`appmixer e2e import`, optionally
+   `--account <accountId>`). Flows exported from a live instance
    (`appmixer e2e export`) DO carry that instance's account IDs — leave them
    in place; the import ignores IDs that don't exist on the target instance and
    rebinds a live account instead.
