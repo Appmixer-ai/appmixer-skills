@@ -2,35 +2,27 @@
 
 Execute E2E test flows against a live Appmixer instance and evaluate results.
 
-The heavy lifting is done by a **deterministic runner script** (explicit state
-machine, no LLM). **You (the agent) are the fix loop**: when the runner exits
-with a `NEEDS_FIX` brief, you diagnose it, edit the local flow JSON, and re-run
-the script. The runner re-uploads the local file and rebinds accounts on every
-run, so edit → re-run is the whole cycle.
+The heavy lifting is done by a **deterministic runner** built into the appmixer
+CLI (`appmixer flow run-e2e` — explicit state machine, no LLM). **You (the
+agent) are the fix loop**: when the runner exits with a `NEEDS_FIX` brief, you
+diagnose it, edit the local flow JSON, and re-run the command. The runner
+re-uploads the local file and rebinds accounts on every run, so edit → re-run
+is the whole cycle.
 
 **Assumes the connector is already published** (`appmixer pack` + `publish` per
 `12-e2e-upload.md`). The runner uploads/updates the *flows* itself.
 
 ## Prerequisites
 
-- **Node dependencies** — install once (idempotent, skips if already present):
-  ```bash
-  # APPMIXER_SKILL_ROOT = the skills/ directory of the appmixer-skills checkout
-  # (the folder that contains _shared/).
-  #  - Claude Code plugin install: $CLAUDE_PLUGIN_ROOT/skills
-  #  - skill symlinked/copied into a project's .claude/skills/: the real path of
-  #    the skill directory, one level up (substitute <skill-dir> below)
-  export APPMIXER_SKILL_ROOT="${APPMIXER_SKILL_ROOT:-${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills}}"
-  if [ -z "$APPMIXER_SKILL_ROOT" ]; then
-      export APPMIXER_SKILL_ROOT="$(dirname "$(readlink -f <skill-dir>)")"
-  fi
-  bash "$APPMIXER_SKILL_ROOT/scripts/ensure-deps.sh"
-  ```
+- **`appmixer` CLI** — installed (`npm i -g appmixer`) at a version that has
+  `appmixer flow run-e2e` (check with `appmixer flow run-e2e --help`).
 - Configuration: `APPMIXER_SKILL_API_URL`, `APPMIXER_SKILL_USERNAME`,
   `APPMIXER_SKILL_PASSWORD` — the runner loads them from exported vars, the
   `APPMIXER_ENV` file, or `~/.config/appmixer-skills/env` (in that precedence).
   If none provide them, ask the user for the values and write
   `~/.config/appmixer-skills/env` (KEY=value lines, `chmod 600`), then continue.
+  (Without any of these, the runner falls back to the CLI's own
+  `appmixer url` + `appmixer login` session.)
 - Connector published on the instance; an auth account exists for it
 - **Design conventions** — the fix loop consults
   `references/09-testing.md` in this skill's directory (no setup needed).
@@ -38,14 +30,19 @@ run, so edit → re-run is the whole cycle.
 ## The runner
 
 ```bash
-node "$APPMIXER_SKILL_ROOT/test-connector/scripts/run.js" \
-    <path-to-flow.json> [baseUrl]
+appmixer flow run-e2e <path-to-flow.json | dir> [--base-url <url>]
 ```
 
-One flow per invocation. It derives the connector and repo root from the flow
-path, then: ensures E2E stores exist → createOrUpdates the flow from the local
-JSON → rebinds accounts → starts → monitors logs → triages deterministically
-(e.g. rebinds accounts on token errors and retries). Every state transition is
+A directory target runs every `test-flow-*.json` in it, sequentially. Useful
+options: `-c <connector-prefix>` (only flows of that connector),
+`--max-attempts <n>` (deterministic fix attempts per flow, default 5),
+`--timeout <seconds>` (per-run completion timeout, default 480), `--json`
+(machine-readable results array on the last line).
+
+For each flow it derives the connector and repo root from the flow path, then:
+ensures E2E stores exist → createOrUpdates the flow from the local JSON →
+rebinds accounts → starts → monitors logs → triages deterministically (e.g.
+rebinds accounts on token errors and retries). Every state transition is
 logged as `[FSM] FROM → TO (why)` — a run log reads as a narrative.
 
 **Fail-fast error handling is enforced at upload:** the runner injects
@@ -159,7 +156,7 @@ timeouts — `assertsFired`/`assertsSilent` (component IDs). Then:
    re-publish (`appmixer pack && appmixer publish`) before re-running.
 5. **Validate** the edited flow:
    ```bash
-   node "$APPMIXER_SKILL_ROOT/test-connector/scripts/validate.js" <flow.json>
+   appmixer flow validate <flow.json>
    ```
 6. **Re-run the runner** with the same flow path.
 
@@ -180,17 +177,18 @@ timeouts — `assertsFired`/`assertsSilent` (component IDs). Then:
 
 ## Running all flows of a connector
 
-Iterate the runner over each flow file and collect the `RESULT |` lines:
+Point the runner at the test-flows directory — it runs each flow sequentially
+and prints one `RESULT |` line per flow:
 
 ```bash
-for f in src/<vendor>/<connector>/artifacts/test-flows/test-flow-*.json; do
-    node .../test-connector/scripts/run.js "$f" | tee -a /tmp/e2e-run.log
-done
+appmixer flow run-e2e src/<vendor>/<connector>/artifacts/test-flows | tee /tmp/e2e-run.log
 grep '^RESULT |' /tmp/e2e-run.log
 ```
 
-Run flows **sequentially** — parallel runs against one instance cause noisy logs
-and account contention. Apply the fix loop to each failing flow before moving on.
+During a fix loop, prefer one flow per invocation (pass the single file) so
+exit code 2 maps to the flow you are fixing. Never run flows **in parallel** —
+parallel runs against one instance cause noisy logs and account contention.
+Apply the fix loop to each failing flow before moving on.
 
 **Always end your report to the user with the summary table** built from the
 `RESULT |` lines — one row per flow: name, status, designer URL.
@@ -282,5 +280,5 @@ Tests must pass on repeated runs without input changes:
 ## References
 
 - **Flow design patterns**: `references/09-testing.md` — read before diagnosing or fixing flows
-- **API details**: `skills/_shared/appmixerApi/*.js` — the shared HTTP client library is the single source of truth for Appmixer API calls (auth, flows, accounts, logs, stores)
-- **Triage rules**: `scripts/triage.js` — add deterministic rules there for repeatable failure classes (keeps fixes rare)
+- **API details**: the appmixer CLI's `src/api/` modules are the single source of truth for Appmixer API calls (auth, flows, accounts, logs, stores); raw endpoints are listed in the table above
+- **Triage rules**: `src/e2e-runner/triage.js` in the appmixer CLI repo — add deterministic rules there for repeatable failure classes (keeps fixes rare)

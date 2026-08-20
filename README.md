@@ -12,11 +12,10 @@ Give your AI coding agent deep Appmixer connector-development expertise — scaf
 | **test-connector** | Test a connector: CLI component test+fix cycle, plus E2E flow testing on a live instance (upload flows, run, evaluate, fix loop) |
 | **review-connector** | Read-only audit of connector components against Appmixer standards (incl. trigger `test()` rules) |
 
-The build and review skills are pure instructions; the only external tool they
-drive is the [`appmixer` CLI](https://www.npmjs.com/package/appmixer). E2E
-flow testing (part of `test-connector`) additionally ships Node helper scripts
-(`skills/test-connector/scripts/` + the shared `skills/_shared/` library) — a
-temporary layer that shrinks away as this tooling moves into the appmixer CLI.
+All three skills are pure instructions; the only external tool they drive is
+the [`appmixer` CLI](https://www.npmjs.com/package/appmixer) — including E2E
+flow testing, which uses the CLI's built-in flow validator
+(`appmixer flow validate`) and deterministic runner (`appmixer flow run-e2e`).
 
 ### build-connector
 

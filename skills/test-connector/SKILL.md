@@ -18,13 +18,13 @@ and validates their output.
 >
 > 1. **CLI component tests** — the workflow in this file: ordered test plan,
 >    then a component test+fix cycle via `appmixer test component`.
-> 2. **E2E flow testing on a live instance** — upload the connector + test
->    flows (`references/12-e2e-upload.md`), then run and evaluate them with a
->    deterministic runner (`references/13-e2e-run.md`). Flows are generated
+> 2. **E2E flow testing on a live instance** — publish the connector and
+>    prepare the instance (`references/12-e2e-upload.md`), then run and
+>    evaluate the flows with the CLI's deterministic runner,
+>    `appmixer flow run-e2e` (`references/13-e2e-run.md`). Flows are generated
 >    during the build (`build-connector`, `references/11-e2e-flow-generation.md`
->    there). The helper scripts live in `scripts/` next to this SKILL.md and
->    lean on the shared `_shared/` library — a temporary arrangement until the
->    appmixer CLI ships this tooling natively.
+>    there). All E2E tooling ships with the `appmixer` CLI — this skill bundles
+>    no scripts.
 >
 > **You (the agent) do this directly** — plan the test order, resolve
 real inputs, run the CLI, interpret the output, fix on failure, and re-test.
@@ -262,24 +262,18 @@ Check the installed version with `appmixer --version`. On 2.3.4 and older:
 When the user wants end-to-end validation on a live Appmixer instance (not just
 CLI component tests), follow the two references shipped with this skill:
 
-1. **Upload** — `references/12-e2e-upload.md`: publish the connector
-   (`appmixer pack` + `publish`), ensure E2E stores, create/verify the auth
-   account, upload the flow JSONs from
-   `src/<vendor>/<connector>/artifacts/test-flows/`, and bind accounts.
-2. **Run** — `references/13-e2e-run.md`: execute each flow with the
-   deterministic runner (`scripts/run.js`), evaluate results, and drive the
-   fix loop (edit flow JSON → re-run; `references/09-testing.md` holds the flow
-   design rules the fixes must follow).
+1. **Publish & prepare** — `references/12-e2e-upload.md`: publish the connector
+   (`appmixer pack` + `publish`) and verify the auth account; flow upload,
+   E2E stores and account binding are handled by the runner itself.
+2. **Run** — `references/13-e2e-run.md`: execute the flows from
+   `src/<vendor>/<connector>/artifacts/test-flows/` with the CLI's
+   deterministic runner (`appmixer flow run-e2e`), evaluate results, and drive
+   the fix loop (edit flow JSON → re-run; `references/09-testing.md` holds the
+   flow design rules the fixes must follow).
 
 Flow JSONs are produced during the build by `build-connector`
-(its `references/11-e2e-flow-generation.md`); `scripts/validate.js` here checks
+(its `references/11-e2e-flow-generation.md`); `appmixer flow validate` checks
 them before upload and after every fix.
-
-The Node helper scripts (`scripts/`, plus the shared `_shared/` library one
-level above this skill) require dependencies installed once via
-`scripts/ensure-deps.sh` at the skills root — both references show the exact
-setup block. This scripted layer shrinks away as the appmixer CLI absorbs the
-E2E tooling.
 
 ## After changes
 

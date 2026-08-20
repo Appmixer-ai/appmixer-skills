@@ -1,34 +1,18 @@
-# Upload E2E Flows
+# Publish & Prepare for E2E
 
-Publish a connector and upload E2E test flows to a live Appmixer instance.
-
-> **Paths:** all `"$APPMIXER_SKILL_ROOT"/test-connector/scripts/...` invocations below
-> require `APPMIXER_SKILL_ROOT` to point at the full skills directory (the one
-> containing `_shared/`). Run the Node-dependencies block in Prerequisites first —
-> it resolves the root (plugin root in Claude Code, or the real path of the
-> skill dir) and exports the variable; keep prefixing later commands with that export.
-> `appmixer-flow.mjs` is a Node CLI built on `_shared/appmixerApi`
-> (deps installed by `scripts/ensure-deps.sh`);
+Publish a connector to a live Appmixer instance and prepare it for E2E runs
+(auth account, validation). Flow upload itself is handled by the E2E runner
+(`appmixer flow run-e2e`, see `13-e2e-run.md`) — it createOrUpdates every flow
+from the local JSON on each run, injects the E2E stores and binds accounts.
 
 ## Prerequisites
 
-- **Node dependencies** — install once (idempotent, skips if already present):
-  ```bash
-  # APPMIXER_SKILL_ROOT = the skills/ directory of the appmixer-skills checkout
-  # (the folder that contains _shared/).
-  #  - Claude Code plugin install: $CLAUDE_PLUGIN_ROOT/skills
-  #  - skill symlinked/copied into a project's .claude/skills/: the real path of
-  #    the skill directory, one level up (substitute <skill-dir> below)
-  export APPMIXER_SKILL_ROOT="${APPMIXER_SKILL_ROOT:-${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills}}"
-  if [ -z "$APPMIXER_SKILL_ROOT" ]; then
-      export APPMIXER_SKILL_ROOT="$(dirname "$(readlink -f <skill-dir>)")"
-  fi
-  bash "$APPMIXER_SKILL_ROOT/scripts/ensure-deps.sh"
-  ```
+- **`appmixer` CLI** — installed (`npm i -g appmixer`) at a version that has
+  `appmixer flow validate` / `appmixer flow run-e2e` (check with `--help`).
 - Configuration — `~/.config/appmixer-skills/env`, an `APPMIXER_ENV` file, or exported vars (see below)
 - **Run from the connector workspace** — the current directory (or a parent)
-  contains `src/<vendor>/<connector>/`; the Node scripts resolve the workspace
-  from the cwd. `APPMIXER_SKILL_CONNECTORS_DIR` is an optional override for
+  contains `src/<vendor>/<connector>/`; the runner and validators resolve the
+  workspace from the cwd. `APPMIXER_SKILL_CONNECTORS_DIR` is an optional override for
   running from elsewhere (see the worktree section below). `<vendor>` is the namespace directory under `src/` — `appmixer` is only the
   default; a workspace can hold several vendors side by side. Bare connector
   names are searched across all vendor dirs; when ambiguous, qualify as
@@ -38,9 +22,9 @@ Publish a connector and upload E2E test flows to a live Appmixer instance.
 
 **Configuration**
 
-The Node scripts load configuration themselves, in this precedence: exported
-`APPMIXER_SKILL_*` variables → the file `APPMIXER_ENV` points to → the default
-`~/.config/appmixer-skills/env`.
+The CLI's E2E commands load configuration themselves, in this precedence:
+exported `APPMIXER_SKILL_*` variables → the file `APPMIXER_ENV` points to → the
+default `~/.config/appmixer-skills/env`.
 
 **First-run setup:** when none of those sources provide the required values, ask
 the user for them and write `~/.config/appmixer-skills/env` yourself
@@ -49,10 +33,9 @@ continue — every later session picks it up automatically.
 
 **⚠️ Instance check:** the effective config decides WHICH INSTANCE every command
 talks to; a wrong source looks like auth breakage (fresh tokens get 401 "Invalid
-JWT", `ensure-stores`/`list-e2e-flows` return foreign IDs/empty lists).
-`appmixer-flow.mjs` prints the effective env + instance on stderr as its first
-line (`[appmixer-flow] env=... instance=...`) — **read it** and abort if it is
-not the instance you expect.
+JWT", flow/store listings return foreign IDs/empty lists). Before anything else,
+confirm `APPMIXER_SKILL_API_URL` (from the parsed env, below) and `appmixer url`
+both point at the instance you expect — abort if they don't.
 
 The config file must contain:
 
@@ -86,36 +69,22 @@ test -n "$(ls -d "${APPMIXER_SKILL_CONNECTORS_DIR:-.}"/src/*/ 2>/dev/null)" || {
 
 Only `APPMIXER_SKILL_*` names are supported.
 
-## Helper Script
-
-`"$APPMIXER_SKILL_ROOT"/test-connector/scripts/appmixer-flow.mjs` wraps all API calls.
-
-For the current, authoritative list of commands and their signatures, read the comment block at the top of the script:
-
-```
-"$APPMIXER_SKILL_ROOT"/test-connector/scripts/appmixer-flow.mjs
-```
-
 ## Quick Start
 
 ```bash
-# 1. Publish the connector
+# 1. Publish the connector (as the e2e user — see Step 1)
 cd src/<vendor>   # from the workspace root
 appmixer pack <connector>
 appmixer publish <vendor>.<connector>.zip   # pack outputs <vendor>.<connector>.zip
 
-# 2. Ensure stores exist (first time only)
-node "$APPMIXER_SKILL_ROOT"/test-connector/scripts/appmixer-flow.mjs ensure-stores
+# 2. Validate flow JSONs locally
+appmixer flow validate src/<vendor>/<connector>/artifacts/test-flows
 
-# 3. Upload all test flows (does NOT assign the account — see step 3b below)
-node "$APPMIXER_SKILL_ROOT"/test-connector/scripts/appmixer-flow.mjs upload-all <connector>
+# 3. Make sure an auth account exists for the connector (Step 2)
+appmixer account ls --json
 
-# 4. Assign the auth account to each uploaded flow (REQUIRED to run)
-node "$APPMIXER_SKILL_ROOT"/test-connector/scripts/appmixer-flow.mjs patch-accounts "$FLOW_ID" "$ACCOUNT_ID" "<vendor>.<connector>."
-
-# 5. Validate flow JSONs locally
-node "$APPMIXER_SKILL_ROOT"/test-connector/scripts/validate.js \
-    src/<vendor>/<connector>/artifacts/test-flows
+# 4. Run — upload, store injection and account binding happen inside the runner
+appmixer flow run-e2e src/<vendor>/<connector>/artifacts/test-flows   # see 13-e2e-run.md
 ```
 
 ## Workflow
@@ -170,7 +139,8 @@ existing version appends a copy): that is harmless **only when all copies are
 byte-identical AND carry your marker** — otherwise remove + publish again:
 
 ```bash
-TOKEN=$(node "$APPMIXER_SKILL_ROOT"/test-connector/scripts/appmixer-flow.mjs auth | tail -1)
+# Reuse the CLI's stored login token (aligned with the e2e user in Step 1)
+TOKEN=$(node -e "console.log(require(require('os').homedir()+'/.config/configstore/appmixer.json').token)")
 curl -s -H "Authorization: Bearer $TOKEN" \
   "$APPMIXER_SKILL_API_URL/components/<vendor>.<connector>.<module>.<Component>" -o /tmp/comp.zip
 python3 - <<'EOF'
@@ -186,38 +156,31 @@ EOF
 
 ### Step 2: Ensure Auth Account Exists
 
-List existing accounts or create one:
+List existing accounts (filter by service yourself — service is
+`<vendor>:<connector>`, nested connectors often authenticate at the top level,
+e.g. `appmixer:microsoft`):
 
 ```bash
-# List existing accounts
-node "$APPMIXER_SKILL_ROOT"/test-connector/scripts/appmixer-flow.mjs list-accounts <vendor>:<connector>
-
-# Or create from local configstore (appmixer CLI stores auth here after `appmixer test auth`)
-CONFIGSTORE="$HOME/.config/configstore/appmixer.json"
-AUTH_JSON=$(python3 -c "
-import json
-d = json.load(open('$CONFIGSTORE'))
-fields = d.get('<vendor>:<connector>', {}).get('authFields', {})
-print(json.dumps(fields))
-")
-ACCOUNT_ID=$(node "$APPMIXER_SKILL_ROOT"/test-connector/scripts/appmixer-flow.mjs create-account <connector> "$AUTH_JSON")
-
-# For OAuth2 connectors, pass the tokens instead of authFields:
-# AUTH_JSON='{"accessToken":"...","refreshToken":"..."}'
+appmixer account ls --json
 ```
 
-**OAuth2 specifics** (all handled by `create-account`, listed for manual/curl debugging):
+**Creating an account is a user step.** The reliable path is a human
+authenticating in the Appmixer designer UI ("Connect account" on any component
+of the connector) — ask the user to do it and then re-list. Injecting an
+account directly (`appmixer account create <file>` with
+`{ "name": ..., "service": "<vendor>:<connector>", "token": {...}, "profileInfo": {} }`)
+also works, but mind the engine's requirements:
 
-- The engine validates scopes on `POST /accounts` and reads them from **`token.scope`
-  (singular, array)** — `token.scopes` or a top-level `scopes` field is silently
-  ignored and the request fails with `400 "Scopes provided have missing required
-  scopes"`. `create-account` fills `token.scope` from the connector's `auth.js`
-  automatically when the auth JSON doesn't carry it.
+- **OAuth2 scopes**: the engine validates scopes on account creation and reads
+  them from **`token.scope` (singular, array)** — `token.scopes` or a top-level
+  `scopes` field is silently ignored and the request fails with `400 "Scopes
+  provided have missing required scopes"`. Fill `token.scope` with the scope
+  array from the connector's `auth.js` if the token payload doesn't carry it.
 - **Service config must exist** (`GET /service-config/<vendor>:<connector>` must
   return a `clientId`) — the engine instantiates the connector's auth module during
   account creation and needs it. Without it the API fails with an opaque 500.
-  `create-account` checks this and tells you to set it:
-  `PUT /service-config/<vendor>:<connector> {"clientId":"...","clientSecret":"..."}`.
+  Set it first: `PUT /service-config/<vendor>:<connector>
+  {"clientId":"...","clientSecret":"..."}` (or via Backoffice > Services).
 - **500 wrapping `Request failed with status code 404`** on account creation means
   the connector's `requestProfileInfo` makes an HTTP call that fails server-side
   (e.g. the service has no userinfo endpoint). Fix the connector: derive profile
@@ -227,8 +190,7 @@ ACCOUNT_ID=$(node "$APPMIXER_SKILL_ROOT"/test-connector/scripts/appmixer-flow.mj
 
 Test the account is valid:
 ```bash
-TOKEN=$(node "$APPMIXER_SKILL_ROOT"/test-connector/scripts/appmixer-flow.mjs auth | tail -1)
-curl -s -X POST "$APPMIXER_SKILL_API_URL/accounts/$ACCOUNT_ID/test" -H "Authorization: Bearer $TOKEN"
+appmixer account test <accountId>
 # Should return {"ok":true}
 ```
 
@@ -239,6 +201,7 @@ call: hit a cheap component source endpoint with the account bound, the way the
 designer does:
 
 ```bash
+TOKEN=$(node -e "console.log(require(require('os').homedir()+'/.config/configstore/appmixer.json').token)")
 curl -s -X POST "$APPMIXER_SKILL_API_URL/component/<vendor>/<connector>/<module>/<ListComponent>?outPort=out" \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"componentId":"<any-component-id-with-this-account>","flowId":"<flowId>"}'
@@ -250,43 +213,38 @@ AxiosError whose `config.url` points at the service (trigger `start()` calls), o
 components fail mid-run with 401/403. When several accounts exist for the service,
 test each and pin the working one with `APPMIXER_SKILL_ACCOUNT_ID`.
 
-### Step 3: Upload Test Flows
+### Step 3: Flow Upload & Account Binding — the Runner Does It
 
-```bash
-# Upload all test flows for a connector (dir resolved from connector name)
-node "$APPMIXER_SKILL_ROOT"/test-connector/scripts/appmixer-flow.mjs upload-all <connector>
+`appmixer flow run-e2e` (see `13-e2e-run.md`) handles the whole
+upload-and-bind cycle on every run:
 
-# Or upload a single flow
-node "$APPMIXER_SKILL_ROOT"/test-connector/scripts/appmixer-flow.mjs upload-flow \
-    /abs/path/to/test-flow-xxx.json <connector>
-```
+- **createOrUpdate by name**: if a flow with the same name exists it is stopped
+  and updated in place (`?forceUpdate=true`); flows are never deleted and
+  recreated.
+- Tags `customFields.category: "E2E_test_flow"` and a description, strips
+  server-only fields, enforces fail-fast `errorHandling`.
+- **E2E stores**: creates `E2E Failed Tests` / `E2E Succeeded Tests` if missing
+  and injects their IDs into ProcessE2EResults.
+- **Account binding**: binds an account to every connector component
+  (precedence: `APPMIXER_SKILL_ACCOUNT_ID` override > the component's own
+  `config.properties.account` > first flow-authored account that exists on the
+  instance > first existing account of the service), and re-binds after every
+  update — a plain flow PUT always drops bindings.
 
-`upload-all <connector>` / `upload-flow <file> <connector>` take **no account
-argument**. `prepFlow` only sets, on each flow:
-- `customFields.category: "E2E_test_flow"` — for filtering
-- `description: "E2E test flow for <connector>"`
-- **ProcessE2EResults stores** — `config.properties.failedStoreId` / `successStoreId` injected from the instance stores
-
-The upload commands use the createOrUpdate pattern: if a flow with the same name exists, it is stopped and updated in place (with `?forceUpdate=true`). Flows are never deleted and recreated.
-
-**⚠️ Account assignment is NOT automatic.** `upload-all`/`upload-flow` do **not**
-set `config.properties.account` and do **not** call the auth API. After upload
-you MUST assign the account yourself, otherwise the engine has no access token
-and the flow fails at runtime:
-```bash
-node "$APPMIXER_SKILL_ROOT"/test-connector/scripts/appmixer-flow.mjs patch-accounts "$FLOW_ID" "$ACCOUNT_ID" "<vendor>.<connector>."
-```
-This sets `config.properties.account` on every matching component **and** calls
-`PUT /auth/component/:componentId/:accountId`.
+**Uploading without running** (rare — e.g. handing a flow to someone in the
+designer): `appmixer flow import <file>` creates the flow as-is — no E2E
+tagging, no store injection, no account binding. The user must then connect
+accounts in the designer by hand (or bind per component:
+`appmixer auth bind <componentId> <accountId>`).
 
 **Account IDs in flow JSONs are tolerated but instance-specific.** Flows
-downloaded from a live instance (`download-E2E-flows.js`) carry that instance's
+downloaded from a live instance carry that instance's
 `config.properties.account` values — do not strip them (they keep the file in
 sync with the download output), but never rely on them either: they are
 meaningless on any other tenant and rot when accounts are deleted. Binding is
-always re-done at upload/run time — patch-accounts here, or the E2E run step
-runner, which ignores flow-authored IDs that don't exist on the target instance
-and rebinds a live account (`APPMIXER_SKILL_ACCOUNT_ID` overrides everything).
+always re-done at run time by the runner, which ignores flow-authored IDs that
+don't exist on the target instance and rebinds a live account
+(`APPMIXER_SKILL_ACCOUNT_ID` overrides everything).
 
 **⚠️ Recipients are NOT injected.** If you want ProcessE2EResults to notify
 someone, set `recipients` in the flow JSON's ProcessE2EResults lambda yourself.
@@ -298,8 +256,7 @@ someone, set `recipients` in the flow JSON's ProcessE2EResults lambda yourself.
 Run structural + coverage validation on test flow JSONs before uploading:
 
 ```bash
-node "$APPMIXER_SKILL_ROOT"/test-connector/scripts/validate.js \
-    src/<vendor>/<connector>/artifacts/test-flows
+appmixer flow validate src/<vendor>/<connector>/artifacts/test-flows
 ```
 
 This catches issues like:
@@ -319,22 +276,22 @@ This catches issues like:
 
 #### 4b: Validate Variable References (After Upload)
 
-After uploading, **validate that all variable references are resolvable**:
+Once a flow exists on the instance (e.g. after the first runner attempt),
+**check that all variable references are resolvable**:
 
 ```bash
-node "$APPMIXER_SKILL_ROOT"/test-connector/scripts/appmixer-flow.mjs validate-variables "$FLOW_ID"
+appmixer flow variables "$FLOW_ID" --json
 ```
 
-This calls `POST /variables/$FLOW_ID/fetch` — the SAME endpoint the designer
-uses to render variable chips — and checks every transform variable against
-what the designer would offer. Output is one `OK`/`INVALID` line per mapping
-(INVALID = red chip in the designer, typically unresolvable at runtime), plus
-any fetch errors; **exit code 1 when anything is invalid**. If the fetch
-endpoint is unavailable it falls back to a plain listing and says so — a
-listing is NOT a validation.
+This calls the variables-fetch endpoint (`POST /variables/$FLOW_ID/fetch`) —
+the SAME endpoint the designer uses to render variable chips. Compare every
+variable used in the flow's `config.transform.*` / `lambda` values against what
+the response offers: a transform variable that is NOT among the offered ones
+renders as an invalid (red) chip in the designer and typically never resolves
+at runtime.
 
-Response internals (for manual digging): with `compress=true` the offered
-variables are deduplicated into `dynamicComponentVariables[]` and each
+Response internals: with `compress=true` the offered variables are deduplicated
+into `dynamicComponentVariables[]` and each
 `components.<id>.links.in.<sender>.<port>.variables` carries `refs` — indices
 into that array; entry values look like `{{{$.<id>.<port>.<field>}}}`.
 `variables.errors` entries mean the source's options call failed.
@@ -343,25 +300,25 @@ into that array; entry values look like `{{{$.<id>.<port>.<field>}}}`.
 
 ## Auth Token — When `/user/auth` Returns 403
 
-`appmixer-flow.mjs` authenticates by calling `POST /user/auth`. If that returns
-403 (e.g. password has special chars, or an SSO-only account), provide a
-pre-obtained token via the `APPMIXER_TOKEN` env var — the client then skips
-`/user/auth` entirely:
+The E2E commands authenticate with `APPMIXER_SKILL_USERNAME`/`PASSWORD` via
+`POST /user/auth`. If that returns 403 (e.g. password has special chars, or an
+SSO-only account), provide a pre-obtained token via the `APPMIXER_TOKEN` env
+var — the client then skips `/user/auth` entirely:
 
 ```bash
 # Reuse the appmixer CLI's stored token
 export APPMIXER_TOKEN=$(node -e "console.log(require(require('os').homedir()+'/.config/configstore/appmixer.json').token)")
-node "$APPMIXER_SKILL_ROOT"/test-connector/scripts/appmixer-flow.mjs auth   # echoes the token in use
 ```
 
 ## Running Outside the Workspace (worktrees, CI)
 
-The Node scripts resolve the workspace by walking up from the cwd. When you
-must run from elsewhere — or target a specific git worktree different from your
-cwd — set the override explicitly for those commands:
+The runner and validators resolve the workspace by walking up from the cwd (or
+from the flow path). When you must run from elsewhere — or target a specific
+git worktree different from your cwd — set the override explicitly:
 
 ```bash
 export APPMIXER_SKILL_CONNECTORS_DIR=/path/to/worktree
+# appmixer flow validate also takes --connectors-dir <dir>
 ```
 
 ## Stale Worker OAuth State After Re-authentication
@@ -427,17 +384,17 @@ for i in items:
 
 ## Known Gotchas
 
-### Stores must exist
-The `E2E Failed Tests` and `E2E Succeeded Tests` stores must exist before upload. Auto-create them:
-```bash
-node "$APPMIXER_SKILL_ROOT"/test-connector/scripts/appmixer-flow.mjs ensure-stores
-```
+### Stores are created by the runner
+The `E2E Failed Tests` and `E2E Succeeded Tests` stores must exist with their
+IDs injected into ProcessE2EResults — `appmixer flow run-e2e` creates and
+injects them automatically on every run; there is nothing to do manually.
+(`appmixer store ls` / `appmixer store create <name>` exist for manual work.)
 
 ### Flows must be stopped before PUT update
-`PUT /flows/:flowId` rejects updates on running flows. The upload commands handle this automatically (stop → update → re-assign accounts). Never update a running flow manually without stopping first.
+`PUT /flows/:flowId` rejects updates on running flows. The runner handles this automatically (stop → update → re-bind accounts). Never update a running flow manually without stopping first.
 
 ### Dynamic output ports show "Raw Output" — fix source URL
-If `validate-variables` shows a component only exposes "Raw Output" instead of individual fields, the component's `generateOutputPortOptions` is failing. Common causes:
+If the variables check shows a component only exposes "Raw Output" instead of individual fields, the component's `generateOutputPortOptions` is failing. Common causes:
 1. **The source call fails server-side** — reproduce it directly (the way the designer does) and read the actual error:
    ```bash
    curl -s -X POST "$APPMIXER_SKILL_API_URL/component/<vendor>/<connector>/<module>/<SourceComponent>?outPort=out" \
@@ -453,16 +410,16 @@ If `validate-variables` shows a component only exposes "Raw Output" instead of i
    **"Invalid URL" chips** in the inspector and all output variables show as invalid.
    The designer sends the caller's bound account automatically; auth-requiring
    sources must keep the default (no `ignoreAuth`).
-After fixing, re-publish the connector (remove + publish — see the stale-snapshot section) and re-upload the flow.
+After fixing, re-publish the connector (remove + publish — see the stale-snapshot section) and re-run the flow.
 
-### `validate-variables` checks designer offerings, not runtime data
+### The variables check reads designer offerings, not runtime data
 It validates that every transform variable is among what the designer's
 variables-fetch endpoint offers (red-chip detection). It does NOT validate
 runtime VALUES — a variable like `$.codeblock.out.result.field` can be offered
 yet empty at runtime. Always confirm by running the flow.
 
 ### Special characters in `.env` passwords
-Passwords with `&`, `!`, `|` etc. break `source .env`. Always use the helper script commands — they use Python to parse the `.env` safely.
+Passwords with `&`, `!`, `|` etc. break `source .env`. Always export via the Python parser in Prerequisites — it quotes values safely.
 
 ## Key API Endpoints
 
@@ -480,4 +437,4 @@ Passwords with `&`, `!`, `|` etc. break `source .env`. Always use the helper scr
 
 ## References
 
-- **API details**: `skills/_shared/appmixerApi/*.js` — the shared HTTP client library is the single source of truth for Appmixer API calls
+- **API details**: the appmixer CLI's `src/api/` modules are the single source of truth for Appmixer API calls; the raw endpoints are in the table above

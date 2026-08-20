@@ -37,20 +37,16 @@ done < <(find "$REPO_ROOT/instructions/examples" -type f \( -name '*.json' -o -n
 [[ $EX_OK == 1 ]] && ok "all instructions/examples files parse (JSON + node --check)" \
                   || fail "invalid example files (see above)"
 
-echo "── e2e script infrastructure ───────────────────────────────────────"
+echo "── no stale script-era references ──────────────────────────────────"
 E2E_OK=1
-for f in skills/test-connector/scripts/run.js skills/test-connector/scripts/validate.js \
-         skills/test-connector/scripts/appmixer-flow.mjs skills/_shared/appmixerApi/index.js \
-         skills/scripts/ensure-deps.sh skills/package.json; do
-    [[ -f "$REPO_ROOT/$f" ]] || { E2E_OK=0; echo "  missing: $f"; }
-done
-# no references to pre-consolidation skill layouts anywhere in skills/
-if grep -rn "e2e-shared\|generate-e2e-flows\|run-e2e-flows/\|upload-e2e-flows" \
-        "$REPO_ROOT/skills" --include='*.md' --include='*.js' --include='*.mjs' > /dev/null 2>&1; then
-    E2E_OK=0; echo "  stale pre-consolidation skill paths referenced in skills/"
+# the E2E tooling moved into the appmixer CLI — nothing may reference the
+# removed script layer (or pre-consolidation skill layouts) anywhere in skills/
+if grep -rn "e2e-shared\|generate-e2e-flows\|run-e2e-flows/\|upload-e2e-flows\|_shared\|appmixerApi\|appmixer-flow\.mjs\|ensure-deps\.sh\|APPMIXER_SKILL_ROOT\|test-connector/scripts" \
+        "$REPO_ROOT/skills" "$REPO_ROOT/instructions" --include='*.md' --include='*.js' --include='*.mjs' > /dev/null 2>&1; then
+    E2E_OK=0; echo "  stale references to the removed script layer (grep the patterns above)"
 fi
-[[ $E2E_OK == 1 ]] && ok "e2e scripts present, no stale skill paths" \
-                   || fail "e2e script infrastructure broken (see above)"
+[[ $E2E_OK == 1 ]] && ok "no references to the removed e2e script layer" \
+                   || fail "stale e2e script references (see above)"
 
 echo "────────────────────────────────────────────────────────────────────"
 echo "passed: $PASS, failed: $FAIL"
