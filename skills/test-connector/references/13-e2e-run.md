@@ -16,8 +16,9 @@ a flow that already lives on the instance.
 ## Prerequisites
 
 - **`appmixer` CLI** — installed (`npm i -g appmixer`) at version **2.6.0 or
-  newer** (check with `appmixer e2e run --help`). The ONLY dependency — no
-  other tooling, no required environment variable.
+  newer**. The ONLY dependency — no other tooling, no required environment
+  variable. Verify it first (the version-gate snippet is in
+  `12-e2e-upload.md` Prerequisites; quick probe: `appmixer e2e run --help`).
 - **CLI configured** — `appmixer url` + `appmixer login` as the e2e user (see
   `12-e2e-upload.md` Prerequisites; that doc also lists the optional
   `APPMIXER_TOKEN`/`APPMIXER_SKILL_*` env overrides for CI).

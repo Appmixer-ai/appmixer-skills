@@ -10,9 +10,16 @@ is `appmixer e2e run` (see `13-e2e-run.md`).
 ## Prerequisites
 
 - **`appmixer` CLI** — installed (`npm i -g appmixer`) at version **2.6.0 or
-  newer** (the first with the `e2e` commands; check with `appmixer e2e --help`).
-  This is the ONLY dependency — there is no other tooling and no required
-  environment variable.
+  newer** (the first with the `e2e` commands). This is the ONLY dependency —
+  there is no other tooling and no required environment variable.
+  **Verify the version before anything else** and stop with an upgrade hint
+  when it is too old:
+
+  ```bash
+  V=$(appmixer --version 2>/dev/null) || { echo "appmixer CLI not installed — npm i -g appmixer"; exit 1; }
+  [ "$(printf '%s\n2.6.0\n' "$V" | sort -V | head -1)" = "2.6.0" ] \
+    || { echo "appmixer >= 2.6.0 required (found $V) — npm i -g appmixer@latest"; exit 1; }
+  ```
 - **CLI configured against the target instance:**
   ```bash
   appmixer url https://api.your-instance.com
