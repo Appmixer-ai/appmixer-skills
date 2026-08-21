@@ -307,8 +307,64 @@ Tests must pass on repeated runs without input changes:
 - **Avoid hardcoded dates**: Use `g_now` + `g_addTimeSpan` to compute future dates dynamically. Hardcoded dates expire and tests break.
 - **Create + Delete cleanup**: If the API rejects duplicates (e.g. contacts by email), the test MUST delete created resources at the end.
 - **Delete component placement**: Delete components should be placed DIRECTLY BELOW their corresponding Assert component (same x position, y + 128px) to maintain clean visual layout and avoid crossing connection lines.
-- **Search/Find race conditions**: Many APIs have eventual consistency. A record created 1 second ago may not appear in search results. Best approach: search for a pre-existing test record instead of a just-created one. Alternative: add a CodeBlock delay (`await new Promise(r => setTimeout(r, 5000))`).
+- **Search/Find race conditions**: Many APIs have eventual consistency. A record created 1 second ago may not appear in search results. Best approach: search for a pre-existing test record instead of a just-created one. Alternative: insert `appmixer.utils.timers.Wait` with `interval: "1m"` (minimum unit is minutes) — CodeBlock CANNOT delay: it runs synchronously in isolated-vm (`evalSync`), `await`/`setTimeout`/Promises error out.
 - **Cross-component variable references**: When referencing variables from indirect upstream components (2+ hops), prefer direct upstream references. E.g. use `$.find-items.out.id` instead of `$.create-item.out.id` when the update is triggered by find.
+
+#### Provider Latency Is a Design Input
+
+Before authoring a flow around a polling trigger, **measure how long the
+provider takes to make a new record visible**, and size the `AfterAll` timeout
+from that. Do not assume "a few seconds".
+
+Real case: Deepgram's request log lags **12–17 minutes** — records created at
+13:39 were absent at 13:50 and present at 13:56, and a job's detail endpoint
+answers `200` with an empty body immediately after the submit. Every trigger
+flow authored with a 420 s window was structurally unable to pass, no matter
+what the component code did.
+
+When the window is long, the runner needs a matching one:
+
+```bash
+AGENT_TIMEOUT_MS=3600000 appmixer e2e run <flowId> --fix --timeout 1700
+```
+
+(Budget the overall `AGENT_TIMEOUT_MS` for TWO windows plus overhead — a clean
+timeout on a trigger flow triggers one deterministic re-run, and a budget that
+only covers one window kills the runner mid-retry; see `13-e2e-run.md`.)
+
+If a component can get its result via a callback instead (see
+`14-async-components.md`), that lag disappears — 4 seconds instead of 17 minutes
+— and it is worth changing the component rather than nursing the timeouts.
+
+#### Provoking Failure States
+
+A trigger that watches a **failure** (failed job, rejected request, bounced
+message) needs a provocation the provider **accepts** and then fails. Verify
+that at design time.
+
+Real case: the Deepgram Failed Request flow submitted an unreachable audio URL.
+The provider fetches that URL while handling the submit and rejects the whole
+call synchronously (`415`), so the component throws, the flow stops on first
+error the way E2E flows must, and the trigger never sees anything — and a
+rejected submit is not logged as a failed request either. The flow could never
+pass.
+
+If no deterministic provocation exists, do not ship a flow that cannot pass.
+Remove it, cover the component with review plus its `test()` method, and write
+down why in `artifacts/test-flows/README.md` so the next person does not re-add
+it.
+
+#### Tenant-Bound Values in Flows
+
+`appmixer e2e import` re-resolves **account** bindings, but nothing else. A
+trigger's `config.properties` (e.g. `projectId`, `boardId`, `viewId`) is a plain
+string that belongs to whoever's credentials authored the flow. Swap the E2E
+account and those flows fail with `404 … cannot be found`.
+
+- Keep the list of tenant-bound properties in `artifacts/test-flows/README.md`.
+- Remember that swapping the account also resets the **data** the flows rely on:
+  a fresh API key can mean an empty project, so `Find*` components correctly
+  return `notFound` and the asserts never fire.
 
 #### Component Configuration Pattern
 

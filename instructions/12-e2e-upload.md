@@ -100,6 +100,19 @@ node scripts/validate.js --connector <connector>   # from the workspace root
 # on untouched components are threshold-gated and may be left alone
 ```
 
+**⚠️ Run the validators from `dev`, not from the branch.** The validator set
+lives in the repo, so a branch cut before a validator was added never runs it
+and reports a clean connector. Real case: a branch predating
+`component-icon-svg` and `tick-requires-tick-flag` validated clean while 14 icon
+failures waited on the other side of the rebase. Rebase first, or copy the
+missing `scripts/validators/*.js` in from `dev` before trusting a clean run.
+
+**"Legacy findings may be left alone" applies to the repo-wide run, not to
+commits.** The pre-commit hook validates every CHANGED file strictly, with no
+thresholds, so a one-line fix in a connector that carries pre-existing debt is
+blocked by that debt rather than by your change. Either clear it, or commit with
+`--no-verify` and say so in your report.
+
 Pack and publish (absolute zip path — `pack` writes the zip into the CWD and stale
 zips from earlier sessions may exist elsewhere in the repo; a relative `publish`
 after a cwd reset silently publishes the wrong one):
@@ -179,6 +192,20 @@ Test the account is valid:
 appmixer account test <accountId>
 # Should return {"ok":true}
 ```
+
+**API-key connectors: check the key's SCOPES, not just its validity.** The runner
+diagnoses missing OAuth scopes; for API keys there is no such safety net, and a
+key can authenticate perfectly while every interesting endpoint answers 403. Real
+case: a Deepgram key listed projects happily and returned `403 … does not have
+the required scope` on every project-scoped endpoint, blocking five flows. Have
+the connector document which key scopes its components need (a line in the
+connector README) and check the E2E key against that list before running
+anything.
+
+Replacing the account also replaces the **tenant** behind it: a new key can
+belong to a different project or workspace, so the data the flows expect — records
+to find, request history to poll — is simply not there, and the failures look
+nothing like an auth problem.
 
 **⚠️ `{"ok":true}` may prove nothing.** The test runs the connector's
 `validateAccessToken`, and some connectors (e.g. salesforce) only compare a stored
