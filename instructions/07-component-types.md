@@ -338,6 +338,14 @@ See [`examples/hybrid-trigger/NewRecord.js`](examples/hybrid-trigger/NewRecord.j
 
 ### Trigger component.json Requirements
 
+> **Not every webhook component is a trigger.** An *action* that starts a
+> long-running provider job can also carry `"webhook": true` and hand the
+> provider `context.getWebhookUrl()`, so the result comes back to the very
+> component that submitted the job (ports: `out` = job id, `done` = result).
+> That is the **self-callback** pattern — see `14-async-components.md`. Do NOT
+> use `tick()` to deliver a job's result: a tick emit has no message scope and
+> cannot continue the branch that started the job.
+
 1. **NO `inPorts`**: Triggers must NOT have input ports
 2. **Use `properties`**: Configuration is defined in `properties`, not `inPorts`
 3. **Set appropriate flags**:

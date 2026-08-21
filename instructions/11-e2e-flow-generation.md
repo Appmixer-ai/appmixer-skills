@@ -4,37 +4,20 @@ Generate E2E test flow JSON files for a connector's components. **You (the agent
 write the flows directly** — there is no separate sub-agent. After writing them
 you run a deterministic validator and fix anything it flags, looping until clean.
 
-> **Paths:** `$APPMIXER_SKILL_ROOT` points at the full skills directory (the one
-> containing `_shared/`). The Setup block below resolves it (plugin root in
-> Claude Code, downloaded bundle elsewhere) — run it first and keep prefixing
-> later commands with the same export.
-> The validator (`validate.js`) needs Node deps (`ajv`) which are
-> installed by `scripts/ensure-deps.sh`.
-
-## Setup (first run)
-
-Install Node dependencies (idempotent, skips if already present):
-
-```bash
-# APPMIXER_SKILL_ROOT = the skills/ directory of the appmixer-skills checkout
-# (the folder that contains _shared/).
-#  - Claude Code plugin install: $CLAUDE_PLUGIN_ROOT/skills
-#  - skill symlinked/copied into a project's .claude/skills/: the real path of
-#    the skill directory, one level up (substitute <skill-dir> below)
-export APPMIXER_SKILL_ROOT="${APPMIXER_SKILL_ROOT:-${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills}}"
-if [ -z "$APPMIXER_SKILL_ROOT" ]; then
-    export APPMIXER_SKILL_ROOT="$(dirname "$(readlink -f <skill-dir>)")"
-fi
-bash "$APPMIXER_SKILL_ROOT/scripts/ensure-deps.sh"
-```
+> **Tooling:** the validator and the canonical flow template ship with the
+> `appmixer` CLI (`npm i -g appmixer`, version **>= 2.6.0** — the version-gate
+> snippet is in `12-e2e-upload.md` Prerequisites; quick probe:
+> `appmixer e2e validate --help`). No other setup is needed.
 
 ## How it works
 
 1. **Pick the components** to cover (one trigger or action per flow; default: all
    testable components of the connector).
-2. **Read the canonical template** `$APPMIXER_SKILL_ROOT/test-connector/scripts/test-flow-template.json`
-   — copy its structure (OnStart → setup → component-under-test → Assert →
-   AfterAll → ProcessE2EResults). It is a complete, working example.
+2. **Read the canonical template**
+   [`examples/test-flow-template.json`](examples/test-flow-template.json)
+   (shipped next to this document) — copy its structure (OnStart → setup →
+   component-under-test → Assert → AfterAll → ProcessE2EResults). It is a
+   complete, working example.
 
    ⚠️ **The template is the ONLY structural source of truth. Do NOT copy patterns
    from other connectors' committed test flows** — many pre-date the current
@@ -50,11 +33,14 @@ bash "$APPMIXER_SKILL_ROOT/scripts/ensure-deps.sh"
    `src/<vendor>/<connector>/artifacts/test-flows/test-flow-<name>.json`.
 5. **Validate**:
    ```bash
-   node "$APPMIXER_SKILL_ROOT/test-connector/scripts/validate.js" \
-     src/<vendor>/<connector>/artifacts/test-flows
+   appmixer e2e validate src/<vendor>/<connector>/artifacts/test-flows
    ```
    Fix every reported failure and re-run until it prints `Validation passed`.
    Warnings are informational (improve them when easy, but they don't block).
+   (`--ruleset basic` limits the run to the generic flow rules; server-side
+   validation of a live flow is `appmixer flow validate <flowId>`.
+   `--connectors-dir <dir>` points the coverage rules at the workspace when
+   running from elsewhere.)
 
 ## Critical rules (the validator enforces these)
 
@@ -87,10 +73,10 @@ bash "$APPMIXER_SKILL_ROOT/scripts/ensure-deps.sh"
    component. Enforced by `inport-key-match`.
 
 0d. **Don't invent `config.properties.account`** in newly generated flows —
-   binding happens at upload time (patch-accounts / runner
-   `APPMIXER_SKILL_ACCOUNT_ID`). Flows downloaded from a live instance
-   (`download-E2E-flows.js`) DO carry that instance's account IDs — leave them
-   in place; the runner ignores IDs that don't exist on the target instance and
+   binding happens at import time (`appmixer e2e import`, optionally
+   `--account <accountId>`). Flows exported from a live instance
+   (`appmixer e2e export`) DO carry that instance's account IDs — leave them
+   in place; the import ignores IDs that don't exist on the target instance and
    rebinds a live account instead.
 
 1. **Flow name starts with `E2E `** and is descriptive.
@@ -175,20 +161,20 @@ bash "$APPMIXER_SKILL_ROOT/scripts/ensure-deps.sh"
     one flow. `component-coverage` excludes `trigger: true` components, so it only
     flags uncovered **actions** — but triggers CAN and SHOULD be E2E-covered too,
     using the provoke pattern below.
-17. **Never verify a Create via full-text search** — search endpoints
+16. **Never verify a Create via full-text search** — search endpoints
     (`searchTerm`-style inputs) read an eventually-consistent index: a record
     created a second earlier is deterministically missing (and archived/deleted
     records are often excluded by default). Verify with Get-by-ID or a
     consistent list filter (`where Name=="…"` + `includeArchived` in Xero) —
     list endpoints read the primary store.
-18. **Unique names per run where the API enforces uniqueness** — contact names,
+17. **Unique names per run where the API enforces uniqueness** — contact names,
     option/category names etc. reject duplicates. Either make the name unique
     per run (append `{{{mod}}}` bound to `$.<onStart>.out.started`, or
     `g_now`/timestamp modifiers) or create+archive/delete in the same flow so
     the name is reusable. NEVER create per-run instances of org-capped
     resources (e.g. Xero allows max 2 active tracking categories per org) —
     reuse an existing one via `items[0]` instead.
-19. **Trigger flows (provoke pattern)** — the trigger sits **sourceless** in the
+18. **Trigger flows (provoke pattern)** — the trigger sits **sourceless** in the
     flow next to the normal OnStart chain; an action in the same flow provokes the
     event it listens for:
     - webhook trigger: `OnStart → SetVariable → Wait 1m → Create/Update/Delete
@@ -228,15 +214,15 @@ bash "$APPMIXER_SKILL_ROOT/scripts/ensure-deps.sh"
       `07-component-types.md`. A wrong topic produces a flow that registers
       fine and times out forever.
 
-(Failures 1-10 — including 5c, 6b and 9b — fail validation; 11-19 are warnings
+(Failures 1-10 — including 5c, 6b and 9b — fail validation; 11-18 are warnings
 or generation guidance.)
 
 ## Adding / changing a rule
 
-The validator is `validate.js` + `validators/*.js`: each validator exports
-`{ name, description, run(ctx) }` and calls `ctx.addFailure` / `ctx.addWarning`.
-Shared check logic lives in `validators/lib/`. Add a new file to `validators/` to
-add a rule — `validate.js` auto-discovers it.
+The validator suite lives in the appmixer CLI repo (`src/validators/rules/*.js`):
+each rule exports `{ name, description, run(ctx) }` and calls `ctx.addFailure` /
+`ctx.addWarning`; shared check logic lives in `src/validators/rules/lib/`. Add a
+new file there to add a rule — the suite auto-discovers it.
 
 ## Next step
 

@@ -17,13 +17,11 @@ Each skill directory is self-contained (`SKILL.md` + `references/`), so
 per-skill installs (`npx skills`, manual copy) work without post-install
 downloads.
 
-> **E2E flow testing** is the one scripted exception: `test-connector` ships
-> Node helper scripts (`test-connector/scripts/` — flow validator, upload CLI,
-> deterministic runner) built on the shared `_shared/` library in this
-> directory, with deps declared in `package.json` here (installed once via
-> `scripts/ensure-deps.sh`). E2E flow *generation* instructions ship with
-> `build-connector` (`references/11-e2e-flow-generation.md`). This scripted
-> layer disappears step by step as the tooling moves into the appmixer CLI.
+> **E2E flow testing** also runs through the CLI: the `appmixer e2e` command
+> family (`import`, `run`, `list`, `results`, `export`, `validate`, `rm`)
+> ships with it — the skills bundle no scripts. E2E flow *generation*
+> instructions ship with `build-connector`
+> (`references/11-e2e-flow-generation.md`).
 
 ## The connector workspace
 

@@ -2,28 +2,29 @@
     "name": "E2E Service - crud",
     "description": "End-to-end test for Service connector - tests CRUD operations",
     "flow": {
-        "start": {
+        "1f0c9d4e-2a3b-4c5d-8e6f-0a1b2c3d4e5f": {
             "type": "appmixer.utils.controls.OnStart",
             "x": 64,
             "y": 16,
             "source": {},
             "version": "1.0.0",
-            "config": {}
+            "config": {},
+            "errorHandling": { "autoRetry": false, "onError": "stopFlow" }
         },
-        "create-item": {
+        "2a7b8c9d-1e2f-4a3b-9c4d-5e6f7a8b9c0d": {
             "type": "appmixer.service.core.CreateItem",
-            "x": 256,
+            "x": 272,
             "y": 16,
             "version": "1.0.0",
             "source": {
                 "in": {
-                    "start": ["out"]
+                    "1f0c9d4e-2a3b-4c5d-8e6f-0a1b2c3d4e5f": ["out"]
                 }
             },
             "config": {
                 "transform": {
                     "in": {
-                        "start": {
+                        "1f0c9d4e-2a3b-4c5d-8e6f-0a1b2c3d4e5f": {
                             "out": {
                                 "type": "json2new",
                                 "modifiers": {
@@ -36,61 +37,63 @@
                         }
                     }
                 }
-            }
+            },
+            "errorHandling": { "autoRetry": false, "onError": "stopFlow" }
         },
-        "get-item": {
+        "3b8c9d0e-2f3a-4b4c-8d5e-6f7a8b9c0d1e": {
             "type": "appmixer.service.core.GetItem",
-            "x": 448,
+            "x": 480,
             "y": 144,
             "version": "1.0.0",
             "source": {
                 "in": {
-                    "create-item": ["out"]
+                    "2a7b8c9d-1e2f-4a3b-9c4d-5e6f7a8b9c0d": ["out"]
                 }
             },
             "config": {
                 "transform": {
                     "in": {
-                        "create-item": {
+                        "2a7b8c9d-1e2f-4a3b-9c4d-5e6f7a8b9c0d": {
                             "out": {
                                 "type": "json2new",
                                 "modifiers": {
                                     "itemId": {
-                                        "var-1": {
-                                            "variable": "$.create-item.out.id",
+                                        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d": {
+                                            "variable": "$.2a7b8c9d-1e2f-4a3b-9c4d-5e6f7a8b9c0d.out.id",
                                             "functions": []
                                         }
                                     }
                                 },
                                 "lambda": {
-                                    "itemId": "{{{var-1}}}"
+                                    "itemId": "{{{a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d}}}"
                                 }
                             }
                         }
                     }
                 }
-            }
+            },
+            "errorHandling": { "autoRetry": false, "onError": "stopFlow" }
         },
-        "assert-item": {
+        "4c9d0e1f-3a4b-4c5d-9e6f-7a8b9c0d1e2f": {
             "type": "appmixer.utils.test.Assert",
-            "x": 832,
+            "x": 688,
             "y": 144,
             "version": "1.0.0",
             "source": {
                 "in": {
-                    "get-item": ["out"]
+                    "3b8c9d0e-2f3a-4b4c-8d5e-6f7a8b9c0d1e": ["out"]
                 }
             },
             "config": {
                 "transform": {
                     "in": {
-                        "get-item": {
+                        "3b8c9d0e-2f3a-4b4c-8d5e-6f7a8b9c0d1e": {
                             "out": {
                                 "type": "json2new",
                                 "modifiers": {
                                     "expression": {
-                                        "name-check": {
-                                            "variable": "$.get-item.out.name",
+                                        "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e": {
+                                            "variable": "$.3b8c9d0e-2f3a-4b4c-8d5e-6f7a8b9c0d1e.out.name",
                                             "functions": []
                                         }
                                     }
@@ -99,7 +102,7 @@
                                     "expression": {
                                         "AND": [
                                             {
-                                                "field": "{{{name-check}}}",
+                                                "field": "{{{b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e}}}",
                                                 "assertion": "equal",
                                                 "expected": "E2E Test Item"
                                             }
@@ -110,65 +113,68 @@
                         }
                     }
                 }
-            }
+            },
+            "errorHandling": { "autoRetry": false, "onError": "stopFlow" }
         },
-        "after-all": {
+        "5d0e1f2a-4b5c-4d6e-8f7a-8b9c0d1e2f3a": {
             "type": "appmixer.utils.test.AfterAll",
-            "x": 1024,
-            "y": 80,
+            "x": 896,
+            "y": 144,
             "version": "1.0.0",
             "source": {
                 "in": {
-                    "assert-item": ["out"]
+                    "4c9d0e1f-3a4b-4c5d-9e6f-7a8b9c0d1e2f": ["out"]
                 }
             },
             "config": {
                 "properties": {
-                    "timeout": 30
+                    "timeout": 180
                 }
-            }
+            },
+            "errorHandling": { "autoRetry": false, "onError": "stopFlow" }
         },
-        "delete-item": {
+        "6e1f2a3b-5c6d-4e7f-9a8b-9c0d1e2f3a4b": {
             "type": "appmixer.service.core.DeleteItem",
-            "x": 1216,
-            "y": 80,
+            "x": 1104,
+            "y": 144,
             "version": "1.0.0",
             "source": {
                 "in": {
-                    "after-all": ["out"]
+                    "5d0e1f2a-4b5c-4d6e-8f7a-8b9c0d1e2f3a": ["out"]
                 }
             },
             "config": {
                 "transform": {
                     "in": {
-                        "after-all": {
+                        "5d0e1f2a-4b5c-4d6e-8f7a-8b9c0d1e2f3a": {
                             "out": {
                                 "type": "json2new",
                                 "modifiers": {
                                     "itemId": {
-                                        "var-1": {
-                                            "variable": "$.create-item.out.id",
+                                        "c3d4e5f6-a7b8-4c9d-8e0f-2a3b4c5d6e7f": {
+                                            "variable": "$.2a7b8c9d-1e2f-4a3b-9c4d-5e6f7a8b9c0d.out.id",
                                             "functions": []
                                         }
                                     }
                                 },
                                 "lambda": {
-                                    "itemId": "{{{var-1}}}"
+                                    "itemId": "{{{c3d4e5f6-a7b8-4c9d-8e0f-2a3b4c5d6e7f}}}"
                                 }
                             }
                         }
                     }
                 }
-            }
+            },
+            "errorHandling": { "autoRetry": false, "onError": "stopFlow" }
         },
-        "process-results": {
+        "7f2a3b4c-6d7e-4f8a-8b9c-0d1e2f3a4b5c": {
             "type": "appmixer.utils.test.ProcessE2EResults",
-            "x": 1408,
-            "y": 80,
+            "x": 1312,
+            "y": 144,
             "version": "1.0.0",
             "source": {
                 "in": {
-                    "delete-item": ["out"]
+                    "6e1f2a3b-5c6d-4e7f-9a8b-9c0d1e2f3a4b": ["out"]
                 }
             },
             "config": {
@@ -178,29 +184,30 @@
                 },
                 "transform": {
                     "in": {
-                        "delete-item": {
+                        "6e1f2a3b-5c6d-4e7f-9a8b-9c0d1e2f3a4b": {
                             "out": {
                                 "type": "json2new",
                                 "modifiers": {
                                     "recipients": {},
                                     "testCase": {},
                                     "result": {
-                                        "result-var": {
-                                            "variable": "$.after-all.out",
+                                        "d4e5f6a7-b8c9-4d0e-9f1a-3b4c5d6e7f8a": {
+                                            "variable": "$.5d0e1f2a-4b5c-4d6e-8f7a-8b9c0d1e2f3a.out",
                                             "functions": []
                                         }
                                     }
                                 },
                                 "lambda": {
-                                    "recipients": "jirka@client.io",
+                                    "recipients": "test@appmixer.ai",
                                     "testCase": "E2E Service - crud",
-                                    "result": "{{{result-var}}}"
+                                    "result": "{{{d4e5f6a7-b8c9-4d0e-9f1a-3b4c5d6e7f8a}}}"
                                 }
                             }
                         }
                     }
                 }
-            }
+            },
+            "errorHandling": { "autoRetry": false, "onError": "stopFlow" }
         }
     }
 }
