@@ -122,7 +122,7 @@ The complete zero-to-first-connector path — nothing else is needed:
 ```bash
 claude
 /plugin marketplace add Appmixer-ai/appmixer-skills
-/plugin install appmixer@appmixer-agents
+/plugin install appmixer@appmixer-skills
 ```
 
 **2. Create a workspace** — a folder with `src/<vendor>/` inside. The vendor is your namespace; pick your company name, or just use `appmixer`:
@@ -194,7 +194,7 @@ The skills determine the vendor without extra configuration:
 ```bash
 claude
 /plugin marketplace add Appmixer-ai/appmixer-skills
-/plugin install appmixer@appmixer-agents
+/plugin install appmixer@appmixer-skills
 ```
 
 All 3 skills load automatically, namespaced as `appmixer:build-connector`, `appmixer:test-connector`, `appmixer:review-connector`.
@@ -204,7 +204,8 @@ All 3 skills load automatically, namespaced as `appmixer:build-connector`, `appm
 ```bash
 git clone https://github.com/Appmixer-ai/appmixer-skills.git
 claude
-/plugin add /path/to/appmixer-skills
+/plugin marketplace add /path/to/appmixer-skills
+/plugin install appmixer@appmixer-skills
 ```
 
 ### Claude Desktop / Claude.ai
@@ -236,6 +237,44 @@ Copy the skill directories from `skills/` into your agent's skills folder — ea
 | Windsurf | `.windsurf/skills/` |
 | Cline | `.cline/skills/` |
 | Generic | `.agents/skills/` |
+
+### Working with the pre-release version (`dev` branch)
+
+Unreleased skills live on the `dev` branch — merging into `main` is what
+releases them (plugin marketplaces read straight from git; there is no
+separate publish step). To test the pre-release version in Claude Code:
+
+```bash
+/plugin marketplace add Appmixer-ai/appmixer-skills#dev
+/plugin install appmixer@appmixer-skills
+```
+
+**Already have the marketplace added (from `main`)?** Do a clean switch —
+remove it first. Removing the marketplace also uninstalls its plugins;
+re-adding under the same name would only replace the registration while the
+plugin keeps running from the old cached version:
+
+```bash
+/plugin marketplace remove appmixer-skills
+/plugin marketplace add Appmixer-ai/appmixer-skills#dev
+/plugin install appmixer@appmixer-skills
+```
+
+Updates are not automatic: after new commits land on `dev`, run
+`/plugin marketplace update appmixer-skills` (reinstall the plugin if the
+skills don't refresh). Switching back to the released version is the same
+remove → add (without `#dev`) → install sequence.
+
+Other agents (Cursor, Copilot, …): clone the repo, `git checkout dev`, and
+copy the skill directories per [Manual Installation](#manual-installation-any-agent).
+
+**Pre-release CLI:** the E2E part of `test-connector` needs an `appmixer` CLI
+with the `e2e` commands (>= 2.6.0). Until that version is on npm, install the
+CLI from its repo branch (announced with each testing round):
+
+```bash
+npm i -g git+ssh://git@github.com/Appmixer-ai/appmixer-cli.git#<branch>
+```
 
 ## Configuration
 
