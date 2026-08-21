@@ -5,8 +5,9 @@ write the flows directly** — there is no separate sub-agent. After writing the
 you run a deterministic validator and fix anything it flags, looping until clean.
 
 > **Tooling:** the validator and the canonical flow template ship with the
-> `appmixer` CLI (`npm i -g appmixer`) — no other setup is needed. Check the
-> CLI is recent enough with `appmixer e2e validate --help`.
+> `appmixer` CLI (`npm i -g appmixer`, version **>= 2.6.0** — the version-gate
+> snippet is in `12-e2e-upload.md` Prerequisites; quick probe:
+> `appmixer e2e validate --help`). No other setup is needed.
 
 ## How it works
 
@@ -160,20 +161,20 @@ you run a deterministic validator and fix anything it flags, looping until clean
     one flow. `component-coverage` excludes `trigger: true` components, so it only
     flags uncovered **actions** — but triggers CAN and SHOULD be E2E-covered too,
     using the provoke pattern below.
-17. **Never verify a Create via full-text search** — search endpoints
+16. **Never verify a Create via full-text search** — search endpoints
     (`searchTerm`-style inputs) read an eventually-consistent index: a record
     created a second earlier is deterministically missing (and archived/deleted
     records are often excluded by default). Verify with Get-by-ID or a
     consistent list filter (`where Name=="…"` + `includeArchived` in Xero) —
     list endpoints read the primary store.
-18. **Unique names per run where the API enforces uniqueness** — contact names,
+17. **Unique names per run where the API enforces uniqueness** — contact names,
     option/category names etc. reject duplicates. Either make the name unique
     per run (append `{{{mod}}}` bound to `$.<onStart>.out.started`, or
     `g_now`/timestamp modifiers) or create+archive/delete in the same flow so
     the name is reusable. NEVER create per-run instances of org-capped
     resources (e.g. Xero allows max 2 active tracking categories per org) —
     reuse an existing one via `items[0]` instead.
-19. **Trigger flows (provoke pattern)** — the trigger sits **sourceless** in the
+18. **Trigger flows (provoke pattern)** — the trigger sits **sourceless** in the
     flow next to the normal OnStart chain; an action in the same flow provokes the
     event it listens for:
     - webhook trigger: `OnStart → SetVariable → Wait 1m → Create/Update/Delete
@@ -213,7 +214,7 @@ you run a deterministic validator and fix anything it flags, looping until clean
       `07-component-types.md`. A wrong topic produces a flow that registers
       fine and times out forever.
 
-(Failures 1-10 — including 5c, 6b and 9b — fail validation; 11-19 are warnings
+(Failures 1-10 — including 5c, 6b and 9b — fail validation; 11-18 are warnings
 or generation guidance.)
 
 ## Adding / changing a rule

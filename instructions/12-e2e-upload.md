@@ -417,9 +417,6 @@ variables-fetch endpoint offers (red-chip detection). It does NOT validate
 runtime VALUES — a variable like `$.codeblock.out.result.field` can be offered
 yet empty at runtime. Always confirm by running the flow.
 
-### Special characters in `.env` passwords
-Passwords with `&`, `!`, `|` etc. break `source .env`. Always export via the Python parser in Prerequisites — it quotes values safely.
-
 ## Key API Endpoints
 
 | Action | Method | Endpoint |
