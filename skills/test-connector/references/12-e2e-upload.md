@@ -165,7 +165,20 @@ appmixer account ls --json
 
 **Creating an account is a user step.** The reliable path is a human
 authenticating in the Appmixer designer UI ("Connect account" on any component
-of the connector) — ask the user to do it and then re-list. Injecting an
+of the connector) — ask the user to do it and then re-list.
+
+**API-key services — inject from the local test-auth session** (CLI newer than
+2.6.x): after `appmixer test auth login` has stored the key locally,
+
+```bash
+appmixer account create --from-auth <vendor>:<connector> --name "<connector> e2e test"
+```
+
+builds the payload from the stored `authFields`, sets `token.type` and lets the
+server fill `profileInfo` via the connector's auth module. On older CLIs (or
+when the flag is unavailable) fall back to a direct `POST /accounts` with
+`{ "name", "service", "token": { "type": "apiKey", ... }, "profileInfo": {...} }`
+— the engine rejects tokens without a `type`. Injecting an
 account directly (`appmixer account create <file>` with
 `{ "name": ..., "service": "<vendor>:<connector>", "token": {...}, "profileInfo": {} }`)
 also works, but mind the engine's requirements:

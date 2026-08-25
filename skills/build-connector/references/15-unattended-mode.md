@@ -79,9 +79,10 @@ what is missing (a failed pre-flight costs nothing):
    `appmixer test auth login` is a human step — report exactly what to run.
 5. **Instance account** — an account for `<vendor>:<connector>` exists on the
    instance (`appmixer account ls --json`), or the credentials from (4) allow
-   creating one via `POST /accounts` (apiKey services: include `token.type`
-   and `profileInfo` — the CLI's `create-account` path is not reliable for
-   apiKey services). OAuth services without an existing account: STOP —
+   creating one — preferred (CLI newer than 2.6.x):
+   `appmixer account create --from-auth <vendor>:<connector>`; fallback on
+   older CLIs: `POST /accounts` with `token.type` and `profileInfo` set
+   explicitly. OAuth services without an existing account: STOP —
    consent needs a human.
 6. **Budget declared** — all three budget items have values, stated in the
    opening report.
