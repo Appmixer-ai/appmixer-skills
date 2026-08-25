@@ -39,7 +39,7 @@ connectors, but a customer's own workspace works just as well.
 ## Design conventions (references sync)
 
 The connector **design conventions** ship inside the skills that use them
-(`build-connector`, `review-connector`), in each skill's `references/`
+(`build-connector`, `review-connector`, `test-connector`), in each skill's `references/`
 directory — including complete example files in `references/examples/`. The
 canonical source is `instructions/` at the repo root;
 `node scripts/sync-references.mjs` copies it into the skills (the smoke test

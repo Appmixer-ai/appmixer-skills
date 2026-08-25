@@ -9,7 +9,7 @@ Give your AI coding agent deep Appmixer connector-development expertise — scaf
 | Skill | What it does |
 |-------|-------------|
 | **build-connector** | The end-to-end pipeline: build (requirements → research → scaffold incl. trigger `test()`) → review → test → publish |
-| **test-connector** | Test a connector: CLI component test+fix cycle, plus E2E flow testing on a live instance (upload flows, run, evaluate, fix loop) |
+| **test-connector** | Test a connector: CLI component test+fix cycle, live verification (`appmixer connector verify` — schema conformance + enum round-trips against the real API), plus E2E flow testing on a live instance (upload flows, run, evaluate, fix loop) |
 | **review-connector** | Read-only audit of connector components against Appmixer standards (incl. trigger `test()` rules) |
 
 All three skills are pure instructions; the only external tool they drive is
@@ -24,7 +24,9 @@ API docs, scaffolds `service.json`/`auth.js`/`quota.js` and every component
 (actions, triggers with `test()` for Flow Test Mode, dynamic dropdown sources
 with caching), then hands off to review, testing, and publishing. Also handles
 smaller jobs inside an existing connector — adding components or retrofitting a
-`test()` method onto a trigger. Progress persists in
+`test()` method onto a trigger. It also authors the connector's live-verification
+spec (`artifacts/verify.json` — fixture recipes and enum round-trip definitions
+for `appmixer connector verify`; running it belongs to test-connector). Progress persists in
 `artifacts/ai-artifacts/pipeline-state.json`, so an interrupted build resumes
 where it stopped.
 
@@ -52,6 +54,14 @@ Results land in `artifacts/ai-artifacts/test-plan.json`. Auth is set up through
 `appmixer test auth login` (the browser step is yours). Heads-up: tests spend
 API credits, so the agent always asks before running them.
 
+After the component loop passes, it runs **live verification**
+(`appmixer connector verify`) with the same stored credentials: schema
+conformance (is every declared output field really returned?) and, with
+`--write`, enum round-trips that create a record per select option and compare
+the service's own label for the stored value — the check that catches inverted
+label/value maps. `--record` saves PII-sanitized output shapes to
+`artifacts/samples/` so CI can re-check conformance offline.
+
 Also covers **E2E flow testing on a live Appmixer instance**: publishes the
 connector, imports the flow JSONs from `artifacts/test-flows/` (generated
 during the build) with `appmixer e2e import` — which binds auth accounts and
@@ -67,6 +77,8 @@ Example prompts:
 > Test just the CaptureEvent component.
 
 > Upload and run the E2E flows for `acme.posthog`.
+
+> Run live verification for the cliniko connector and record the samples.
 
 > FindPersons failed with a 400 — figure out why and fix it.
 
@@ -110,6 +122,24 @@ appmixer e2e results -c <vendor>:<connector>                        # stored res
 Flow *generation* rules ship with `build-connector`
 (`references/11-e2e-flow-generation.md`); upload/run procedures with
 `test-connector` (`references/12-e2e-upload.md`, `references/13-e2e-run.md`).
+
+## Live verification
+
+Between the CLI component loop and E2E flows sits `appmixer connector verify` —
+the semantic check that the source tells the truth about the service's API
+(where `appmixer connector validate` only checks the source's shape). Pure
+instructions again; the CLI ships the tooling:
+
+```sh
+appmixer connector verify <connector>            # declared schemas vs live payloads
+appmixer connector verify <connector> --write    # + enum round-trips (creates + cleans up records)
+appmixer connector verify <connector> --record   # save sanitized output shapes to artifacts/samples/
+appmixer connector verify <connector> --offline  # re-check from samples, no credentials (CI)
+```
+
+Spec *authoring* (`artifacts/verify.json`) ships with `build-connector`; the
+run-and-interpret procedure with `test-connector`; the shared rules in both
+skills' `references/15-live-verification.md`.
 
 See [skills/README.md](skills/README.md) for architecture details (how the skills work, the references sync).
 
