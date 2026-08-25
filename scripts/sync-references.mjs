@@ -22,7 +22,7 @@ const MANIFEST = {
         '03-plugins.md', '04-components.md', '05-component-config.md',
         '06-component-behavior.md', '07-component-types.md',
         '08-best-practices.md', '09-testing.md', '10-trigger-test-method.md',
-        '11-e2e-flow-generation.md', '14-async-components.md',
+        '11-e2e-flow-generation.md', '14-async-components.md', '17-demo-flows.md',
         '15-live-verification.md', 'examples'
     ],
     'review-connector': [

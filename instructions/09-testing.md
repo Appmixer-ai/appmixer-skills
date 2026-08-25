@@ -25,6 +25,12 @@ E2E test flows are automated workflow tests stored as `test-flow-*.json` files i
 
 **Full Coverage Requirement**: All components in a connector MUST be tested. Verify that every component in the connector appears in at least one test flow.
 
+**Data assumptions get a designer sticky note**: a flow that assumes tenant
+data (hardcoded entity IDs that must exist), provokes its own data, or carries
+a timing constraint (a Wait that must not be removed) MUST carry a top-level
+`notes` entry — a designer sticky note with the warning and the setup steps for
+a fresh tenant. See `11-e2e-flow-generation.md` rule 19 for the shape.
+
 #### Test Flow Structure
 
 Test flows are JSON files that define a workflow using the Appmixer flow format. Each flow consists of:
