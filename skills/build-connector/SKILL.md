@@ -58,6 +58,7 @@ Step 1: BUILD      → Requirements → research the API → scaffold + componen
 Step 2: REVIEW     → Audit against standards, fix findings              [review-connector]
 Step 3a: TEST CLI  → Authenticate → component test loop → finalize      [test-connector]
 Step 3b: TEST E2E  → generate flows (this skill) → upload + run          [test-connector]
+Step 3c: VERIFY    → author artifacts/verify.json (this skill) → run     [test-connector]
 Step 4: PUBLISH    → Lint, bundle bump, pack & publish via the appmixer CLI
 ```
 
@@ -66,6 +67,11 @@ Step 3b: flow *generation* is this skill's job
 live instance belongs to `test-connector` (its `references/12-e2e-upload.md`
 and `13-e2e-run.md`). All E2E tooling ships with the appmixer CLI
 (`appmixer e2e import|run|list|results|export|validate|rm`).
+
+Step 3c: authoring `artifacts/verify.json` (fixture recipes + enum round-trip
+specs) is this skill's job — see `references/15-live-verification.md` for the
+format and rules (account-agnostic recipes, mandatory round-trip cleanup);
+running `appmixer connector verify` belongs to `test-connector`.
 
 Progress is tracked in
 `src/<vendor>/<connector>/artifacts/ai-artifacts/pipeline-state.json` —
@@ -228,6 +234,26 @@ the connector, imports the flows (`appmixer e2e import`) and runs them on a
 live instance (`appmixer e2e run` — its `references/12-e2e-upload.md` and
 `13-e2e-run.md`). Skip this step if the user
 has no live instance — continue with Step 4.
+
+
+## Step 3c: Author the live-verification spec
+
+Write `src/<vendor>/<connector>/artifacts/verify.json` following
+`references/15-live-verification.md`:
+
+1. **Fixtures** — a recipe per ID the read checks need, resolved from the
+   connector's own List/Find components (`{ "from": "ListBusinesses", "path": "id" }`).
+   Never concrete IDs: the file must work on any tenant.
+2. **Read cases** — every List/Find/Get component, wiring fixture placeholders
+   into required inputs.
+3. **Round-trip specs** — one per `select` input whose stored value the service
+   echoes back (`valueField`, ideally `labelField` too — the label comparison is
+   what catches inverted label/value maps). Each spec MUST define a `cleanup`
+   through the connector's own components (`MakeApiCall` when there is no
+   delete action).
+
+Running verify (read-only, `--write` round-trips, `--record` samples,
+`--offline`) belongs to the `test-connector` skill.
 
 ---
 
