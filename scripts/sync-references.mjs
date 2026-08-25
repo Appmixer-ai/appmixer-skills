@@ -22,7 +22,8 @@ const MANIFEST = {
         '03-plugins.md', '04-components.md', '05-component-config.md',
         '06-component-behavior.md', '07-component-types.md',
         '08-best-practices.md', '09-testing.md', '10-trigger-test-method.md',
-        '11-e2e-flow-generation.md', '14-async-components.md', 'examples'
+        '11-e2e-flow-generation.md', '14-async-components.md',
+        '15-unattended-mode.md', 'examples'
     ],
     'review-connector': [
         '04-components.md', '05-component-config.md', '06-component-behavior.md',
@@ -31,12 +32,20 @@ const MANIFEST = {
     ],
     'test-connector': [
         '09-testing.md', '12-e2e-upload.md', '13-e2e-run.md',
-        '14-async-components.md', 'examples/e2e-test-flow.json'
+        '14-async-components.md', '15-unattended-mode.md',
+        'examples/e2e-test-flow.json'
+    ],
+    'ship-connector': [
+        '15-unattended-mode.md'
     ]
 };
 
 const check = process.argv.includes('--check');
 let drift = [];
+
+// Map keys use forward slashes on every platform (manifest entries are
+// written with '/'; path.relative yields '\' on Windows).
+const posix = p => p.split(path.sep).join('/');
 
 function* walk(dir) {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -51,7 +60,7 @@ function expectedFiles(items) {
     for (const item of items) {
         const abs = path.join(SRC, item);
         if (fs.statSync(abs).isDirectory()) {
-            for (const f of walk(abs)) out.set(path.relative(SRC, f), f);
+            for (const f of walk(abs)) out.set(posix(path.relative(SRC, f)), f);
         } else {
             out.set(item, abs);
         }
@@ -65,7 +74,7 @@ for (const [skill, items] of Object.entries(MANIFEST)) {
 
     if (check) {
         const actual = new Set(fs.existsSync(refDir)
-            ? [...walk(refDir)].map(f => path.relative(refDir, f)) : []);
+            ? [...walk(refDir)].map(f => posix(path.relative(refDir, f))) : []);
         for (const [rel, src] of expected) {
             const dst = path.join(refDir, rel);
             if (!fs.existsSync(dst)) drift.push(`${skill}: missing references/${rel}`);

@@ -225,6 +225,16 @@ Record the result (status, reason) for the component in `test-plan.json`.
 - **STOP immediately** on `[ERROR]: Mongo DB not connected!` or
   `[ERROR]: Request failed with status code 403!`.
 
+## Unattended runs
+
+When this skill runs under an explicitly approved unattended budget (see
+`references/15-unattended-mode.md` — activation is always the user's, never
+the agent's), the interactive confirmations become budget checks and failing
+components are marked failed and skipped rather than blocking the run. The
+STOP rules above and the auth steps that need a human (browser login, OAuth
+consent) are NOT relaxed — they stop an unattended run too, with the stop
+brief defined in that reference.
+
 ## Known CLI limitations (version ≤ 2.3.4)
 
 Check the installed version with `appmixer --version`. On 2.3.4 and older:

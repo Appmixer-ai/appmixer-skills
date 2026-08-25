@@ -48,6 +48,7 @@ https://github.com/appmixer-ai/appmixer-connectors.
 | `09-testing.md` | E2E flow design, modifier functions, deterministic patterns |
 | `10-trigger-test-method.md` | Trigger `test(context)` for Flow Test Mode — patterns per trigger group |
 | `11-e2e-flow-generation.md` | Generating E2E test flows into `artifacts/test-flows/` (used by Step 3b) |
+| `15-unattended-mode.md` | Unattended runs: upfront budget approval, gate resolutions, stop briefs |
 
 Consult these when generating code, debugging failures, or reviewing output.
 
@@ -183,6 +184,12 @@ Never run these automatically — they can take a long time and cost credits. Ev
 
 > "Ready to plan/run CLI tests for `<connector>`. Shall I go ahead?"
 
+**Exception — approved unattended run:** when the run is under an explicitly
+approved unattended budget (see `references/15-unattended-mode.md` for the
+activation rules — the agent never declares this on its own), this gate is
+pre-approved by that budget. Check the remaining budget instead of asking, and
+stop with a brief when it is exhausted.
+
 ---
 
 ## Step 3a: Test CLI
@@ -197,14 +204,16 @@ by hand; the CLI stores extra keys (e.g. `authFilePath`) that hand-written entri
 
 ### CLI-2. Test plan
 
-**Ask user first** — confirm before running.
+**Ask user first** — confirm before running (unattended run: budget check
+instead, per the exception above).
 
 Follow Step 0a of the `test-connector` skill — read the connector's component
 definitions and write an ordered `test-plan.json` directly (no sub-agent).
 
 ### CLI-3. Test + fix loop
 
-**Ask user first** before each component test run.
+**Ask user first** before each component test run (unattended run: budget
+check instead).
 
 For each component in the test plan, test sequentially (port 2300 conflict if
 parallel) by following the `test-connector` skill (drives `appmixer test component`).
@@ -215,7 +224,8 @@ After 3 failures → report to user: skip or investigate manually.
 
 ### CLI-4. Finalize
 
-Ask user about consistently failing components: remove or keep?
+Ask user about consistently failing components: remove or keep? (Unattended
+run: keep them, mark them failed in the report — removal is a human decision.)
 
 ---
 

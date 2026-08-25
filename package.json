@@ -44,6 +44,10 @@
       {
         "name": "test-connector",
         "path": "./skills/test-connector"
+      },
+      {
+        "name": "ship-connector",
+        "path": "./skills/ship-connector"
       }
     ]
   },

@@ -28,6 +28,10 @@
     {
       "filename": "skills/test-connector/SKILL.md",
       "updater": "scripts/skill-version.js"
+    },
+    {
+      "filename": "skills/ship-connector/SKILL.md",
+      "updater": "scripts/skill-version.js"
     }
   ],
   "packageFiles": [
