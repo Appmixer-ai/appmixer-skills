@@ -77,6 +77,12 @@ module.exports = {
 };
 
 const toCsv = (array) => {
+    // An empty result set is ordinary (new account, filter matches nothing), so
+    // never index into array[0] before checking — that throws a TypeError that
+    // ends the flow instead of writing an empty file.
+    if (!array.length) {
+        return '';
+    }
     const headers = Object.keys(array[0]);
     return [
         headers.join(','),

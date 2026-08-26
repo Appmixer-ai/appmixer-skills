@@ -299,6 +299,18 @@ Flow JSONs are produced during the build by `build-connector`
 (its `references/11-e2e-flow-generation.md`); `appmixer e2e validate` checks
 them before import and after every fix.
 
+**Async components need both ports asserted** — see
+`references/14-async-components.md` → "Testing an async component". For a
+component whose job finishes later, assert the job id on the submit port **and**
+the result on the completion port, and wire both asserts into `AfterAll` so the
+flow cannot pass while the callback path is broken; size the `AfterAll` window
+for the provider's real job duration. If the component takes a Correlation ID,
+assert it comes back on the completion port — that is the cheapest way to catch
+a broken echo before a user hits it with ten parallel jobs. A flow that reaches
+the result through a `Wait` timer plus a status component is testing the user's
+polling, not the component's completion path, and is a sign the component is
+built in the wrong shape.
+
 ## After changes
 
 If testing leads to fixes:
