@@ -40,6 +40,7 @@ https://github.com/appmixer-ai/appmixer-connectors.
 | `00-overview.md` | Appmixer architecture overview |
 | `01-connectors.md` | Connector structure, service.json, bundle.json |
 | `02-authentication.md` | Auth patterns (API key, OAuth, etc.) |
+| `03-plugins.md` | Plugins — services, custom fields, extending the platform |
 | `04-components.md` | Component structure and component.json |
 | `05-component-config.md` | Transforms, modifiers, lambda patterns |
 | `06-component-behavior.md` | Behavior file patterns |
@@ -48,8 +49,18 @@ https://github.com/appmixer-ai/appmixer-connectors.
 | `09-testing.md` | E2E flow design, modifier functions, deterministic patterns |
 | `10-trigger-test-method.md` | Trigger `test(context)` for Flow Test Mode — patterns per trigger group |
 | `11-e2e-flow-generation.md` | Generating E2E test flows into `artifacts/test-flows/` (used by Step 3b) |
+| `14-async-components.md` | Jobs that finish later — self-callback vs. continuation chain |
 
 Consult these when generating code, debugging failures, or reviewing output.
+
+**Before writing any component whose operation does not finish inside one
+request — a transcription, a render, a scrape/dataset job, an enrichment, a
+human approval — read `14-async-components.md` first.** The tell is that the API
+returns a job/snapshot/task **id** rather than the result, and usually offers a
+callback URL parameter or a companion status endpoint. Getting this wrong is
+expensive to undo later: it changes the component's ports, so fixing it after
+release is a breaking change. Never solve it by returning the id and leaving the
+user to poll in the flow, and never expose the callback URL as a component input.
 
 ## Pipeline Overview
 
