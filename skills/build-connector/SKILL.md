@@ -235,6 +235,9 @@ live instance (`appmixer e2e run` — its `references/12-e2e-upload.md` and
 `13-e2e-run.md`). Skip this step if the user
 has no live instance — continue with Step 4.
 
+Optionally ship 1–2 presentable demo flows in `artifacts/demo-flows/`
+(`references/17-demo-flows.md` — conventions and the schema-variable rule).
+
 
 ## Step 3c: Author the live-verification spec
 

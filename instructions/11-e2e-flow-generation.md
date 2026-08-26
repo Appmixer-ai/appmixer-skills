@@ -183,6 +183,11 @@ you run a deterministic validator and fix anything it flags, looping until clean
       created during flow start, before OnStart fires.
     - polling trigger (e.g. event-start): create data the first poll will match
       (an ongoing/imminent item) — no Wait needed.
+    - **baseline-and-dedupe polling trigger** (`tick()` records the current item
+      set on its first poll and only emits items that appear LATER): the provoke
+      MUST run after that first tick, so keep the `Wait 1m` before the
+      provoking action — a cart/record created at flow start lands in the
+      baseline and is never emitted (prestashop AbandonedCart).
     - Webhook notifications can take **minutes** to arrive (MS Graph: ~5 measured)
       — set the AfterAll `timeout` to 420 and expect the runner to wait, not fail.
     - Cleanup should consume the TRIGGER's output (`$.trigger.out.id`) — it then
@@ -214,7 +219,26 @@ you run a deterministic validator and fix anything it flags, looping until clean
       `07-component-types.md`. A wrong topic produces a flow that registers
       fine and times out forever.
 
-(Failures 1-10 — including 5c, 6b and 9b — fail validation; 11-18 are warnings
+19. **Document data assumptions with a designer sticky note** — a flow that
+    assumes tenant data (a hardcoded entity ID that must exist), provokes its
+    own data (state transitions, seeded records), or carries a timing
+    constraint (a Wait that must not be removed) MUST carry a top-level
+    `notes` entry explaining the assumption and how to satisfy it on a fresh
+    tenant. Anyone opening the flow in the designer sees the warning instead
+    of debugging a silent timeout. Shape (markdown `content`):
+
+    ```json
+    "notes": {
+        "<uuid>": { "x": 64, "y": 32, "width": 672, "height": 224,
+                    "content": "## ⚠️ Test data assumption\n\n…what must exist, why, and the setup steps…" }
+    }
+    ```
+
+    Notes survive `appmixer e2e import`. Real cases: prestashop find-returns
+    (self-provoked Refunded state + required POST permission), customer-orders
+    (demo customer with orders vs. the GDPR anonymous account).
+
+(Failures 1-10 — including 5c, 6b and 9b — fail validation; 11-19 are warnings
 or generation guidance.)
 
 ## Adding / changing a rule
