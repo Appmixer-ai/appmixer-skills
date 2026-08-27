@@ -295,8 +295,18 @@ Updates are not automatic: after new commits land on `dev`, run
 skills don't refresh). Switching back to the released version is the same
 remove → add (without `#dev`) → install sequence.
 
-Other agents (Cursor, Copilot, …): clone the repo, `git checkout dev`, and
-copy the skill directories per [Manual Installation](#manual-installation-any-agent).
+Other agents (Cursor, Copilot, …): point the `skills` CLI at the branch with a
+`/tree/<branch>` URL — `add` takes no ref flag, and the `owner/repo#dev`
+shorthand is not accepted there:
+
+```bash
+npx skills add https://github.com/Appmixer-ai/appmixer-skills/tree/dev
+```
+
+The branch is recorded in `skills-lock.json` (`"ref": "dev"`), so a later
+`npx skills update` keeps pulling from `dev` without repeating the URL.
+Re-running `add` re-installs over the existing copies. Switching back to the
+released version is the same `add` without the `/tree/dev` suffix.
 
 **Pre-release CLI:** the E2E part of `test-connector` needs an `appmixer` CLI
 with the `e2e` commands (>= 2.6.0). Until that version is on npm, install the
