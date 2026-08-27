@@ -150,11 +150,32 @@ port); if the provider only offers a status endpoint to poll, it MUST use a
    cannot continue the branch that started the job. (A polling trigger is still
    legitimate on its own, for jobs submitted outside Appmixer.)
 5. **Missing echo** on the self-callback shape — one component instance has ONE
-   callback URL, so parallel jobs arrive in completion order. Inputs must be
-   stashed in state under the provider's job id at submit time, replayed on the
-   callback, and `stateUnset` afterwards; a **Correlation ID** input should be
-   echoed on both ports. Without it a downstream component cannot tell which
-   result belongs to which input — `warning`.
+   callback URL, so parallel jobs arrive in completion order. The job's inputs
+   plus a **Correlation ID** input must be echoed on both ports; without them a
+   downstream component cannot tell which result belongs to which input —
+   `warning`.
+6. **Echo carried in component state** rather than in the callback URL —
+   `warning`, rule `async.echo-in-state`. `stateSet` after the submit races the
+   provider's callback (it starts working the moment it accepts the job), a
+   redelivered callback finds the entry already `stateUnset`, and state has no
+   TTL so a job that never calls back leaks its entry forever. The fix is to
+   append the echo to `context.getWebhookUrl()` and read it back from
+   `context.messages.webhook.content.query`.
+7. **Callback emitted without checking it carries a job id** — `warning`, rule
+   `async.unguarded-callback`. Anything can POST to a webhook URL; without the
+   guard a stray or replayed request emits a `done` carrying an empty result.
+8. **`context.response()` not in a `finally`** — `warning`, rule
+   `async.ack-not-guaranteed`. An emit (or a state call) that throws before the
+   ack means no 2xx, the provider redelivers, and the redelivery re-runs the
+   same failure.
+9. **Submit drops a file read stream on the error path**, or accepts a missing
+   job id from the submit response — `warning`. An un-destroyed stream holds a
+   descriptor per failed attempt; a missing job id sends `request_id: undefined`
+   into the flow and silently unlinks the callback, so it should throw.
+10. **A `limit-concurrency` quota rule whose comment describes capping in-flight
+    jobs** on a component that submits and returns — `info`. The slot is released
+    when `receive()` returns, so it caps concurrent submissions only; the comment
+    must not claim protection the rule no longer provides.
 
 ### Triggers only
 1. **`test(context)` present** — triggers should implement `test()` so Flow Test
