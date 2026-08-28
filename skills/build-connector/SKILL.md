@@ -40,6 +40,7 @@ https://github.com/appmixer-ai/appmixer-connectors.
 | `00-overview.md` | Appmixer architecture overview |
 | `01-connectors.md` | Connector structure, service.json, bundle.json |
 | `02-authentication.md` | Auth patterns (API key, OAuth, etc.) |
+| `03-plugins.md` | Plugins — services, custom fields, extending the platform |
 | `04-components.md` | Component structure and component.json |
 | `05-component-config.md` | Transforms, modifiers, lambda patterns |
 | `06-component-behavior.md` | Behavior file patterns |
@@ -48,9 +49,19 @@ https://github.com/appmixer-ai/appmixer-connectors.
 | `09-testing.md` | E2E flow design, modifier functions, deterministic patterns |
 | `10-trigger-test-method.md` | Trigger `test(context)` for Flow Test Mode — patterns per trigger group |
 | `11-e2e-flow-generation.md` | Generating E2E test flows into `artifacts/test-flows/` (used by Step 3b) |
-| `15-unattended-mode.md` | Unattended runs: upfront budget approval, gate resolutions, stop briefs |
+| `14-async-components.md` | Jobs that finish later — self-callback vs. continuation chain |
+| `18-unattended-mode.md` | Unattended runs: upfront budget approval, gate resolutions, stop briefs |
 
 Consult these when generating code, debugging failures, or reviewing output.
+
+**Before writing any component whose operation does not finish inside one
+request — a transcription, a render, a scrape/dataset job, an enrichment, a
+human approval — read `14-async-components.md` first.** The tell is that the API
+returns a job/snapshot/task **id** rather than the result, and usually offers a
+callback URL parameter or a companion status endpoint. Getting this wrong is
+expensive to undo later: it changes the component's ports, so fixing it after
+release is a breaking change. Never solve it by returning the id and leaving the
+user to poll in the flow, and never expose the callback URL as a component input.
 
 ## Pipeline Overview
 
@@ -59,6 +70,7 @@ Step 1: BUILD      → Requirements → research the API → scaffold + componen
 Step 2: REVIEW     → Audit against standards, fix findings              [review-connector]
 Step 3a: TEST CLI  → Authenticate → component test loop → finalize      [test-connector]
 Step 3b: TEST E2E  → generate flows (this skill) → upload + run          [test-connector]
+Step 3c: VERIFY    → author artifacts/verify.json (this skill) → run     [test-connector]
 Step 4: PUBLISH    → Lint, bundle bump, pack & publish via the appmixer CLI
 ```
 
@@ -67,6 +79,11 @@ Step 3b: flow *generation* is this skill's job
 live instance belongs to `test-connector` (its `references/12-e2e-upload.md`
 and `13-e2e-run.md`). All E2E tooling ships with the appmixer CLI
 (`appmixer e2e import|run|list|results|export|validate|rm`).
+
+Step 3c: authoring `artifacts/verify.json` (fixture recipes + enum round-trip
+specs) is this skill's job — see `references/15-live-verification.md` for the
+format and rules (account-agnostic recipes, mandatory round-trip cleanup);
+running `appmixer connector verify` belongs to `test-connector`.
 
 Progress is tracked in
 `src/<vendor>/<connector>/artifacts/ai-artifacts/pipeline-state.json` —
@@ -185,7 +202,7 @@ Never run these automatically — they can take a long time and cost credits. Ev
 > "Ready to plan/run CLI tests for `<connector>`. Shall I go ahead?"
 
 **Exception — approved unattended run:** when the run is under an explicitly
-approved unattended budget (see `references/15-unattended-mode.md` for the
+approved unattended budget (see `references/18-unattended-mode.md` for the
 activation rules — the agent never declares this on its own), this gate is
 pre-approved by that budget. Check the remaining budget instead of asking, and
 stop with a brief when it is exhausted.
@@ -238,6 +255,29 @@ the connector, imports the flows (`appmixer e2e import`) and runs them on a
 live instance (`appmixer e2e run` — its `references/12-e2e-upload.md` and
 `13-e2e-run.md`). Skip this step if the user
 has no live instance — continue with Step 4.
+
+Optionally ship 1–2 presentable demo flows in `artifacts/demo-flows/`
+(`references/17-demo-flows.md` — conventions and the schema-variable rule).
+
+
+## Step 3c: Author the live-verification spec
+
+Write `src/<vendor>/<connector>/artifacts/verify.json` following
+`references/15-live-verification.md`:
+
+1. **Fixtures** — a recipe per ID the read checks need, resolved from the
+   connector's own List/Find components (`{ "from": "ListBusinesses", "path": "id" }`).
+   Never concrete IDs: the file must work on any tenant.
+2. **Read cases** — every List/Find/Get component, wiring fixture placeholders
+   into required inputs.
+3. **Round-trip specs** — one per `select` input whose stored value the service
+   echoes back (`valueField`, ideally `labelField` too — the label comparison is
+   what catches inverted label/value maps). Each spec MUST define a `cleanup`
+   through the connector's own components (`MakeApiCall` when there is no
+   delete action).
+
+Running verify (read-only, `--write` round-trips, `--record` samples,
+`--offline`) belongs to the `test-connector` skill.
 
 ---
 

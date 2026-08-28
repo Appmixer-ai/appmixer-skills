@@ -19,7 +19,7 @@ live instance). This file adds only the gate policy (one upfront approval, a
 budget, deterministic stop conditions) and the final ship steps (commit, push,
 PR).
 
-**Read `references/15-unattended-mode.md` first** — it is the contract this
+**Read `references/18-unattended-mode.md` first** — it is the contract this
 skill runs under: activation rules, budget semantics, gate resolutions,
 pre-flight checks, stop brief format. Everything below assumes it.
 
@@ -33,14 +33,14 @@ pre-flight checks, stop brief format. Everything below assumes it.
   instead of interrogating the user.
 - **Target instance** (API URL) and **e2e user** for the E2E phase.
 - **Budget** — `maxCredits` / `maxMinutes` / `maxFixAttempts`
-  (defaults per `15-unattended-mode.md`; state whatever is used).
+  (defaults per `18-unattended-mode.md`; state whatever is used).
 
 ## The one gate
 
 Before anything runs, present a single approval containing: connector name,
 component list (or the issue link that defines it), target instance, push
 remote + branch, and the budget. The user's approval of THIS summary is the
-activation described in `15-unattended-mode.md` — after it, no further
+activation described in `18-unattended-mode.md` — after it, no further
 questions until the run ends or a stop condition fires. When the skill is
 invoked from an already-unattended context (CI, a scheduled run whose setup
 approved the budget), the approval is carried by that context — print the same
@@ -55,7 +55,7 @@ its first non-`done` step instead of starting over.
 
 ### Step 0 — Pre-flight
 
-Run the full pre-flight from `15-unattended-mode.md` (CLI version, instance,
+Run the full pre-flight from `18-unattended-mode.md` (CLI version, instance,
 fresh login, service credentials in the configstore, instance account, budget,
 git safety). Any failure → stop brief, nothing spent.
 
@@ -71,7 +71,7 @@ Commit after this step (feature branch `feature/<connector>-connector`).
 ### Step 2 — CLI tests
 
 `test-connector` Step 0a (test plan) and the test+fix loop — the "ask first"
-gates resolve per `15-unattended-mode.md` (budget check instead of a
+gates resolve per `18-unattended-mode.md` (budget check instead of a
 question). Async components: test the submit path (`wait=false`) plus their
 status components; the wait path is E2E's job. A component still failing after
 `maxFixAttempts` is marked failed in the plan and the run continues.
@@ -83,7 +83,7 @@ Commit after this step.
 1. Generate flows if missing (`build-connector` Step 3b /
    `11-e2e-flow-generation.md`), `appmixer e2e validate` until clean.
 2. Publish + prepare per `12-e2e-upload.md` (login as the e2e user is already
-   done in pre-flight; account creation rules per `15-unattended-mode.md`
+   done in pre-flight; account creation rules per `18-unattended-mode.md`
    pre-flight item 5).
 3. `appmixer e2e import <flows> --account <id>` — treat import as the
    authoritative validation; fix flow JSONs on INVALID variables and
@@ -96,22 +96,36 @@ Commit after this step.
 
 Commit after this step.
 
-### Step 4 — Ship
+### Step 4 — Live verification
+
+`test-connector`'s live verification step (`build-connector`/`test-connector`
+Step 3c): `appmixer connector verify <connector>` (read-only schema
+conformance), then `--write` when the connector ships `artifacts/verify.json`
+round-trip specs authored in Step 1 — never against a production tenant. Interpret
+findings per `15-live-verification.md`: FAIL findings are fixed inside the
+`maxFixAttempts` budget like any other component failure; WARN findings are
+reported, not fixed. Skip with a stated reason when the connector has no
+`verify.json` and no schema-bearing components.
+
+Commit after this step.
+
+### Step 5 — Ship
 
 1. Bundle version check per `build-connector`'s publish rules (initial release
    stays 1.0.0; changes to an existing connector bump + changelog).
 2. Push the feature branch to the approved remote.
 3. `gh pr create` against the approved base. PR body: summary, component
-   table, auth/quota, test evidence (validator, CLI x/y, E2E x/y with the
-   instance name), links to the flow JSONs in the branch, notes for reviewers.
+   table, auth/quota, test evidence (validator, CLI x/y, live verification,
+   E2E x/y with the instance name), links to the flow JSONs in the branch,
+   notes for reviewers.
 4. When the run started from an issue: `gh issue comment` with the PR link.
-5. Final report per `15-unattended-mode.md` (per-step outcomes, budget spent,
+5. Final report per `18-unattended-mode.md` (per-step outcomes, budget spent,
    everything skipped or failed stated explicitly). **Never merge the PR.**
 
 ## Failure semantics
 
 Stop conditions and the stop brief are defined in
-`references/15-unattended-mode.md`. The short version: budgets are hard
+`references/18-unattended-mode.md`. The short version: budgets are hard
 ceilings; per-component failures degrade the run (finish the rest, report),
 run-level failures (auth needing a human, infra errors, repeated NEEDS_FIX)
 stop it; every stop leaves `pipeline-state.json` resumable and prints the

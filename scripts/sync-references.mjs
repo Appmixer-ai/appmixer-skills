@@ -22,8 +22,8 @@ const MANIFEST = {
         '03-plugins.md', '04-components.md', '05-component-config.md',
         '06-component-behavior.md', '07-component-types.md',
         '08-best-practices.md', '09-testing.md', '10-trigger-test-method.md',
-        '11-e2e-flow-generation.md', '14-async-components.md',
-        '15-unattended-mode.md', 'examples'
+        '11-e2e-flow-generation.md', '14-async-components.md', '17-demo-flows.md',
+        '15-live-verification.md', '18-unattended-mode.md', 'examples'
     ],
     'review-connector': [
         '04-components.md', '05-component-config.md', '06-component-behavior.md',
@@ -32,11 +32,11 @@ const MANIFEST = {
     ],
     'test-connector': [
         '09-testing.md', '12-e2e-upload.md', '13-e2e-run.md',
-        '14-async-components.md', '15-unattended-mode.md',
-        'examples/e2e-test-flow.json'
+        '14-async-components.md', '15-live-verification.md',
+        '18-unattended-mode.md', 'examples/e2e-test-flow.json'
     ],
     'ship-connector': [
-        '15-unattended-mode.md'
+        '18-unattended-mode.md'
     ]
 };
 

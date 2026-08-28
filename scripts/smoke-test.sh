@@ -48,6 +48,26 @@ fi
 [[ $E2E_OK == 1 ]] && ok "no references to the removed e2e script layer" \
                    || fail "stale e2e script references (see above)"
 
+echo "── every reference file is cited by its SKILL.md ───────────────────"
+# A reference that ships but is never named in SKILL.md is invisible: the agent
+# is never told to read it, so the rule silently does not apply. This is how
+# 14-async-components.md sat unused in all three skills.
+CITED_OK=1
+for skill_dir in "$REPO_ROOT"/skills/*/; do
+    skill_md="$skill_dir/SKILL.md"
+    [[ -f "$skill_md" ]] || continue
+    for ref in "$skill_dir"references/*.md; do
+        [[ -e "$ref" ]] || continue
+        base="$(basename "$ref")"
+        grep -qF "$base" "$skill_md" || {
+            echo "  orphan: $(basename "${skill_dir%/}")/references/$base not mentioned in SKILL.md"
+            CITED_OK=0
+        }
+    done
+done
+[[ $CITED_OK == 1 ]] && ok "every skill references/ file is cited by its SKILL.md" \
+                     || fail "orphaned reference files (see above)"
+
 echo "────────────────────────────────────────────────────────────────────"
 echo "passed: $PASS, failed: $FAIL"
 [[ $FAIL == 0 ]]

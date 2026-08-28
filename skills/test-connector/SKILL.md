@@ -228,7 +228,7 @@ Record the result (status, reason) for the component in `test-plan.json`.
 ## Unattended runs
 
 When this skill runs under an explicitly approved unattended budget (see
-`references/15-unattended-mode.md` — activation is always the user's, never
+`references/18-unattended-mode.md` — activation is always the user's, never
 the agent's), the interactive confirmations become budget checks and failing
 components are marked failed and skipped rather than blocking the run. The
 STOP rules above and the auth steps that need a human (browser login, OAuth
@@ -269,6 +269,26 @@ Check the installed version with `appmixer --version`. On 2.3.4 and older:
 | **Output Schema Mismatch** | Actual output ≠ declared schema — fix the component logic or the schema. |
 | **Cannot read properties of undefined (reading 'execute')** | Read 2–3 sibling components and follow their established pattern. |
 
+## Live verification (after the component loop, before E2E)
+
+Once every component in the plan passes, run the live semantic check — it
+reuses the credentials Step 0 stored, so it costs one command:
+
+```bash
+appmixer connector verify <connector>            # read-only schema conformance
+appmixer connector verify <connector> --write    # + enum round-trips (creates + cleans up records)
+appmixer connector verify <connector> --record   # save sanitized output shapes to artifacts/samples/ (commit them)
+```
+
+Interpret findings per `references/15-live-verification.md`: FAIL
+declared-but-absent = dead variable-picker entry (fix the schema or mapping);
+WARN returned-but-undeclared = candidates to declare; round-trip FAIL names
+the option whose label the service disagrees with. `--write` needs the
+connector's `artifacts/verify.json` round-trip specs (authored by
+`build-connector`) and must never run against a production tenant. After a
+green `--record`, commit `artifacts/samples/` so CI can re-check conformance
+offline (`--offline`, no credentials).
+
 ## E2E flow testing
 
 When the user wants end-to-end validation on a live Appmixer instance (not just
@@ -288,6 +308,18 @@ CLI component tests), follow the two references shipped with this skill:
 Flow JSONs are produced during the build by `build-connector`
 (its `references/11-e2e-flow-generation.md`); `appmixer e2e validate` checks
 them before import and after every fix.
+
+**Async components need both ports asserted** — see
+`references/14-async-components.md` → "Testing an async component". For a
+component whose job finishes later, assert the job id on the submit port **and**
+the result on the completion port, and wire both asserts into `AfterAll` so the
+flow cannot pass while the callback path is broken; size the `AfterAll` window
+for the provider's real job duration. If the component takes a Correlation ID,
+assert it comes back on the completion port — that is the cheapest way to catch
+a broken echo before a user hits it with ten parallel jobs. A flow that reaches
+the result through a `Wait` timer plus a status component is testing the user's
+polling, not the component's completion path, and is a sign the component is
+built in the wrong shape.
 
 ## After changes
 

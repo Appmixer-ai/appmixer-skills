@@ -28,6 +28,7 @@ The rules to check live in the `references/` directory next to this SKILL.md:
 | `07-component-types.md` | Actions, triggers, dynamic components |
 | `08-best-practices.md` | Coding standards, naming, error handling |
 | `10-trigger-test-method.md` | Trigger `test(context)` rules for Flow Test Mode |
+| `14-async-components.md` | Jobs that finish later — self-callback vs. continuation chain |
 
 Complete example files (component.json, behaviors, auth.js, lib.js) are in
 `references/examples/`. Real-world example connectors (when you want a
@@ -59,7 +60,22 @@ vendor; the first segment names the vendor dir under `src/`).
    connector's `component.json` files for `<ComponentName>?outPort` in
    `source.url` references (ignore self-references that only pass
    `generateOutputPortOptions`).
-6. **Check against the rules below** and output the issue list. Report real
+6. **Ask whether the operation finishes later.** This is a separate question from
+   the component type and it is easy to miss, because an async component looks
+   like an ordinary action from the outside — it returns quickly, with an id.
+   Answer YES if any of these hold, then apply `14-async-components.md`:
+   - the behavior sends a job/snapshot/task/render/transcription **id** rather
+     than the result the component's label promises;
+   - the API accepts a callback, webhook, `notify` or `endpoint` **URL
+     parameter**, or the connector exposes one as a component input;
+   - the connector ships a companion "get status" / "is it ready" component, or
+     its own e2e flow reaches the result through a `Wait`/timer step;
+   - the behavior sleeps, polls in a loop, or blocks on a long request.
+
+   The smell is often spread across **several** components rather than visible in
+   one file, so check the connector's component list and its test flows, not just
+   the file in front of you.
+7. **Check against the rules below** and output the issue list. Report real
    issues only — do not flag correct things.
 
 ## What to check
@@ -105,6 +121,61 @@ vendor; the first segment names the vendor dir under `src/`).
    `error` — inspector opens fire concurrent bursts that trip API rate limits
    (429). Self-references used only for `generateOutputPortOptions` (static
    options) are exempt and must not call the API at all.
+
+### Async components only (when review step 6 answered YES)
+
+Apply `14-async-components.md`. Its decision rule is: if the provider offers a
+callback/webhook URL parameter, the component MUST use the **self-callback**
+shape (`"webhook": true` + `context.getWebhookUrl()` + a second, completion
+port); if the provider only offers a status endpoint to poll, it MUST use a
+**continuation chain** (`context.setTimeout`, minimum interval one minute).
+
+1. **Callback URL exposed as a component input** — `error`, rule
+   `async.callback-url-as-input`. The reference file names this explicitly: the
+   moment a user fills it in, the provider delivers elsewhere and the completion
+   port silently never fires. None of the four reference implementations
+   (`clearbit/enrichment/FindPerson`, `plivo/sms/SendSMSAndWaitForReply`,
+   `twilio/calls/ForwardCall`, `utils/tasks/RequestApproval`) expose one.
+2. **Neither shape implemented** — `error`, rule `async.no-completion-path`.
+   Returning a job id on `out` and leaving the user to poll — whether by hand in
+   the flow, via a `Wait` timer, or through a companion status component — is
+   not a completion path. Check which of the two shapes the provider's API
+   supports before deciding which one to recommend.
+3. **Blocking instead of continuing** — sleeping or polling in a loop inside
+   `receive()` holds a worker for the whole job. `warning` normally, `info` when
+   a sibling connector does the same deliberately AND the wait is short enough
+   that the one-minute continuation floor would be too coarse.
+4. **`tick()` used to deliver completion**, or a separate polling trigger used as
+   an action's completion path — `error`. A tick emit has no message scope, so it
+   cannot continue the branch that started the job. (A polling trigger is still
+   legitimate on its own, for jobs submitted outside Appmixer.)
+5. **Missing echo** on the self-callback shape — one component instance has ONE
+   callback URL, so parallel jobs arrive in completion order. The job's inputs
+   plus a **Correlation ID** input must be echoed on both ports; without them a
+   downstream component cannot tell which result belongs to which input —
+   `warning`.
+6. **Echo carried in component state** rather than in the callback URL —
+   `warning`, rule `async.echo-in-state`. `stateSet` after the submit races the
+   provider's callback (it starts working the moment it accepts the job), a
+   redelivered callback finds the entry already `stateUnset`, and state has no
+   TTL so a job that never calls back leaks its entry forever. The fix is to
+   append the echo to `context.getWebhookUrl()` and read it back from
+   `context.messages.webhook.content.query`.
+7. **Callback emitted without checking it carries a job id** — `warning`, rule
+   `async.unguarded-callback`. Anything can POST to a webhook URL; without the
+   guard a stray or replayed request emits a `done` carrying an empty result.
+8. **`context.response()` not in a `finally`** — `warning`, rule
+   `async.ack-not-guaranteed`. An emit (or a state call) that throws before the
+   ack means no 2xx, the provider redelivers, and the redelivery re-runs the
+   same failure.
+9. **Submit drops a file read stream on the error path**, or accepts a missing
+   job id from the submit response — `warning`. An un-destroyed stream holds a
+   descriptor per failed attempt; a missing job id sends `request_id: undefined`
+   into the flow and silently unlinks the callback, so it should throw.
+10. **A `limit-concurrency` quota rule whose comment describes capping in-flight
+    jobs** on a component that submits and returns — `info`. The slot is released
+    when `receive()` returns, so it caps concurrent submissions only; the comment
+    must not claim protection the rule no longer provides.
 
 ### Triggers only
 1. **`test(context)` present** — triggers should implement `test()` so Flow Test
