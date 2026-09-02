@@ -292,11 +292,13 @@ CLI component tests), follow the two references shipped with this skill:
    (`appmixer e2e list -c <vendor>:<connector> --json` →
    `appmixer e2e run <flowId> --fix`), evaluate results
    (`appmixer e2e results`), and drive the fix loop (edit flow JSON →
-   re-import → re-run; `references/09-testing.md` holds the flow design rules
+   re-import → re-run; `references/09-testing.md` and
+   `references/11-e2e-flow-generation.md` hold the flow design rules
    the fixes must follow).
 
 Flow JSONs are produced during the build by `build-connector`
-(its `references/11-e2e-flow-generation.md`); `appmixer e2e validate` checks
+(`references/11-e2e-flow-generation.md`, bundled here too for the fix loop);
+`appmixer e2e validate` checks
 them before import and after every fix.
 
 **Async components need both ports asserted** — see

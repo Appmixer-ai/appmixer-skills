@@ -31,7 +31,7 @@ const MANIFEST = {
         '14-async-components.md', 'examples'
     ],
     'test-connector': [
-        '09-testing.md', '12-e2e-upload.md', '13-e2e-run.md',
+        '09-testing.md', '11-e2e-flow-generation.md', '12-e2e-upload.md', '13-e2e-run.md',
         '14-async-components.md', '15-live-verification.md',
         'examples/e2e-test-flow.json'
     ]

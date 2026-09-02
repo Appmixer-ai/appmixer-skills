@@ -263,13 +263,10 @@ async receive(context) {
 }
 ```
 
-**Appmixer will not schedule a continuation shorter than one minute** — that is
-both the floor and a sensible default for the poll interval. The engine rounds
-anything shorter up *silently*, and test mode does not, so a 30-second interval
-passes its component test and then polls every 60 s in production, taking every
-comment and timeout message computed from it along with it. See
-`06-component-behavior.md` — "Scheduling Work Later" — before deriving a total
-wait from the interval.
+**Appmixer will not schedule a continuation shorter than one minute** — use
+that as the floor and the default poll interval, and never derive a total wait
+from a shorter value. Why (silent clamp in production, no floor in test mode)
+is in `06-component-behavior.md` — "Scheduling Work Later".
 
 ---
 
