@@ -29,13 +29,22 @@ Exit 0 = no fail/error findings; 1 otherwise.
 ## The checks and what findings mean
 
 **schema-conformance** — declared outPort contract vs the live payload, for
-every List/Find/Get component:
+every List/Find/Get component and every trigger (sampled through its `test()`
+method — the same read-only fetch Flow Test Mode uses). Declared and returned
+fields are compared as **nested leaf paths** (`from.username`), because the
+variable picker offers every nested leaf as its own variable:
 
 | Finding | Meaning | Action |
 |---|---|---|
-| FAIL: declared but absent | dead entry in the designer's variable picker | remove the field or fix the mapping |
+| FAIL: declared but absent | a *required* leaf (or, with no `required` in the schema, any leaf) never returned — dead entry in the designer's variable picker | remove the field or fix the mapping |
+| WARN: optional field never observed | a leaf the schema does not list in `required` was absent from every sample | confirm it exists; record a sample that has it (`--record` appends distinct shapes) |
 | WARN: returned but undeclared | data no flow can reach | candidates to declare (link stubs like `links`/relations are expected noise — `expandIds` output is what counts) |
-| SKIP: no data in the account | nothing to compare against | seed one record, or accept the gap |
+| SKIP: no data in the account / no sample | nothing to compare against | seed one record; for a trigger, make `test()` able to see an event (Telegram: no webhook registered) |
+
+Sample files (`artifacts/samples/<Component>.json`) hold a **list** of shapes;
+`--record` adds a shape only when it differs from those on file, so recording a
+text message, then a photo, then a message from a user with a username builds
+the union that "never observed" is judged against.
 
 **enum-roundtrip** (`--write` only) — for a `select` input: create a record per
 option, read back the stored value AND **the service's own label for it**. The
