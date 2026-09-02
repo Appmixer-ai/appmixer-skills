@@ -321,8 +321,6 @@ into `dynamicComponentVariables[]` and each
 into that array; entry values look like `{{{$.<id>.<port>.<field>}}}`.
 `variables.errors` entries mean the source's options call failed.
 
-**NEVER assert on Raw Output** (`$.comp-id.out`) — it always contains something, making the assertion meaningless. Always test specific fields (e.g. `$.comp-id.out.ManualJournalID` notEmpty).
-
 ## Auth — When `appmixer login` Is Not Possible
 
 With the default setup the e2e commands reuse the CLI's stored login token —
@@ -387,9 +385,7 @@ Whack-a-mole warning: each publish of an existing version **appends a duplicate
 copy** into the stored package of every non-removed component — removing A+B and
 publishing refreshes A+B but appends a dupe to the just-cleaned C+D. Duplicates
 are harmless **when byte-identical** (verify with the zipfile snippet in Step 1);
-only content that differs across copies needs another remove+publish round. And
-retry any `appmixer remove` that fails with 502/504 — a gateway error means the
-remove did NOT happen.
+only content that differs across copies needs another remove+publish round.
 
 Alternative when definitions refuse to update in place: **bump the component
 `version`** in component.json (new version = new snapshot) and update the flows'

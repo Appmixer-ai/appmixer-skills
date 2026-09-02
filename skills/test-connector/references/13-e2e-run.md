@@ -77,12 +77,10 @@ run `appmixer e2e import` (which binds accounts and validity-tests them).
 **Auth failures are detected automatically:**
 - **Preflight at import** — every bound account is validity-tested
   (`POST /accounts/:id/test`) by `appmixer e2e import`; an expired/revoked token
-  fails the import with the account id, before anything runs. ⚠️ This test runs
-  the connector's `validateAccessToken`, which in some connectors (salesforce)
-  only compares a stored expiry date — a dead token can still pass preflight and
-  surface as runtime 401/403 (`Bad_OAuth_Token`, `INVALID_SESSION_ID`) or as a
-  flow-start 400 wrapping an inner 401 from the trigger's `start()` call. In
-  that case try the service's OTHER accounts and pin the working one.
+  fails the import with the account id, before anything runs. ⚠️ A passing
+  preflight can still hide a dead token (`validateAccessToken` is a no-op in
+  some connectors) — the runtime symptoms and the real-call check are in
+  `12-e2e-upload.md` Step 2.
 - **Scopes (`--fix`)** — a TokenError that persists after one account rebind
   means the bound account's token lacks the component's required scopes (read
   from its `component.json`). The runner hard-fails with the exact scopes —
@@ -90,14 +88,10 @@ run `appmixer e2e import` (which binds accounts and validity-tests them).
   re-consent, pin the new account with `appmixer e2e import --account
   <accountId>` if the old scope-less account still exists next to it.
 
-**A pinned account is authoritative:** with `appmixer e2e import --account
-<accountId>` (or the `APPMIXER_SKILL_ACCOUNT_ID` env override), the import
-overrides flow-authored `config.properties.account` values both in the
-uploaded flow definition and in the auth grants — a stale account hardcoded in
-the flow JSON can never shadow it. (Unpinned imports keep flow-authored
-accounts — that is how multi-account flows work — but only when the ID exists
-on the target instance; foreign/deleted IDs, e.g. from a flow exported off
-another tenant, are ignored and a live account is bound instead.)
+**A pinned account is authoritative:** `appmixer e2e import --account
+<accountId>` (or `APPMIXER_SKILL_ACCOUNT_ID`) overrides every flow-authored
+account, in the flow definition and in the auth grants; the full binding
+precedence is in `12-e2e-upload.md` Step 3.
 
 **Clean timeouts are triaged by flow type (`--fix`):** a timeout with zero
 errors means some Assert never fired.
@@ -148,12 +142,9 @@ by the flow name. Then:
      usually means an upstream Assert or AfterAll failed
    - `"timeout"` in AfterAll = not all Asserts fired — something upstream is stuck
    - **Flow start rejected: `Component transformation validation error` /
-     `Malformed transformation`** (the response names no component) — some
-     component's `source`/`config.transform` is keyed on a port name that is not
-     one of its inPorts. Most components use `in`, but not all (salesforce
-     CreateLead → `lead`, CreateContact → `contact`). Check every component's
-     `component.json` inPorts; the `inport-key-match` validator catches this
-     statically.
+     `Malformed transformation`** (the response names no component) — a
+     `source`/`config.transform` keyed on a wrong inPort name; rule 0c in
+     `11-e2e-flow-generation.md` (`inport-key-match` validator).
    - **Flow start rejected: 400 wrapping an inner 401/AxiosError with a service
      URL** — the engine called the service during start (trigger `start()`) with a
      dead/wrong account; see the auth notes above. `Cannot read properties of
@@ -265,23 +256,11 @@ results or the FIX BRIEF. When reading `/logs` **manually**, always check
 ### `GET /flows/:flowId` Elasticsearch errors
 **Always use `?projection=stage` for status checks** and `?projection=flow` for the definition.
 
-### Search/Find race conditions after Create
-Many APIs have eventual consistency on search indexes. A record created 1 second ago may not appear in search results yet:
-- **Best approach:** Search for a pre-existing test record instead of a just-created one
-- **Alternative:** Insert `appmixer.utils.timers.Wait` with `interval: "1m"` (minimum unit is minutes). CodeBlock CANNOT delay — it runs synchronously in isolated-vm (`evalSync`), `await`/`setTimeout`/Promises are unavailable and error out.
-- **Alternative:** Use GetById between Create and Find to add natural delay
-
 ### Duplicate records on re-runs
 Previous test runs may leave records behind if cleanup failed:
 1. Stop any running flows first
 2. Check if the API rejects duplicates
 3. Clean up leftover test data from previous runs via the connector's API
-
-### CodeBlock output wraps results under `result`
-`appmixer.utils.controls.CodeBlock` wraps the return value under a `result` field. Access it via `$.code-block-id.out.result`. Deep access like `$.code-block-id.out.result.field` does NOT work — return simple strings/numbers only.
-
-### CodeBlock code syntax
-CodeBlock runs in `isolated-vm`, **synchronously** (`evalSync`) — no `await`, no `setTimeout`, no Promises. Input variables are exposed on **`$data`** (e.g. `$data.body`), not as bare identifiers. Bare `return` statements are illegal. Use expressions directly (e.g., `'value-' + Date.now()`) or IIFEs — a single expression that evaluates to a value.
 
 ### Assert failures do NOT stop the flow — and `equal` reads `expected`, not `value`
 A failed assertion is logged in the Assert result payload (`error[]`) as a plain info message; the flow continues and ProcessE2EResults still completes. The runner scans Assert payloads (`collectAssertFailures`) so these fail the run — but when reading logs manually, always check the Assert `success`/`error` arrays, not just component errors. Common authoring bug: `{"assertion": "equal", "field": ..., "value": "200"}` — the Assert component reads the comparison value from the key **`expected`**; with `value` it compares against `undefined` and fails with the misleading message "expected undefined to equal 200".
@@ -289,11 +268,10 @@ A failed assertion is logged in the Assert result payload (`error[]`) as a plain
 ### Log parsing
 The `/logs` API returns raw Elasticsearch hits. Error details are in `hits[]._source.err` as a **JSON string** (not object). Parse `err.response.data` for the actual error message.
 
-### Deterministic test design
-Tests must pass on repeated runs without input changes:
-- **Create + Delete cleanup**: If the API rejects duplicates, the test MUST delete created resources at the end.
-- **Unique inputs via modifiers**: Use `g_timestamp` or `g_uuid4` modifier functions for unique identifiers.
-- **Avoid hardcoded dates**: Use `g_now` + `g_addTimeSpan` modifiers to compute future dates dynamically.
+### Flow-design gotchas (CodeBlock, eventual consistency, determinism)
+Live in `09-testing.md` — "Modifier Functions" (CodeBlock `result` wrapping,
+`$data`, no delays) and "Deterministic Test Design" (search-after-create race,
+unique inputs, no hardcoded dates, cleanup).
 
 ## Key API Endpoints
 

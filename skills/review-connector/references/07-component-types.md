@@ -71,7 +71,7 @@ module.exports = {
 - Includes `outputType` for array vs individual items
 - IMPORTANT: Ignore pagination or limits—use the maximum available page size
 - Mention maximum page size count in description
-- **IMPORTANT**: Do NOT include `limit` or `offset` fields in component inputs - these are not supported by Appmixer List components
+- Same `limit`/`offset` rule as Find components above
 
 **Example component.json structure**:
 See [`examples/list-forms/component.json`](examples/list-forms/component.json).
