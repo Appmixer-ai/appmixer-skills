@@ -62,8 +62,7 @@
                 "schema": { "$ref": "#/definitions/jsonSchema" },
                 "inspector": { "$ref": "#/definitions/inspector" }
             }
-        },
-        "icon": { "type": "string", "description": "Link to svg icon. The icon representing the component in the UI." }
+        }
     },
     "additionalProperties": false,
     "required": ["name"],

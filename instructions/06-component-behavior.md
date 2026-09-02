@@ -98,21 +98,29 @@ module.exports = {
 
 ### Webhook Components
 
+Registration belongs to the lifecycle methods, not to `receive()` (see
+"Trigger Behavior Requirements" in `07-component-types.md`):
+
 ```javascript
 module.exports = {
-    async receive(context) {
-        const webhookUrl = context.getWebhookUrl();
-
-        // Register webhook with external service
-        await registerWebhook(context, webhookUrl);
-
-        return context.sendJson({ webhookUrl }, 'out');
+    async start(context) {
+        // Register the webhook with the external service when the flow starts
+        const { id } = await registerWebhook(context, context.getWebhookUrl());
+        return context.saveState({ webhookId: id });
     },
 
-    async webhook(context) {
-        // Handle incoming webhook
-        const payload = context.messages.webhook;
-        return context.sendJson(payload, 'out');
+    async stop(context) {
+        // Unregister it when the flow stops
+        const { webhookId } = await context.loadState();
+        return unregisterWebhook(context, webhookId);
+    },
+
+    async receive(context) {
+        // Handle the incoming webhook payload
+        if (context.messages.webhook) {
+            await context.sendJson(context.messages.webhook.content.data, 'out');
+            return context.response();
+        }
     }
 };
 ```

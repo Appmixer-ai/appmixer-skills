@@ -4,7 +4,7 @@ Generate E2E test flow JSON files for a connector's components. **You (the agent
 write the flows directly** — there is no separate sub-agent. After writing them
 you run a deterministic validator and fix anything it flags, looping until clean.
 
-> **Tooling:** the validator and the canonical flow template ship with the
+> **Tooling:** the validator ships with the
 > `appmixer` CLI (`npm i -g appmixer`, version **>= 2.6.0** — the version-gate
 > snippet is in `12-e2e-upload.md` Prerequisites; quick probe:
 > `appmixer e2e validate --help`). No other setup is needed.
@@ -14,10 +14,10 @@ you run a deterministic validator and fix anything it flags, looping until clean
 1. **Pick the components** to cover (one trigger or action per flow; default: all
    testable components of the connector).
 2. **Read the canonical template**
-   [`examples/test-flow-template.json`](examples/test-flow-template.json)
-   (shipped next to this document) — copy its structure (OnStart → setup →
-   component-under-test → Assert → AfterAll → ProcessE2EResults). It is a
-   complete, working example.
+   [`examples/e2e-test-flow.json`](examples/e2e-test-flow.json)
+   (shipped next to this document) — copy its structure (OnStart →
+   component-under-test → Assert → AfterAll → cleanup → ProcessE2EResults).
+   It is a complete, working example.
 
    ⚠️ **The template is the ONLY structural source of truth. Do NOT copy patterns
    from other connectors' committed test flows** — many pre-date the current
@@ -210,14 +210,13 @@ you run a deterministic validator and fix anything it flags, looping until clean
     - **Event not provokable via API at all** (real storefront/UI action:
       checkout sessions, customer-portal steps)? Still generate the flow —
       trigger lane + `OnStart → Wait` (validators require OnStart) — and add a
-      sticky `note` in the flow JSON with numbered manual steps to fire the
-      event, plus a longer AfterAll `timeout` (600) so a human has time to click
+      sticky note (top-level `notes`, rule 19) with numbered manual steps to
+      fire the event, plus a longer AfterAll `timeout` (600) so a human has time to click
       through. The flow then serves as a repeatable manual verification harness.
     - **Verify the trigger's topic fires at all** before writing the flow: a
       generic "updated" topic can be dead for the whole real journey (per-step
-      topics fire instead) — see the multi-topic trigger pattern in
-      `07-component-types.md`. A wrong topic produces a flow that registers
-      fine and times out forever.
+      topics fire instead). Probe the topic with a direct API call first — a
+      wrong topic produces a flow that registers fine and times out forever.
 
 19. **Document data assumptions with a designer sticky note** — a flow that
     assumes tenant data (a hardcoded entity ID that must exist), provokes its

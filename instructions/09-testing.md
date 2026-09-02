@@ -311,8 +311,7 @@ Tests must pass on repeated runs without input changes:
 
 - **Unique inputs**: Use `g_timestamp` or `g_uuid4` modifier functions for unique identifiers (e.g. `e2e-{{{ts-var}}}@test.com`). Prefer modifiers over CodeBlock.
 - **Avoid hardcoded dates**: Use `g_now` + `g_addTimeSpan` to compute future dates dynamically. Hardcoded dates expire and tests break.
-- **Create + Delete cleanup**: If the API rejects duplicates (e.g. contacts by email), the test MUST delete created resources at the end.
-- **Delete component placement**: Delete components should be placed DIRECTLY BELOW their corresponding Assert component (same x position, y + 128px) to maintain clean visual layout and avoid crossing connection lines.
+- **Create + Delete cleanup**: If the API rejects duplicates (e.g. contacts by email), the test MUST delete created resources at the end — after AfterAll (see Required Components).
 - **Search/Find race conditions**: Many APIs have eventual consistency. A record created 1 second ago may not appear in search results. Best approach: search for a pre-existing test record instead of a just-created one. Alternative: insert `appmixer.utils.timers.Wait` with `interval: "1m"` (minimum unit is minutes) — CodeBlock CANNOT delay: it runs synchronously in isolated-vm (`evalSync`), `await`/`setTimeout`/Promises error out.
 - **Cross-component variable references**: When referencing variables from indirect upstream components (2+ hops), prefer direct upstream references. E.g. use `$.find-items.out.id` instead of `$.create-item.out.id` when the update is triggered by find.
 
@@ -731,16 +730,11 @@ The `result` property MUST use `{{{uuid}}}` pattern referencing `$.after-all.out
 4. **Multiple Assert Components - Separate Branches**
     - **CRITICAL**: If a flow has more than one Assert component, they MUST be in separate branches
     - Each Assert should test a different aspect or operation
-    - Branches should have different y-coordinates for visual separation
-    - All Assert components feed into the AfterAll component to merge results
-    - Example structure:
+    - Branches sit on different rows (Δy ≥ 128) and all feed into AfterAll:
       ```
-      Component A (y=100)
-        ├─> Assert 1 (y=100) ─┐
-        └─> Component B (y=300) ─> Assert 2 (y=300) ─┘
-                                                      └─> AfterAll
+      Component A (y=16)  → Assert 1 (y=16)  ─┐
+        └─> Component B (y=144) → Assert 2 (y=144) ─┴─> AfterAll
       ```
-    - See `test-flow-images.json` for reference implementation
 
 5. **Field Name Accuracy**
     - Use EXACT field names from component.json
@@ -757,31 +751,8 @@ The `result` property MUST use `{{{uuid}}}` pattern referencing `$.after-all.out
     - Use AfterAll to ensure cleanup runs after all assertions
     - Connect cleanup components properly
 
-8. **Component Coordinates and Layout**
-    - **Horizontal spacing**: at least **208px** (MIN_DX) between sequentially connected components on the x-axis
-    - **Vertical spacing**: at least **128px** (MIN_DY) between parallel rows/branches on the y-axis
-    - **Starting position**: OnStart at `x: 64, y: 16`
-    - **Diagonal staircase pattern**: When operations branch off sequentially (Create → Get → Update → ...), each subsequent action moves **+208px right** and **+128px down**, forming a diagonal:
-      ```
-      on-start (64,16) → set-variables (272,16) → create (480,16)
-                                                       ↓
-                                                   get (688,144)
-                                                       ↓
-                                                   update (896,272)
-                                                       ↓
-                                                   get-content (1104,400)
-      ```
-    - **Assert column**: All Assert components are **right-aligned at a fixed x position** (e.g., `x: 1312`), each at the **same y as its corresponding action**:
-      ```
-      create (480,16)          →  assert-create (1312,16)
-      get (688,144)            →  assert-get (1312,144)
-      update (896,272)         →  assert-update (1312,272)
-      get-content (1104,400)   →  assert-get-content (1312,400)
-      ```
-    - **Tail chain (AfterAll → Cleanup → ProcessResults)**: Place on a **horizontal line** at approximately the vertical center of the flow (e.g., `y: 144`), spaced ≥208px apart after the assert column:
-      ```
-      after-all (1520,144) → delete (1728,144) → process-results (1936,144)
-      ```
+8. **Component Coordinates and Layout** — the staircase described in
+   "Component Layout Rules" above; nothing else.
 
 9. **Naming Conventions**
     - Component IDs are **freshly generated UUIDs** (`crypto.randomUUID()`) —
@@ -882,9 +853,9 @@ See [`examples/e2e-test-flow.json`](examples/e2e-test-flow.json).
 
 #### Reference Test Flows
 
-Good examples to reference (under each connector's `artifacts/test-flows/`):
-- `src/appmixer/googleDocs/artifacts/test-flows/` - Document CRUD operations
-- `src/appmixer/todoist/artifacts/test-flows/` - Task/project/label workflows
-- `src/appmixer/hubspot/artifacts/test-flows/` - CRM operations
+`examples/e2e-test-flow.json` is the only structural reference. Do NOT copy
+patterns from other connectors' committed test flows — many pre-date the current
+rules (`BeforeAll`, missing `errorHandling`, readable component ids); see
+`11-e2e-flow-generation.md`.
 
 ---

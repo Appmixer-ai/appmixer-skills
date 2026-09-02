@@ -261,14 +261,16 @@ async function getSubfolders(context, rootFolderId) {
 
 #### Dynamic Field Options
 
-Use `source` property to populate field options dynamically:
+Use `source` property to populate field options dynamically. The field type is
+`text` (typeahead), never `select` — see "Using `variableFetch` / `isSource`
+for Dynamic Source Calls" in `07-component-types.md` for why:
 
 ```json
 {
     "inspector": {
         "inputs": {
             "projectId": {
-                "type": "select",
+                "type": "text",
                 "source": {
                     "url": "/component/appmixer/service/core/ListProjects?outPort=out",
                     "data": {

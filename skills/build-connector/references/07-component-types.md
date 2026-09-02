@@ -205,15 +205,16 @@ module.exports = {
 
 Trigger components monitor for events and start workflows when conditions are met. They use polling or webhooks.
 
-### Common Trigger Patterns
+### Key Characteristics
 
-**Key Characteristics**:
 - Set `"trigger": true` in component.json
 - Use `tick()` method for polling triggers
 - Use `webhook()` method for webhook triggers
 - Store state to track changes
 
-### New/Created (Item) Triggers
+### Trigger Kinds
+
+#### 1. Polling Triggers (`tick: true`) — New/Created (Item)
 
 **Purpose**: Trigger when new items are created.
 
@@ -525,7 +526,7 @@ The convention is to pass a sentinel property in `source.data.properties` so the
 "source": {
     "url": "/component/appmixer/<connector>/core/ListFoo?outPort=out",
     "data": {
-        "properties": { "variableFetch": true },
+        "properties": { "isSource": true },
         "transform": "./ListFoo#toSelectArray"
     }
 }
@@ -539,7 +540,7 @@ async receive(context) {
         const drives = await listItems(context, 'me/drives?');
         return context.sendJson({ drives }, 'out');
     } catch (err) {
-        if (context.properties.variableFetch) {
+        if (context.properties.isSource) {
             return context.sendJson({ drives: [] }, 'out');
         }
         context.log({ stage: 'Error', err });
@@ -583,12 +584,12 @@ const { callEndpointCached } = require('../../lib');
 async receive(context) {
     try {
         const url = `https://api.example.com/foo?token=${context.auth.accessToken}`;
-        const { data } = context.properties.variableFetch
+        const { data } = context.properties.isSource
             ? await callEndpointCached(context, url)
             : await context.httpRequest.get(url);
         return context.sendJson({ items: data.items }, 'out');
     } catch (err) {
-        if (context.properties.variableFetch) {
+        if (context.properties.isSource) {
             return context.sendJson({ items: [] }, 'out');
         }
         throw err;
