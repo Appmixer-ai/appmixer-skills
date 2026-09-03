@@ -100,6 +100,15 @@ vendor; the first segment names the vendor dir under `src/`).
    or missing types render as bare keys in the designer variable picker. If the
    behavior appends fields to each record (e.g. `index`/`count`), declare them too;
    only declare fields the behavior actually sends.
+   That const MUST be a complete JSON Schema exported as **`ITEM_SCHEMA`**
+   (`{ type, required, properties }`, declared above `module.exports`, passed to the
+   helper as `ITEM_SCHEMA.properties`) — see "Export the item schema as
+   `ITEM_SCHEMA`" in `07-component-types.md`. A dynamic port declares nothing in
+   component.json, so without the export the whole output contract is invisible to
+   offline checks and `verify` must treat every field as required. Missing export =
+   `warning` (rule `outport.item-schema-missing`); exported but with no `required`
+   on a payload that is polymorphic or has optional fields = `warning`
+   (`outport.required-missing`).
 8. **inspector.inputs** — labels, descriptions, types for all inputs;
    entity-reference inputs have a `source` pointing to a List/Find component.
 9. **quota** — present for components that call external APIs.

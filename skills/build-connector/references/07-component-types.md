@@ -41,12 +41,26 @@ Components with `outputType` (Find/List) **MUST** use standardized lib.js helper
 ```javascript
 const lib = require('../../lib');
 
+// The output contract of ONE item. Exported so the offline tooling can read it —
+// see "Export the item schema as ITEM_SCHEMA" below.
+const ITEM_SCHEMA = {
+    type: 'object',
+    required: ['id'],
+    properties: {
+        id: { type: 'string', title: 'ID', example: '1001' },
+        name: { type: 'string', title: 'Name', example: 'Acme Inc.' }
+    }
+};
+
 module.exports = {
+
+    ITEM_SCHEMA,
+
     async receive(context) {
         const { outputType } = context.messages.in.content;
 
         if (context.properties.generateOutputPortOptions) {
-            return lib.getOutputPortOptions(context, outputType, SCHEMA, { label: 'Items' });
+            return lib.getOutputPortOptions(context, outputType, ITEM_SCHEMA.properties, { label: 'Items' });
         }
 
         const records = await fetchData();
@@ -59,6 +73,55 @@ module.exports = {
 - For the `'array'` outputType, always use `result` as the array output field name and include the total count: `{ result: records, count: records.length }`
 - Never use `records` or custom field names for consistency
 - lib.js MUST exist in connector root if component has outputType — follow this rule even when the workspace has no tooling to enforce it
+- The helper takes the **property map**, so pass `ITEM_SCHEMA.properties` — `lib.js` is copy-pasted per connector and its signature must not change
+
+### Export the item schema as `ITEM_SCHEMA`
+
+A dynamic output port declares **no** `schema` in component.json — the designer
+builds the variable picker from the options the component emits under
+`generateOutputPortOptions`. That leaves the whole output contract invisible to
+every offline check, and gives `required` nowhere to live, so
+`appmixer connector verify` has to treat every declared field as mandatory and
+reports an optional field the API happened not to return as a dead picker entry
+(real case: airtop FindSessions, 2026-09-03 — the session listing carries the
+connection URLs for a *running* session and omits them for an ended one).
+
+So a component whose `out` port generates its own options **MUST** export that
+item schema:
+
+```javascript
+const ITEM_SCHEMA = {
+    type: 'object',
+    required: ['id', 'status'],          // only what the API ALWAYS returns
+    properties: {
+        id: { type: 'string', title: 'Session ID', example: '0a5b2c4e-9d31' },
+        status: { type: 'string', title: 'Status', example: 'running' },
+        cdpUrl: { type: 'string', title: 'CDP URL', example: 'https://api.airtop.ai/cdp/0a5b' }
+    }
+};
+
+module.exports = { ITEM_SCHEMA, async receive(context) { /* … */ } };
+```
+
+Rules:
+
+1. **A complete JSON Schema** (`type` / `required` / `properties`), not a bare
+   property map — the same shape a static `outPorts[].schema` declares, so every
+   schema-aware check (nested titles, types, examples) works on it unchanged.
+2. **`required` lists only what the API always returns**, per level, exactly as
+   in "Nested objects in output schemas" (`05-component-config.md`). Take the
+   answer from a live `appmixer connector verify` run rather than from the
+   provider's docs — it reports which leaves were never observed.
+3. **Declare it above `module.exports`.** Naming it in the exports object while
+   the `const` sits below throws `Cannot access 'ITEM_SCHEMA' before
+   initialization` at require time — the component then fails to load at all.
+4. Applies to a **self-sourced** port (`source.url` points back at this
+   component). A port sourced from a *sibling* takes its contract from that
+   sibling's `ITEM_SCHEMA`.
+
+This changes nothing for the designer: the emitted options are byte-identical.
+It exists so `validate` can see the contract offline and `verify` can honour
+`required`.
 
 ### List (Items) Components
 

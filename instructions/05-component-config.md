@@ -250,6 +250,10 @@ the wrong one. Therefore:
    picker entry (FAIL), an absent *optional* leaf is only a warning. Without
    any `required`, every declared leaf is treated as required.
 
+Both rules apply to a **dynamic** output port too — it has no `schema` here, so
+its contract lives in the behavior file's `ITEM_SCHEMA` export ("Export the item
+schema as `ITEM_SCHEMA`" in `07-component-types.md`). Same shape, same checks.
+
 ```json
 "chat": {
     "type": "object",
