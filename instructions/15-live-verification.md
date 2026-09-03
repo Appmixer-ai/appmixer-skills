@@ -41,6 +41,15 @@ variable picker offers every nested leaf as its own variable:
 | WARN: returned but undeclared | data no flow can reach | candidates to declare (link stubs like `links`/relations are expected noise — `expandIds` output is what counts) |
 | SKIP: no data in the account / no sample | nothing to compare against | seed one record; for a trigger, make `test()` able to see an event (Telegram: no webhook registered) |
 
+Where the declared contract comes from: the `out` port's `schema` for a static
+port, and the behavior's **`ITEM_SCHEMA` export** for a dynamic one (see "Export
+the item schema as `ITEM_SCHEMA`" in `07-component-types.md`). Without that
+export a dynamic port falls back to running `generateOutputPortOptions`, whose
+options list has no place for `required` — every field then counts as required
+and an optional one the API happened not to return is reported as a FAIL. If a
+Find/List component fails this check on fields you know are optional, exporting
+`ITEM_SCHEMA` with an honest `required` is the fix.
+
 Sample files (`artifacts/samples/<Component>.json`) hold a **list** of shapes;
 `--record` adds a shape only when it differs from those on file, so recording a
 text message, then a photo, then a message from a user with a username builds

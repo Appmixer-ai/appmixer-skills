@@ -2,19 +2,33 @@
 
 const lib = require('../../lib');
 
-// schema of the single item
-const schema = {
-    'id': { 'type': 'string', 'title': 'Task Id' },
-    'name': { 'type': 'string', 'title': 'Name' },
-    'status': { 'type': 'string', 'title': 'Status' }
+// The output contract of ONE item. Exported as ITEM_SCHEMA because this port is
+// dynamic: component.json declares no schema for it, so this is the only place the
+// contract exists. `required` lists what the API ALWAYS returns — everything else is
+// optional, and `appmixer connector verify` reports an absent optional leaf as a
+// warning instead of a dead variable-picker entry.
+// Must be declared ABOVE module.exports: naming it in the exports object while the
+// const sits below throws "Cannot access 'ITEM_SCHEMA' before initialization".
+const ITEM_SCHEMA = {
+    type: 'object',
+    required: ['id', 'name'],
+    properties: {
+        id: { type: 'string', title: 'Task Id', example: '1001' },
+        name: { type: 'string', title: 'Name', example: 'Buy groceries' },
+        status: { type: 'string', title: 'Status', example: 'open' }
+    }
 };
 
 module.exports = {
+
+    ITEM_SCHEMA,
+
     async receive(context) {
         const { searchQuery, outputType } = context.messages.in.content;
 
         if (context.properties.generateOutputPortOptions) {
-            return lib.getOutputPortOptions(context, outputType, schema, { label: 'Tasks', value: 'tasks' });
+            // The helper takes the property map, not the whole schema.
+            return lib.getOutputPortOptions(context, outputType, ITEM_SCHEMA.properties, { label: 'Tasks', value: 'tasks' });
         }
 
         // any required inputs validation can be done here
