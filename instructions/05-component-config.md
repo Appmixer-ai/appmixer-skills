@@ -230,6 +230,39 @@ Each output port can define its output structure using **either** `schema` or `o
 ]
 ```
 
+### Nested objects in output schemas
+
+The designer's variable picker renders nested schema properties as a **flat
+list of titles**. Two nested leaves with the same title (`from.username` and
+`chat.username`, both "Username") are indistinguishable there, and users wire
+the wrong one. Therefore:
+
+1. **Prefix nested titles with the parent title, dot-separated** —
+   `"Parent.Leaf"`: `From.Username`, `Chat.Username`, `Chat.ID`,
+   `Reply To Message.From.ID`. Deeper levels chain the already-prefixed parent.
+   The object property itself needs a `title` (it is the prefix). Array items
+   are exempt — the picker offers an array as one variable. Enforced by the
+   `outport-nested-title-prefix` validator.
+2. **Mark `required` per level** when the API's payload is polymorphic or has
+   optional fields (a Telegram `User` may have no `username`; a message is a
+   text OR a photo OR a document). `appmixer connector verify` compares the
+   schema with real payloads leaf by leaf: an absent *required* leaf is a dead
+   picker entry (FAIL), an absent *optional* leaf is only a warning. Without
+   any `required`, every declared leaf is treated as required.
+
+```json
+"chat": {
+    "type": "object",
+    "title": "Chat",
+    "required": ["id", "type"],
+    "properties": {
+        "id": { "type": "integer", "title": "Chat.ID", "example": -1002345678901 },
+        "type": { "type": "string", "title": "Chat.Type", "example": "supergroup" },
+        "username": { "type": "string", "title": "Chat.Username", "example": "product_team" }
+    }
+}
+```
+
 ### Output Port Examples (variable picker preview)
 
 Output port fields should include `example` values so users see realistic sample data in the variable picker UI when wiring downstream components.
