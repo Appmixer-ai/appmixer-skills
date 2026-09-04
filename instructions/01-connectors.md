@@ -74,11 +74,35 @@ Describes the connector service and its metadata.
         },
         "icon": {
             "type": "string",
-            "description": "url to the SVG icon of the application"
+            "description": "SVG icon of the application, as a data:image/svg+xml URI"
         }
     }
 }
 ```
+
+### Icons must be SVG
+
+`service.json` and every `component.json` carry an `icon` as a
+`data:image/svg+xml;base64,…` URI. A PNG or JPEG data URI fails the
+`component-icon-svg` validator — it is not a style preference, it is a gate.
+
+When the brand only publishes raster art, trace it instead of shipping the
+raster or drawing an approximation by hand:
+
+```bash
+# 1. split the image into masks: the background, and the glyph inside it
+#    (flood-fill from the border to find "outside", glyph = inside AND light)
+# 2. trace each mask
+potrace -s -o glyph.svg --flat -O 0.4 glyph.pbm
+# 3. compose: background path/rect + glyph path, viewBox matching the source
+```
+
+**Verify numerically, never by eye** — render the SVG, threshold both images and
+compare: mismatch ratio and bounding box. Eyeballing a side-by-side whose panels
+sit on different backgrounds reliably produces false "it is distorted" calls.
+A good trace lands near 0.1 % mismatched pixels with an identical bounding box.
+On macOS `qlmanage -t -s <size> -o <dir> icon.svg` renders faithfully;
+ImageMagick's built-in SVG renderer does not.
 
 ### bundle.json
 

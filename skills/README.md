@@ -5,24 +5,23 @@ and a skill-by-skill overview see the [root README](../README.md).
 
 ## Skills — how they work
 
-Every skill is **pure instructions for the host agent** (e.g. a Claude Code
-session) — no skill spawns its own LLM sub-agent, runs bundled scripts, or
-reads environment variables. `SKILL.md` describes the procedure and the agent
-executes it directly with its own tools: `build-connector`, `test-connector`,
-`review-connector`. Where a real tool is
+Every skill is **instructions for the host agent** (e.g. a Claude Code
+session) — no skill spawns its own LLM sub-agent. `SKILL.md` describes the
+procedure and the agent executes it directly with its own tools:
+`build-connector`, `test-connector`, `review-connector`. Where a real tool is
 needed (component testing, publishing), the skills drive the external
 [`appmixer` CLI](https://www.npmjs.com/package/appmixer) — the only
 prerequisite.
 
-Each skill directory is fully self-contained (`SKILL.md` + `references/`), so
-per-skill installs (`npx skills`, manual copy) work without any shared helpers
-or post-install downloads.
+Each skill directory is self-contained (`SKILL.md` + `references/`), so
+per-skill installs (`npx skills`, manual copy) work without post-install
+downloads.
 
-> The **E2E skills** (`generate-e2e-flows`, `upload-e2e-flows`,
-> `run-e2e-flows`) live on the `dev` branch together with their runtime
-> scripts (`_shared/`, `e2e-shared/`) while that tooling moves into the
-> appmixer CLI. Once the CLI commands exist they return here as pure
-> instructions.
+> **E2E flow testing** also runs through the CLI: the `appmixer e2e` command
+> family (`import`, `run`, `list`, `results`, `export`, `validate`, `rm`)
+> ships with it — the skills bundle no scripts. E2E flow *generation*
+> instructions ship with `build-connector`
+> (`references/11-e2e-flow-generation.md`).
 
 ## The connector workspace
 
@@ -40,7 +39,7 @@ connectors, but a customer's own workspace works just as well.
 ## Design conventions (references sync)
 
 The connector **design conventions** ship inside the skills that use them
-(`build-connector`, `review-connector`), in each skill's `references/`
+(`build-connector`, `review-connector`, `test-connector`), in each skill's `references/`
 directory — including complete example files in `references/examples/`. The
 canonical source is `instructions/` at the repo root;
 `node scripts/sync-references.mjs` copies it into the skills (the smoke test

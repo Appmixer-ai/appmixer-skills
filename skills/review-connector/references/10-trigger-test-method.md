@@ -161,8 +161,11 @@ trigger's `test()`).
 Run the workspace's lint/validators first when it provides them (the
 appmixer-connectors repo ships `npm run lint` + `npm run validate`). Then verify the method actually emits a realistic item. Two options:
 
-**Option 1 — Appmixer CLI** (requires a CLI version that supports the `--test` flag; check with
-`appmixer test component --help`):
+**Option 1 — Appmixer CLI** (requires version **2.6.0 or newer** — the `--test` flag is
+not implemented in 2.3.4 and older; check `appmixer --version` and
+`appmixer test component --help`. On older CLIs skip to Option 2, or verify the trigger's
+production path by running its real `tick()` loop with a short `-t` period and creating a
+matching resource mid-run):
 
 ```bash
 # one-time: store auth credentials for the connector
@@ -184,7 +187,7 @@ those mean the engine fell back to schema samples because `test()` threw or is m
 
 | Group | Description | `test()` approach |
 |-------|-------------|-------------------|
-| **A** Polling list+dedup | `tick()` lists latest, dedups vs state (e.g. `freshdesk.NewTicket`, `gmail.NewEmail`, `github.NewIssue`, `wordpress.*`, `asana.*`) | Reuse the same fetch+map path, queried newest-first (`desc` + `limit 1`), emit first item. ⚠️ If the polling helper has a baseline/init phase that suppresses first-run output (e.g. gmail), don't call it with empty state — add a small `fetchLatest` helper that shares the mapping. For SDK-based connectors (`asana`) reuse the same SDK `list`+`findById` calls — the SDK is the shared seam (see "SDK-based connectors" above). |
+| **A** Polling list+dedup | `tick()` lists latest, dedups vs state (e.g. `freshdesk.NewTicket`, `gmail.NewEmail`, `github.NewIssue`, `wordpress.*`, `asana.*`) | Reuse the same fetch+map path, queried newest-first (`desc` + `limit 1`), emit first item. ⚠️ If the polling helper has a baseline/init phase that suppresses first-run output (e.g. gmail), don't call it with empty state — add a small `fetchLatest` helper that shares the mapping. SDK-based connectors (`asana`): see "SDK-based connectors" above. |
 | **B** Per-flow webhook | `start()` registers a per-flow webhook (e.g. `calendly`, `shopify`, `xero`, `hubspot`, `microsoft.mail`) | Do NOT register. Add a shared `lib.fetchLatestExample(context, type, properties)` once per connector, fetch newest record via REST, reshape into the webhook payload. |
 | **C** Plugin-based (global URL + `addListener`) | app-level webhook, `plugin.js`/`routes.js` fan out (e.g. `slack`, `whatsapp`, `meta.*`) | Skip `addListener`, fetch one recent matching event via REST, return it in the exact shape `routes.js` puts on the wire. **If the upstream has no API to fetch such an event** (e.g. WhatsApp received messages / message-status updates), do NOT fabricate one — `throw new context.CancelError(...)` explaining it can only be triggered by a real event (see Hard rule 5). |
 | **D** Generic webhook (`utils.http.Webhook*`) | no schema/upstream | **Do not implement.** Rely on log search or user-provided `payload`; document in the description. |
@@ -197,7 +200,9 @@ The shared pieces live in the connector's `lib.js` so every component issues req
 way: `apiCall()` (auth + base URL on top of `context.httpRequest`), `mapTicket()` (raw ticket →
 output `fields`) and `requestTickets()` (one page: fetch + map + pagination parsing). `tick()`
 and `test()` both go through `requestTickets()`; `test()` adds only the newest-first query and
-`records[0]`. See `src/appmixer/freshdesk/lib.js` + `tickets/NewTicket/NewTicket.js`.
+`records[0]`. See `src/appmixer/freshdesk/lib.js` + `tickets/NewTicket/NewTicket.js`;
+the sibling triggers `UpdatedTicket` (cursor on `updated_at`), `DeletedTicket`
+(`filter=deleted`, own mapping) and `NewConversation` follow the same shape.
 
 ```javascript
 // lib.js — single source of truth for request shape, mapping and pagination
@@ -380,54 +385,3 @@ test(context) {
 - [ ] Throws (not returns null) when no example exists
 - [ ] Workspace lint/validators pass (when provided), and `test()` verified via CLI `--test` or
       Flow Test Mode on a live instance (see "Verifying your test() method")
-
-## Reference connectors
-
-Worked examples across the groups:
-
-**Group A — polling list+dedup:**
-- **`freshdesk.NewTicket`** (`src/appmixer/freshdesk/tickets/NewTicket/`) — *extract from inlined
-  logic.* `tick()` had the request + mapping inlined, so they were pulled into `lib.requestTickets()`
-  + `lib.mapTicket()` and now `tick()` and `test()` both call them. Also has **dynamic** outPorts
-  (via `GenerateTicketsOutput`), so the schema fallback is weak and `test()` carries real value.
-  The sibling triggers `UpdatedTicket` (cursor on `updated_at`) and `DeletedTicket`
-  (`filter=deleted`, own mapping) follow the same shape; `NewConversation` shares
-  fetch/filter/emit helpers between `tick()` and `test()`.
-- **`google.gmail.NewEmail`** (`src/appmixer/google/gmail/NewEmail/` + `../lib.js`) — *reuse an
-  existing lib helper.* The per-message fetch+normalize was factored into `lib.fetchMessage()`
-  (reused by both `listNewMessages()` and a new `lib.fetchLatestExample()`); `test()` is a 4-line
-  wrapper. Note the gotcha: `listNewMessages()` suppresses output on first run (baseline-only
-  init phase), so `test()` could **not** just call it with empty state — it needed the dedicated
-  `fetchLatestExample()` that lists newest-first and honors `query`. Watch for this whenever the
-  polling helper has init/baseline semantics.
-- **`asana.*`** (`src/appmixer/asana/` — `NewTask`, `NewSubtask`, `NewStory`, `NewComment`,
-  `NewTag`, `TagAdded`, `TaskCompleted`, `NewProject`, `NewTeam`) — *SDK-based, no HTTP helper.*
-  Every `tick()` lists via the `asana` SDK, dedups vs state, then re-fetches each hit with
-  `<resource>.findById(gid)` and emits that. `test()` calls the **same** list + `findById`, so
-  the shape is identical; the one shared addition is `asana-commons.pickLatest()` (newest by
-  `created_at`/`gid`). `NewComment` keeps the `type === 'comment'` filter; `TagAdded` reads the
-  task's `tags`; `TaskCompleted` mirrors both of `tick()`'s branches (single `task` vs
-  project-wide scan) — a worked example of the branching-trigger rule.
-
-**Group B — per-flow webhook:**
-- **`calendly.events.InviteeCreated`** (`src/appmixer/calendly/events/InviteeCreated/` +
-  `../../calendly-commons.js`) — `receive()` only forwards the webhook body, so the reuse is
-  *across the connector's webhook triggers*: `fetchLatestExample()` (REST, newest invitee) +
-  `toWebhookShape()` live in commons; `test()` is a thin wrapper that reshapes the REST record
-  into the exact body the webhook delivers.
-
-**Group C — plugin-based (global URL + `addListener`):**
-- **`slack.list.NewChannelMessageRT`** (`src/appmixer/slack/list/NewChannelMessageRT/`) — `test()`
-  skips `addListener` and reuses the same `conversations.history` call the polling
-  `slack.list.NewChannelMessage` trigger uses, honoring the same `ignoreBotMessages` filter as
-  `receive()`.
-
-**Group E — scheduler/timer:**
-- **`utils.timers.SchedulerTrigger`** (`src/appmixer/utils/timers/SchedulerTrigger/`) — `test()`
-  reuses the same `getNextRun()` computation as `start()`/`receive()` and emits the next-run
-  payload without setting any timeout or touching state.
-
-**Group F — form (dynamic schema):**
-- **`utils.forms.FormTrigger`** (`src/appmixer/utils/forms/FormTrigger/`) — `test()` synthesizes
-  one entry from `properties.fields.ADD`, matching the exact shape a real POST submission
-  produces (`field_<index>` keys, string values, checkbox → boolean, `defaultValue` preferred).

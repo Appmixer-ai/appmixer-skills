@@ -19,11 +19,17 @@ mocha works everywhere.)
 
 ### End-to-End (E2E) Test Flows
 
-E2E test flows are automated workflow tests stored as `test-flow*.json` files in the connector's root directory (`src/<vendor>/<connector_name>/`). These flows test the complete integration by executing components in a realistic sequence.
+E2E test flows are automated workflow tests stored as `test-flow-*.json` files in the connector's `artifacts/test-flows/` directory (`src/<vendor>/<connector_name>/artifacts/test-flows/`). These flows test the complete integration by executing components in a realistic sequence.
 
 **Important**: Connectors should have **multiple smaller test flows** rather than one large flow. Each flow should test a specific feature or workflow (e.g., `test-flow-crud.json`, `test-flow-search.json`, `test-flow-webhooks.json`). This approach makes tests easier to maintain, debug, and understand.
 
 **Full Coverage Requirement**: All components in a connector MUST be tested. Verify that every component in the connector appears in at least one test flow.
+
+**Data assumptions get a designer sticky note**: a flow that assumes tenant
+data (hardcoded entity IDs that must exist), provokes its own data, or carries
+a timing constraint (a Wait that must not be removed) MUST carry a top-level
+`notes` entry — a designer sticky note with the warning and the setup steps for
+a fresh tenant. See `11-e2e-flow-generation.md` rule 19 for the shape.
 
 #### Test Flow Structure
 
@@ -38,6 +44,14 @@ Test flows are JSON files that define a workflow using the Appmixer flow format.
 - Test flow names MUST follow the format: `"E2E Connector Name - test type"`
 - Examples: `"E2E Google Docs - images"`, `"E2E Slack - messages"`, `"E2E GitHub - pull requests"`
 - The testCase field in ProcessE2EResults should match this format
+
+**Component IDs MUST be freshly generated UUIDs** (`crypto.randomUUID()`) —
+never readable slugs like `create-task`. The engine resolves OAuth scopes via a
+global componentId lookup that ignores the flow id, so readable ids reused
+across flows bind accounts to the wrong flow (see `11-e2e-flow-generation.md`,
+rule 0b; enforced by the `component-id-uuid` validator). The JSON snippets in
+THIS document use short readable ids purely for legibility — do not copy them
+into real flows.
 
 **Basic Structure**:
 ```json
@@ -87,51 +101,43 @@ Test flows are JSON files that define a workflow using the Appmixer flow format.
 
 #### Component Layout Rules (IMPORTANT)
 
-For clean, readable flows without crossing lines or cycles, follow these spacing rules strictly:
+For clean, readable flows without crossing lines or cycles, lay flows out as a
+**left→right staircase** (checked, as warnings, by the `layout` validator —
+same rules as `11-e2e-flow-generation.md` rule 14):
+
+**Grid minimums**:
+- `MIN_DX = 208px` — horizontal gap between connected components
+- `MIN_DY = 128px` — vertical gap between rows
+- First component: `x = 64, y = 16`
 
 **Rule 1: Linear Sequence (A → B)**
-When component A connects to component B in sequence:
 ```
-B.x = A.x + 192   (horizontal spacing: 192px)
-B.y = A.y         (same vertical level)
-```
-
-**Rule 2: Branching (A → B, A → C)**
-When component A branches to two components (B and C):
-```
-B.x = A.x + 192   (horizontal spacing: 192px)
-B.y = A.y         (same vertical level as A)
-
-C.x = B.x         (SAME x as B! Vertical alignment)
-C.y = A.y + 128   (vertical spacing: 128px below A)
+B.x = A.x + 208   (horizontal spacing)
+B.y = A.y         (same row)
 ```
 
-**Example - Linear Flow**:
-```
-OnStart (64, 16) → SetVariable (256, 16) → Create (448, 16) → Assert (640, 16)
-                   64+192=256              256+192=448          448+192=640
-```
+**Rule 2: Staircase (one row per tested component)** — a tested component and
+**its** Assert share the same `y` (the Assert sits at `x + 208`); the NEXT
+tested component steps down to `y + 128` (and right), so each
+component→Assert pair gets its own row. Connected components either share a
+row (Δy = 0) or are ≥ 128 apart — never backward or overlapping edges.
 
-**Example - Branching Flow**:
+**Example (staircase)**:
 ```
-Create (448, 16) 
-  ├→ Assert rawJson (640, 16)      [B: x=448+192, y=16]
-  └→ Delete (640, 144)             [C: x=640 (same as B), y=16+128]
-       └→ Create fields (832, 144) [linear: 640+192]
-            └→ Assert fields (1024, 144)
-                 └→ Delete fields (1024, 272) [C: x=1024 (same as Assert), y=144+128]
+OnStart (64, 16) → Create (272, 16)
+Get (480, 144) → Assert (688, 144)
+AfterAll (896, 144) → Delete cleanup (1104, 144) → ProcessE2EResults (1312, 144)
 ```
-
-**Constants**:
-- `deltaX = 192px` - horizontal spacing between sequential components
-- `deltaY = 128px` - vertical spacing for branching
-
-**Start Position**:
-- First component: `x = 64, y = 16`
+AfterAll → cleanup (Delete) → ProcessE2EResults continue to the right after
+the last Assert (see Required Components below).
 
 #### Required Components
 
-Every E2E test flow MUST include these components in sequence:
+Every E2E test flow MUST include these components in sequence — and **every
+component in the flow MUST carry fail-fast error handling**:
+`"errorHandling": { "autoRetry": false, "onError": "stopFlow" }` (see
+`11-e2e-flow-generation.md` rule 0; enforced by the `error-handling`
+validator).
 
 1. **OnStart** (`appmixer.utils.controls.OnStart`)
     - Triggers the flow execution
@@ -143,25 +149,32 @@ Every E2E test flow MUST include these components in sequence:
     - Should test main CRUD operations (Create, Read, Update, Delete)
     - Chain components to test realistic workflows
 
-4. **Assert Components** (`appmixer.utils.test.Assert`)
-    - Validate component outputs
-    - Supported assertions: `equal`, `notEmpty`, `regex`
+3. **Assert Components** (`appmixer.utils.test.Assert`)
+    - Validate component outputs (assertion types: see "Assert Component
+      Configuration" below)
     - Multiple assertions can be used throughout the flow
-    - **Layout rule**: When a Create/Get component branches, Assert goes HORIZONTALLY (x + 192px, same y), while Delete goes VERTICALLY below (same x, y + 128px)
+    - **Layout rule**: a tested component and its Assert share the same row
+      (Assert at x + 208); the next tested component starts a new row (see
+      Layout Rules above)
     - Each Assert MUST be connected to AfterAll to report test results
 
-5. **AfterAll** (`appmixer.utils.test.AfterAll`)
-    - Aggregation point that receives outputs from all test and deletion components
+4. **AfterAll** (`appmixer.utils.test.AfterAll`)
+    - Aggregation point that receives the outputs of **ALL Assert components**
+      in the flow
     - Critical for proper flow termination and cleanup
-    - **Connection rule**: AfterAll should receive inputs from **the final Delete component** and **all Assert components** in the flow
-    - Should include timeout property (e.g., 120 seconds for complex operations)
-    - Position: `x = final_component.x + 192, y = last_row.y` (continues the sequence)
-    - **Key**: AfterAll validates all assertions passed before cleanup operations run
+    - **Connection rule**: every Assert feeds AfterAll; **cleanup (Delete)
+      components come AFTER AfterAll** (AfterAll → cleanup →
+      ProcessE2EResults), so cleanup runs once all assertions have reported
+    - Should include a `timeout` property (e.g. 180 seconds; use 420–600 for
+      trigger flows waiting on webhooks or manual steps — see
+      `11-e2e-flow-generation.md` rule 18)
+    - Position: `x = last_assert.x + 208, y = last_row.y` (continues the sequence)
 
-6. **ProcessE2EResults** (`appmixer.utils.test.ProcessE2EResults`)
+5. **ProcessE2EResults** (`appmixer.utils.test.ProcessE2EResults`)
     - Final component that processes test results
     - REQUIRED for all E2E test flows
-    - Must be connected after cleanup operations
+    - Connected after the cleanup components (or directly after AfterAll when
+      the flow creates nothing to clean up)
     - Reports success/failure to test infrastructure
 
 #### ProcessE2EResults Component Configuration
@@ -290,7 +303,7 @@ Use CodeBlock only when modifiers can't express the logic: complex string format
 
 **CodeBlock gotchas:**
 - Output wraps the return value under `result` field. Access via `$.code-block-id.out.result`. Deep access like `$.code-block-id.out.result.field` does NOT work — return simple strings/numbers.
-- Code runs in `isolated-vm`. Bare `return` statements are illegal. Use expressions directly (e.g. `'value-' + Date.now()`) or IIFEs.
+- Code runs in `isolated-vm`, **synchronously** (`evalSync`) — no `await`, no `setTimeout`, no Promises, so a CodeBlock cannot delay. Input variables are exposed on **`$data`** (e.g. `$data.body`), not as bare identifiers. Bare `return` statements are illegal. Use expressions directly (e.g. `'value-' + Date.now()`) or IIFEs.
 
 #### Deterministic Test Design
 
@@ -298,10 +311,65 @@ Tests must pass on repeated runs without input changes:
 
 - **Unique inputs**: Use `g_timestamp` or `g_uuid4` modifier functions for unique identifiers (e.g. `e2e-{{{ts-var}}}@test.com`). Prefer modifiers over CodeBlock.
 - **Avoid hardcoded dates**: Use `g_now` + `g_addTimeSpan` to compute future dates dynamically. Hardcoded dates expire and tests break.
-- **Create + Delete cleanup**: If the API rejects duplicates (e.g. contacts by email), the test MUST delete created resources at the end.
-- **Delete component placement**: Delete components should be placed DIRECTLY BELOW their corresponding Assert component (same x position, y + 128px) to maintain clean visual layout and avoid crossing connection lines.
-- **Search/Find race conditions**: Many APIs have eventual consistency. A record created 1 second ago may not appear in search results. Best approach: search for a pre-existing test record instead of a just-created one. Alternative: add a CodeBlock delay (`await new Promise(r => setTimeout(r, 5000))`).
+- **Create + Delete cleanup**: If the API rejects duplicates (e.g. contacts by email), the test MUST delete created resources at the end — after AfterAll (see Required Components).
+- **Search/Find race conditions**: Many APIs have eventual consistency. A record created 1 second ago may not appear in search results. Best approach: search for a pre-existing test record instead of a just-created one. Alternatives: insert `appmixer.utils.timers.Wait` with `interval: "1m"` (minimum unit is minutes — a CodeBlock cannot delay, see its gotchas above), or put a Get-by-ID between Create and Find.
 - **Cross-component variable references**: When referencing variables from indirect upstream components (2+ hops), prefer direct upstream references. E.g. use `$.find-items.out.id` instead of `$.create-item.out.id` when the update is triggered by find.
+
+#### Provider Latency Is a Design Input
+
+Before authoring a flow around a polling trigger, **measure how long the
+provider takes to make a new record visible**, and size the `AfterAll` timeout
+from that. Do not assume "a few seconds".
+
+Real case: Deepgram's request log lags **12–17 minutes** — records created at
+13:39 were absent at 13:50 and present at 13:56, and a job's detail endpoint
+answers `200` with an empty body immediately after the submit. Every trigger
+flow authored with a 420 s window was structurally unable to pass, no matter
+what the component code did.
+
+When the window is long, the runner needs a matching one:
+
+```bash
+AGENT_TIMEOUT_MS=3600000 appmixer e2e run <flowId> --fix --timeout 1700
+```
+
+(Budget the overall `AGENT_TIMEOUT_MS` for TWO windows plus overhead — a clean
+timeout on a trigger flow triggers one deterministic re-run, and a budget that
+only covers one window kills the runner mid-retry; see `13-e2e-run.md`.)
+
+If a component can get its result via a callback instead (see
+`14-async-components.md`), that lag disappears — 4 seconds instead of 17 minutes
+— and it is worth changing the component rather than nursing the timeouts.
+
+#### Provoking Failure States
+
+A trigger that watches a **failure** (failed job, rejected request, bounced
+message) needs a provocation the provider **accepts** and then fails. Verify
+that at design time.
+
+Real case: the Deepgram Failed Request flow submitted an unreachable audio URL.
+The provider fetches that URL while handling the submit and rejects the whole
+call synchronously (`415`), so the component throws, the flow stops on first
+error the way E2E flows must, and the trigger never sees anything — and a
+rejected submit is not logged as a failed request either. The flow could never
+pass.
+
+If no deterministic provocation exists, do not ship a flow that cannot pass.
+Remove it, cover the component with review plus its `test()` method, and write
+down why in `artifacts/test-flows/README.md` so the next person does not re-add
+it.
+
+#### Tenant-Bound Values in Flows
+
+`appmixer e2e import` re-resolves **account** bindings, but nothing else. A
+trigger's `config.properties` (e.g. `projectId`, `boardId`, `viewId`) is a plain
+string that belongs to whoever's credentials authored the flow. Swap the E2E
+account and those flows fail with `404 … cannot be found`.
+
+- Keep the list of tenant-bound properties in `artifacts/test-flows/README.md`.
+- Remember that swapping the account also resets the **data** the flows rely on:
+  a fresh API key can mean an empty project, so `Find*` components correctly
+  return `notFound` and the asserts never fire.
 
 #### Component Configuration Pattern
 
@@ -642,82 +710,36 @@ The `result` property MUST use `{{{uuid}}}` pattern referencing `$.after-all.out
 
 #### Best Practices for Test Flows
 
-1. **Multiple Smaller Flows**
-    - Create multiple focused test flows per connector instead of one large flow
-    - Each flow should test a specific feature or workflow
-    - Examples: `test-flow-crud.json`, `test-flow-search.json`, `test-flow-webhooks.json`
-    - Smaller flows are easier to debug, maintain, and understand
+(Multiple smaller flows, full coverage, cleanup after AfterAll, layout and UUID
+component ids are specified at the top of this document and not repeated here.)
 
-2. **Ensure Full Coverage**
-    - **CRITICAL**: Every component in the connector MUST be tested
-    - Verify that each component appears in at least one test flow
-    - Use a checklist to track which components are covered
-    - Include both actions and triggers in test coverage
-
-3. **Test Realistic Workflows**
+1. **Test Realistic Workflows**
     - Create → Modify → Read → Delete sequence
     - Test main user journeys
     - Include error cases where appropriate
 
-4. **Multiple Assert Components - Separate Branches**
+2. **Multiple Assert Components - Separate Branches**
     - **CRITICAL**: If a flow has more than one Assert component, they MUST be in separate branches
     - Each Assert should test a different aspect or operation
-    - Branches should have different y-coordinates for visual separation
-    - All Assert components feed into the AfterAll component to merge results
-    - Example structure:
+    - Branches sit on different rows (Δy ≥ 128) and all feed into AfterAll:
       ```
-      Component A (y=100)
-        ├─> Assert 1 (y=100) ─┐
-        └─> Component B (y=300) ─> Assert 2 (y=300) ─┘
-                                                      └─> AfterAll
+      Component A (y=16)  → Assert 1 (y=16)  ─┐
+        └─> Component B (y=144) → Assert 2 (y=144) ─┴─> AfterAll
       ```
-    - See `test-flow-images.json` for reference implementation
 
-5. **Field Name Accuracy**
+3. **Field Name Accuracy**
     - Use EXACT field names from component.json
     - Match required vs optional fields
     - Example: `paragraphText` not `text`, `oldText` not `searchText`
 
-6. **Variable References**
+4. **Variable References**
     - Reference outputs using `$.component-id.out.fieldName`
     - Use consistent variable IDs in modifiers
     - Pass data between components via variables
 
-7. **Cleanup Operations**
-    - Always delete created test data
-    - Use AfterAll to ensure cleanup runs after all assertions
-    - Connect cleanup components properly
-
-8. **Component Coordinates and Layout**
-    - **Horizontal spacing**: Use **192px** between sequentially connected components on the x-axis
-    - **Vertical spacing**: Use **128px** between parallel rows/branches on the y-axis
-    - **Starting position**: OnStart at `x: 64, y: 16`
-    - **Diagonal staircase pattern**: When operations branch off sequentially (Create → Get → Update → ...), each subsequent action moves **+192px right** and **+128px down**, forming a diagonal:
-      ```
-      on-start (64,16) → set-variables (272,16) → create (464,16)
-                                                       ↓
-                                                   get (656,144)
-                                                       ↓
-                                                   update (848,272)
-                                                       ↓
-                                                   get-content (1040,400)
-      ```
-    - **Assert column**: All Assert components are **right-aligned at a fixed x position** (e.g., `x: 1200`), each at the **same y as its corresponding action**:
-      ```
-      create (464,16)          →  assert-create (1200,16)
-      get (656,144)            →  assert-get (1200,144)
-      update (848,272)         →  assert-update (1200,272)
-      get-content (1040,400)   →  assert-get-content (1200,400)
-      ```
-    - **Tail chain (AfterAll → Cleanup → ProcessResults)**: Place on a **horizontal line** at approximately the vertical center of the flow (e.g., `y: 144`), spaced ~192px apart after the assert column:
-      ```
-      after-all (1392,144) → delete (1616,144) → process-results (1792,144)
-      ```
-
-9. **Naming Conventions**
-    - Use descriptive component IDs: `create-document`, `assert-content-exists`
-    - Name test flows: `test-flow-<feature>.json` (e.g., `test-flow-crud.json`, `test-flow-list.json`)
-    - Use clear, descriptive names that indicate what the flow tests
+5. **File Naming**
+    - Name test flow files: `test-flow-<feature>.json` (e.g., `test-flow-crud.json`, `test-flow-list.json`)
+    - Use clear, descriptive flow names that indicate what the flow tests
 
 #### Example Test Flow Pattern
 
@@ -725,49 +747,20 @@ See [`examples/e2e-test-flow.json`](examples/e2e-test-flow.json).
 
 #### Creating a Test Flow: Step-by-Step
 
-1. **Plan Test Coverage**
-    - List ALL components in the connector (actions and triggers)
-    - Decide how many test flows you need (prefer multiple smaller flows)
-    - Group related components into logical test scenarios
-    - Example groupings:
-        - `test-flow-crud.json`: Create, Update, Get, Delete components
-        - `test-flow-list.json`: List and Find components
-        - `test-flow-advanced.json`: Complex operations like ReplaceText, InsertParagraph
-    - Ensure every component appears in at least one flow
-
-2. **Identify Test Scenario**
-    - Determine which components to test in this specific flow
-    - Plan the workflow sequence
-    - Identify what to assert
-
-3. **Create JSON File**
-    - Name: `src/<vendor>/<connector>/test-flow-<feature>.json`
-    - Use descriptive feature names: `crud`, `search`, `webhooks`, `list`, etc.
-
-4. **Add Required Components**
-    - Start with OnStart
-    - Add your connector components
-    - Include Assert components
-    - End with AfterAll → Cleanup → ProcessE2EResults
-
-5. **Configure Each Component**
-    - Set correct field names from component.json
-    - Pass data via variable references
-    - Set static test values
-
-6. **Verify Field Names**
-    - Read each component's component.json
-    - Check `inPorts[0].schema.properties` for required fields
-    - Match EXACT field names in test flow config
-
-7. **Test Locally**
-    - Ensure authentication is configured
-    - Run individual components with `appmixer test component`
-    - Verify outputs before building full flow
-
-8. **Verify Coverage**
-    - Check that all components are covered across all test flows
-    - Create additional flows if needed for untested components
+1. **Plan** — list ALL components (actions and triggers) and group them into
+   scenarios, e.g. `test-flow-crud.json` (Create, Update, Get, Delete),
+   `test-flow-list.json` (List and Find), `test-flow-advanced.json` (complex
+   operations). Every component appears in at least one flow.
+2. **Create the file** at
+   `src/<vendor>/<connector>/artifacts/test-flows/test-flow-<feature>.json`
+   with OnStart → connector components → Assert(s) → AfterAll → cleanup →
+   ProcessE2EResults.
+3. **Configure each component** from its `component.json`: exact field names,
+   every `required` input populated, data passed via variable references.
+4. **Test locally first** — run individual components with
+   `appmixer test component` and verify outputs before wiring the full flow.
+5. **Validate** with `appmixer e2e validate` (rules in
+   `11-e2e-flow-generation.md`).
 
 #### Common Mistakes to Avoid
 
@@ -780,20 +773,11 @@ See [`examples/e2e-test-flow.json`](examples/e2e-test-flow.json).
     - ❌ Omitting required inputs
     - ✅ Verify all `required` fields from schema are populated
 
-3. **Wrong Variable References**
-    - ❌ `$.component.out` — Raw Output, forbidden. Always include a field name.
-    - ❌ `$.component.out.items.0.id` — `.N.` array indexing does not work in variable paths.
-    - ✅ `$.component-id.out.fieldName`
-    - ✅ For array items use modifier functions: `g_jsonPath` with param `"$[0].id"` on `$.component.out.items`, or `g_first` / `g_last` for simple first/last element. See **Modifier Functions** section above.
-
-3b. **Deep Paths Past the Static outPort Contract**
-    - ❌ `$.make-api-call.out.response.opportunityid` — works at runtime, but MakeApiCall statically declares only `response`/`status`/`statusText`, so the designer's variable picker cannot offer the deep path and renders a red invalid-variable chip (validation error).
-    - ✅ Reference the deepest DECLARED path and extract the leaf with a modifier: `"variable": "$.make-api-call.out.response"` + `"functions": [{ "name": "g_jsonPath", "params": [{ "value": "$.opportunityid" }] }]` (note: `params`, not `args`).
-    - ✅ Dynamic outPorts (options generated by a live `source` call, e.g. polling triggers) DO offer entity leaf fields — reference those directly (`$.trigger.out.contactid`).
-
-3c. **Arrays/Objects in String-Typed Inputs**
-    - ❌ `"headers": [{ "key": "Prefer", "value": "return=representation" }]` — key-value inspector inputs (MakeApiCall `headers`/`parameters`) declare `"type": "string"`; a raw array works at runtime but fails the designer's schema validation with a red "must be string" chip.
-    - ✅ Serialize as a JSON string: `"headers": "[{\"key\": \"Prefer\", \"value\": \"return=representation\"}]"`.
+3. **Wrong Variable References** — Raw Output (`$.component.out`), numeric
+   array indexing (`.items.0.id`), paths deeper than the sender's static
+   outPort contract, and raw arrays in string-typed inputs. The correct forms
+   (`g_jsonPath` / `g_first` / `g_last` modifiers, JSON-serialized strings) are
+   rules 3, 6b, 8 and 9b in `11-e2e-flow-generation.md`.
 
 4. **Forgetting ProcessE2EResults**
     - ❌ Ending flow without ProcessE2EResults
@@ -803,18 +787,11 @@ See [`examples/e2e-test-flow.json`](examples/e2e-test-flow.json).
     - ❌ Leaving test data in the service
     - ✅ Delete all created test data in cleanup phase
 
-6. **Incomplete Component Coverage**
-    - ❌ Creating one large test flow that doesn't test all components
-    - ❌ Forgetting to test some components
-    - ✅ Verify every component appears in at least one test flow
-    - ✅ Create multiple smaller flows to cover all components
-
 #### Reference Test Flows
 
-Good examples to reference:
-- `src/appmixer/googleDocs/test-flow.json` - Document CRUD operations
-- `src/appmixer/monday/test-flow.json` - Board management
-- `src/appmixer/jira/test-flow.json` - Issue tracking
-- `src/appmixer/hubspot/test-flow-create-deal.json` - CRM operations
+`examples/e2e-test-flow.json` is the only structural reference. Do NOT copy
+patterns from other connectors' committed test flows — many pre-date the current
+rules (`BeforeAll`, missing `errorHandling`, readable component ids); see
+`11-e2e-flow-generation.md`.
 
 ---

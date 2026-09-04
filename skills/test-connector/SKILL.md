@@ -1,10 +1,10 @@
 ---
 name: test-connector
-description: Test and validate an Appmixer connector via the appmixer CLI — ordered test plan, then a component test+fix cycle (E2E flow testing folds in here once the appmixer CLI ships it). Use when user wants to test a connector, plan testing, test a component, or validate it works.
+description: Test and validate an Appmixer connector — ordered test plan, a CLI component test+fix cycle, and E2E flow testing on a live instance (upload flows, run, evaluate, fix loop). Use when user wants to test a connector, plan testing, test a component, run E2E flows, upload flows, or validate it works. Triggers on "test connector", "run e2e", "upload flows", "execute test flows", "spusť testy".
 license: MIT
 metadata:
   author: Appmixer
-  version: "0.2.2"
+  version: "1.0.0"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
@@ -14,11 +14,20 @@ metadata:
 Tests a connector's components with real API calls via the **`appmixer` CLI**
 and validates their output.
 
-> **Scope:** today this skill covers CLI component tests. End-to-end testing
-> (generate E2E test flows, upload to a live instance, run and evaluate) will
-> fold in here once its tooling ships in the appmixer CLI — until then the E2E
-> skills live on the `dev` branch of this repo.
- **You (the agent) do this directly** — plan the test order, resolve
+> **Scope:** this skill covers two testing modes:
+>
+> 1. **CLI component tests** — the workflow in this file: ordered test plan,
+>    then a component test+fix cycle via `appmixer test component`.
+> 2. **E2E flow testing on a live instance** — publish the connector and
+>    prepare the instance (`references/12-e2e-upload.md`), import the flows
+>    with `appmixer e2e import`, then run and evaluate them with
+>    `appmixer e2e run` (`references/13-e2e-run.md`). Flows are generated
+>    during the build (`build-connector`, `references/11-e2e-flow-generation.md`
+>    there). All E2E tooling ships with the `appmixer` CLI (`appmixer e2e
+>    import|run|list|results|export|validate|rm`) — this skill bundles no
+>    scripts.
+>
+> **You (the agent) do this directly** — plan the test order, resolve
 real inputs, run the CLI, interpret the output, fix on failure, and re-test.
 There is no sub-agent to spawn.
 
@@ -230,8 +239,9 @@ Check the installed version with `appmixer --version`. On 2.3.4 and older:
   non-cached path if it has one, otherwise record the component as
   `not-cli-testable (staticCache)` in `test-plan.json` and verify it on a live
   instance instead. Do NOT rewrite a component just to dodge this error.
-- **No `--test` flag** — a trigger's `test(context)` method cannot be invoked via
-  the CLI. Verify trigger behavior by running the real `tick()` loop (run the
+- **No `--test` flag on ≤ 2.3.4** — a trigger's `test(context)` method can be
+  invoked via `appmixer test component <dir> --test` from CLI **2.6.0**. On
+  older CLIs verify trigger behavior by running the real `tick()` loop (run the
   component with `-p` properties and a short `-t` tick period, create a matching
   resource mid-run via the service API, and watch for the emitted message);
   `test()` itself is then verified by code review or Flow Test Mode on a live
@@ -248,6 +258,60 @@ Check the installed version with `appmixer --version`. On 2.3.4 and older:
 | **Rate Limit** | Add delays between tests. |
 | **Output Schema Mismatch** | Actual output ≠ declared schema — fix the component logic or the schema. |
 | **Cannot read properties of undefined (reading 'execute')** | Read 2–3 sibling components and follow their established pattern. |
+
+## Live verification (after the component loop, before E2E)
+
+Once every component in the plan passes, run the live semantic check — it
+reuses the credentials Step 0 stored, so it costs one command:
+
+```bash
+appmixer connector verify <connector>            # read-only schema conformance
+appmixer connector verify <connector> --write    # + enum round-trips (creates + cleans up records)
+appmixer connector verify <connector> --record   # save sanitized output shapes to artifacts/samples/ (commit them)
+```
+
+Interpret findings per `references/15-live-verification.md`: FAIL
+declared-but-absent = dead variable-picker entry (fix the schema or mapping);
+WARN returned-but-undeclared = candidates to declare; round-trip FAIL names
+the option whose label the service disagrees with. `--write` needs the
+connector's `artifacts/verify.json` round-trip specs (authored by
+`build-connector`) and must never run against a production tenant. After a
+green `--record`, commit `artifacts/samples/` so CI can re-check conformance
+offline (`--offline`, no credentials).
+
+## E2E flow testing
+
+When the user wants end-to-end validation on a live Appmixer instance (not just
+CLI component tests), follow the two references shipped with this skill:
+
+1. **Publish & prepare** — `references/12-e2e-upload.md`: publish the connector
+   (`appmixer pack` + `publish`) and verify the auth account; then
+   `appmixer e2e import` uploads the flows, injects the E2E stores, binds
+   accounts and validates variables server-side.
+2. **Run** — `references/13-e2e-run.md`: run each imported flow by ID
+   (`appmixer e2e list -c <vendor>:<connector> --json` →
+   `appmixer e2e run <flowId> --fix`), evaluate results
+   (`appmixer e2e results`), and drive the fix loop (edit flow JSON →
+   re-import → re-run; `references/09-testing.md` and
+   `references/11-e2e-flow-generation.md` hold the flow design rules
+   the fixes must follow).
+
+Flow JSONs are produced during the build by `build-connector`
+(`references/11-e2e-flow-generation.md`, bundled here too for the fix loop);
+`appmixer e2e validate` checks
+them before import and after every fix.
+
+**Async components need both ports asserted** — see
+`references/14-async-components.md` → "Testing an async component". For a
+component whose job finishes later, assert the job id on the submit port **and**
+the result on the completion port, and wire both asserts into `AfterAll` so the
+flow cannot pass while the callback path is broken; size the `AfterAll` window
+for the provider's real job duration. If the component takes a Correlation ID,
+assert it comes back on the completion port — that is the cheapest way to catch
+a broken echo before a user hits it with ten parallel jobs. A flow that reaches
+the result through a `Wait` timer plus a status component is testing the user's
+polling, not the component's completion path, and is a sign the component is
+built in the wrong shape.
 
 ## After changes
 

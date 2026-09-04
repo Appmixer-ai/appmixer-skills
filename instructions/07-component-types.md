@@ -41,12 +41,26 @@ Components with `outputType` (Find/List) **MUST** use standardized lib.js helper
 ```javascript
 const lib = require('../../lib');
 
+// The output contract of ONE item. Exported so the offline tooling can read it —
+// see "Export the item schema as ITEM_SCHEMA" below.
+const ITEM_SCHEMA = {
+    type: 'object',
+    required: ['id'],
+    properties: {
+        id: { type: 'string', title: 'ID', example: '1001' },
+        name: { type: 'string', title: 'Name', example: 'Acme Inc.' }
+    }
+};
+
 module.exports = {
+
+    ITEM_SCHEMA,
+
     async receive(context) {
         const { outputType } = context.messages.in.content;
 
         if (context.properties.generateOutputPortOptions) {
-            return lib.getOutputPortOptions(context, outputType, SCHEMA, { label: 'Items' });
+            return lib.getOutputPortOptions(context, outputType, ITEM_SCHEMA.properties, { label: 'Items' });
         }
 
         const records = await fetchData();
@@ -59,6 +73,55 @@ module.exports = {
 - For the `'array'` outputType, always use `result` as the array output field name and include the total count: `{ result: records, count: records.length }`
 - Never use `records` or custom field names for consistency
 - lib.js MUST exist in connector root if component has outputType — follow this rule even when the workspace has no tooling to enforce it
+- The helper takes the **property map**, so pass `ITEM_SCHEMA.properties` — `lib.js` is copy-pasted per connector and its signature must not change
+
+### Export the item schema as `ITEM_SCHEMA`
+
+A dynamic output port declares **no** `schema` in component.json — the designer
+builds the variable picker from the options the component emits under
+`generateOutputPortOptions`. That leaves the whole output contract invisible to
+every offline check, and gives `required` nowhere to live, so
+`appmixer connector verify` has to treat every declared field as mandatory and
+reports an optional field the API happened not to return as a dead picker entry
+(real case: airtop FindSessions, 2026-09-03 — the session listing carries the
+connection URLs for a *running* session and omits them for an ended one).
+
+So a component whose `out` port generates its own options **MUST** export that
+item schema:
+
+```javascript
+const ITEM_SCHEMA = {
+    type: 'object',
+    required: ['id', 'status'],          // only what the API ALWAYS returns
+    properties: {
+        id: { type: 'string', title: 'Session ID', example: '0a5b2c4e-9d31' },
+        status: { type: 'string', title: 'Status', example: 'running' },
+        cdpUrl: { type: 'string', title: 'CDP URL', example: 'https://api.airtop.ai/cdp/0a5b' }
+    }
+};
+
+module.exports = { ITEM_SCHEMA, async receive(context) { /* … */ } };
+```
+
+Rules:
+
+1. **A complete JSON Schema** (`type` / `required` / `properties`), not a bare
+   property map — the same shape a static `outPorts[].schema` declares, so every
+   schema-aware check (nested titles, types, examples) works on it unchanged.
+2. **`required` lists only what the API always returns**, per level, exactly as
+   in "Nested objects in output schemas" (`05-component-config.md`). Take the
+   answer from a live `appmixer connector verify` run rather than from the
+   provider's docs — it reports which leaves were never observed.
+3. **Declare it above `module.exports`.** Naming it in the exports object while
+   the `const` sits below throws `Cannot access 'ITEM_SCHEMA' before
+   initialization` at require time — the component then fails to load at all.
+4. Applies to a **self-sourced** port (`source.url` points back at this
+   component). A port sourced from a *sibling* takes its contract from that
+   sibling's `ITEM_SCHEMA`.
+
+This changes nothing for the designer: the emitted options are byte-identical.
+It exists so `validate` can see the contract offline and `verify` can honour
+`required`.
 
 ### List (Items) Components
 
@@ -71,7 +134,7 @@ module.exports = {
 - Includes `outputType` for array vs individual items
 - IMPORTANT: Ignore pagination or limits—use the maximum available page size
 - Mention maximum page size count in description
-- **IMPORTANT**: Do NOT include `limit` or `offset` fields in component inputs - these are not supported by Appmixer List components
+- Same `limit`/`offset` rule as Find components above
 
 **Example component.json structure**:
 See [`examples/list-forms/component.json`](examples/list-forms/component.json).
@@ -205,15 +268,16 @@ module.exports = {
 
 Trigger components monitor for events and start workflows when conditions are met. They use polling or webhooks.
 
-### Common Trigger Patterns
+### Key Characteristics
 
-**Key Characteristics**:
 - Set `"trigger": true` in component.json
 - Use `tick()` method for polling triggers
 - Use `webhook()` method for webhook triggers
 - Store state to track changes
 
-### New/Created (Item) Triggers
+### Trigger Kinds
+
+#### 1. Polling Triggers (`tick: true`) — New/Created (Item)
 
 **Purpose**: Trigger when new items are created.
 
@@ -337,6 +401,14 @@ See [`examples/hybrid-trigger/NewRecord.js`](examples/hybrid-trigger/NewRecord.j
 | `New{Entity}Webhook` | Webhook-based new item | `NewRecordWebhook`, `NewUserWebhook` |
 
 ### Trigger component.json Requirements
+
+> **Not every webhook component is a trigger.** An *action* that starts a
+> long-running provider job can also carry `"webhook": true` and hand the
+> provider `context.getWebhookUrl()`, so the result comes back to the very
+> component that submitted the job (ports: `out` = job id, `done` = result).
+> That is the **self-callback** pattern — see `14-async-components.md`. Do NOT
+> use `tick()` to deliver a job's result: a tick emit has no message scope and
+> cannot continue the branch that started the job.
 
 1. **NO `inPorts`**: Triggers must NOT have input ports
 2. **Use `properties`**: Configuration is defined in `properties`, not `inPorts`
@@ -517,7 +589,7 @@ The convention is to pass a sentinel property in `source.data.properties` so the
 "source": {
     "url": "/component/appmixer/<connector>/core/ListFoo?outPort=out",
     "data": {
-        "properties": { "variableFetch": true },
+        "properties": { "isSource": true },
         "transform": "./ListFoo#toSelectArray"
     }
 }
@@ -531,7 +603,7 @@ async receive(context) {
         const drives = await listItems(context, 'me/drives?');
         return context.sendJson({ drives }, 'out');
     } catch (err) {
-        if (context.properties.variableFetch) {
+        if (context.properties.isSource) {
             return context.sendJson({ drives: [] }, 'out');
         }
         context.log({ stage: 'Error', err });
@@ -575,12 +647,12 @@ const { callEndpointCached } = require('../../lib');
 async receive(context) {
     try {
         const url = `https://api.example.com/foo?token=${context.auth.accessToken}`;
-        const { data } = context.properties.variableFetch
+        const { data } = context.properties.isSource
             ? await callEndpointCached(context, url)
             : await context.httpRequest.get(url);
         return context.sendJson({ items: data.items }, 'out');
     } catch (err) {
-        if (context.properties.variableFetch) {
+        if (context.properties.isSource) {
             return context.sendJson({ items: [] }, 'out');
         }
         throw err;
