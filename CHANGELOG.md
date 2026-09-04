@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.0.0](https://github.com/Appmixer-ai/appmixer-skills/compare/v0.2.2...v1.0.0) (2026-09-04)
+
+
+### Features
+
+* fold E2E flow testing into test-connector, flow generation into build-connector ([e5e964d](https://github.com/Appmixer-ai/appmixer-skills/commit/e5e964db3e8c7df3e79949e0527d08ebb70aadab)), closes [#7](https://github.com/Appmixer-ai/appmixer-skills/issues/7)
+
+
+### Bug Fixes
+
+* wire 14-async-components.md into the skills that ship it ([#14](https://github.com/Appmixer-ai/appmixer-skills/issues/14)) ([821df34](https://github.com/Appmixer-ai/appmixer-skills/commit/821df348fe391fc917366a301b66536b7d5c49f6)), closes [Appmixer-ai/appmixer-components#2803](https://github.com/Appmixer-ai/appmixer-components/issues/2803) [#2804](https://github.com/Appmixer-ai/appmixer-skills/issues/2804) [#2805](https://github.com/Appmixer-ai/appmixer-skills/issues/2805)
+
 ## [0.2.2](https://github.com/Appmixer-ai/appmixer-skills/compare/v0.2.1...v0.2.2) (2026-08-10)
 
 ## [0.2.1](https://github.com/Appmixer-ai/appmixer-skills/compare/v0.2.0...v0.2.1) (2026-08-10)
