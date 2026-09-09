@@ -75,7 +75,16 @@ vendor; the first segment names the vendor dir under `src/`).
    The smell is often spread across **several** components rather than visible in
    one file, so check the connector's component list and its test flows, not just
    the file in front of you.
-7. **Check against the rules below** and output the issue list. Report real
+7. **Place the connector in its family.** Plenty of connectors are one of a
+   kind, but some belong to an obvious group doing the same job against a
+   different vendor — storage (`google/drive`, `box`, `dropbox`,
+   `microsoft/onedrive`, `microsoft/sharepoint`, `aws/s3`, `utils/ftp`), AI
+   (everything under `src/appmixer/ai/`, where the family is already the
+   directory), and the usual CRM / ticketing / e-commerce / calendar clusters.
+   When there is a family, list the components of one or two peers and compare.
+   This is a **soft** check — see "Family consistency" below — and it is the one
+   part of this review whose findings are suggestions, not defects.
+8. **Check against the rules below** and output the issue list. Report real
    issues only — do not flag correct things.
 
 ## What to check
@@ -199,6 +208,47 @@ port); if the provider only offers a status endpoint to poll, it MUST use a
 ### Cross-cutting
 - Naming consistency with sibling components.
 - Inspector field labels match outPort schema field names.
+
+### Family consistency (soft — suggestions, not defects)
+
+Connectors in the same family should be recognizable to someone who already
+knows a sibling: a flow built on Drive should be rebuildable on SharePoint
+without relearning the vocabulary. Compare against one or two peers, in this
+order of value:
+
+1. **Missing operations** — `family.missing-operation`. What do peers offer
+   that this connector doesn't, and does the vendor's API actually support it?
+   This is the check worth doing; the rest is polish. It is how gaps surface —
+   e.g. `microsoft/onedrive` has no delete, no search and no copy while every
+   other storage connector has all three. Name the peer that has it.
+2. **Gratuitous naming divergence** — `family.naming-divergence`. Same concept,
+   different name: `GetFile` vs `GetFileMetadata`, `query` vs `q`, `fileTypes`
+   vs `fileTypesRestriction`. For a **new, unreleased** component, adopting the
+   family's existing name is free, so a `warning` is fair. For an **already
+   released** one, `info` at most — and do not offer a rename as the fix.
+   Renaming a published component breaks live flows and costs a major bump; the
+   finding exists to inform a future migration, not to demand one now.
+3. **Shape rather than vocabulary** — `family.shape-divergence`. The same
+   operation should have the same *shape* across the family: Find/List with an
+   `outputType` selector, a `notFound` port and an exported `ITEM_SCHEMA`;
+   Delete/Update returning `{}`. Shape is what actually breaks a flow when a
+   connector is swapped, which is why it outranks naming.
+
+Do **not** report these — each is a legitimate difference, not drift:
+
+- **Output field names that follow the vendor's API** (`modified_at` vs
+  `modifiedTime` vs `lastModifiedDateTime`). Keep the vendor's vocabulary. A
+  synthetic normalized one stops matching the vendor's docs and the connector's
+  own MakeApiCall output, which costs more than it buys.
+- **Operations the API genuinely cannot do.** S3 has no folders, no move and no
+  rename; FTP has no IDs, no search and no sharing; Dropbox is path-based where
+  the others are ID-based. A family is a resemblance, not a lowest common
+  denominator — do not propose faking a capability to fill a slot.
+- **Vendor-specific components with no peer analogue** — Box locking and
+  comments, Graph `ListDrives`/`ListSites`, S3 buckets, Drive `GooglePicker`.
+  Breadth beyond the family is a feature.
+- **Input order, labels and tooltips**, and differences that exist because the
+  underlying APIs differ rather than because nobody looked.
 
 ## Output format
 
