@@ -45,7 +45,8 @@ There is no sub-agent to spawn.
   node scripts/npm_install.js
   ```
 - **Auth credentials** — the connector must have valid auth in
-  `~/.config/configstore/appmixer.json` (see Step 0).
+  `~/.config/configstore/appmixer.json` (see Step 0 — a presence check; never
+  copy values out of that file, never edit it).
 - **Run from the connector workspace** — the current directory (or a parent)
   must contain `src/<vendor>/`; components live at
   `src/<vendor>/<connector>/core/<Component>/`. Only when running from
@@ -110,13 +111,19 @@ authenticate anything.
 ## Step 0: Pre-flight auth check (MANDATORY)
 
 Before testing, verify auth exists — running tests without valid auth wastes time.
+This check prints **key names only**. It is the one sanctioned read of the
+configstore: never print, copy or export a credential *value* from that file
+(see "Never lift a credential out of `appmixer.json`" in
+`references/12-e2e-upload.md`).
 
 ```bash
 python3 -c "
 import json, sys
 try:
     d = json.load(open('$HOME/.config/configstore/appmixer.json'))
-    fields = d.get('<vendor>:<connector>', {}).get('authFields', {})
+    entry = d.get('<vendor>:<connector>', {})
+    # apiKey login stores the fields under authFields; OAuth login stores accessToken at the top level
+    fields = entry.get('authFields') or {k: 1 for k in ('accessToken', 'refreshToken') if entry.get(k)}
     if not fields:
         print('No auth credentials for <connector>. Ask user for API key/credentials.'); sys.exit(1)
     print('Auth found:', list(fields.keys()))
@@ -125,9 +132,12 @@ except FileNotFoundError:
 "
 ```
 
-If auth is missing: **set it up via the CLI — never write `appmixer.json` by hand**
-(the CLI stores more than `authFields` — e.g. `authFilePath` — and hand-written
-entries break `appmixer test component` in non-obvious ways). Run:
+If auth is missing: **set it up via the CLI — never write, patch or delete
+`appmixer.json` by hand**, not even temporarily or with a backup. It is the
+developer's live CLI session: the CLI stores more than `authFields` (e.g.
+`authFilePath`), hand-written entries break `appmixer test component` in
+non-obvious ways, and whatever you leave behind is what the developer's next
+`appmixer` command runs against. Run:
 
 ```bash
 # API key connectors:
@@ -277,7 +287,10 @@ the option whose label the service disagrees with. `--write` needs the
 connector's `artifacts/verify.json` round-trip specs (authored by
 `build-connector`) and must never run against a production tenant. After a
 green `--record`, commit `artifacts/samples/` so CI can re-check conformance
-offline (`--offline`, no credentials).
+offline (`--offline`, no credentials). If verify reports `No stored
+credentials`, pass them with `--auth <file>` (an OAuth connector needs
+`{"accessToken": "…"}`) — never patch the configstore to make it resolve; the
+reference has the recipe, including the negative control after an auth migration.
 
 ## E2E flow testing
 
