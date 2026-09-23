@@ -67,7 +67,8 @@ user to poll in the flow, and never expose the callback URL as a component input
 ```
 Step 1: BUILD      → Requirements → research the API → scaffold + components  (this skill)
 Step 2: REVIEW     → Audit against standards, fix findings              [review-connector]
-Step 3a: TEST CLI  → Authenticate → component test loop → finalize      [test-connector]
+Step 3a: TEST CLI  → gate: local login (make the case, prepare the command, ask)
+                     → component test loop → finalize                   [test-connector]
 Step 3b: TEST E2E  → generate flows (this skill) → upload + run          [test-connector]
 Step 3c: VERIFY    → author artifacts/verify.json (this skill) → run     [test-connector]
 Step 4: PUBLISH    → Lint, bundle bump, pack & publish via the appmixer CLI
@@ -192,13 +193,59 @@ warnings. Re-run the review after fixes until clean.
 
 ---
 
-## ⚠️ CLI Tests — Always Ask First
+## The gate into Step 3: one local login — make the case, prepare the command, then ask
 
-Before running `test-connector` (the plan step or the test loop), **always ask the user** whether to proceed.
+Everything up to here is static. The connector has been generated and reviewed
+against rules, but **nothing has run against the service yet**. The gate into
+Step 3 is one browser login, `appmixer test auth login`, and it unlocks the
+whole local test chain:
 
-Never run these automatically — they can take a long time and cost credits. Even when the pipeline suggests it as the next step, stop and confirm:
+- **`appmixer test component`** (Step 3a) — every component executes locally
+  against the real API with real inputs; the CLI injects the stored auth.
+- **`appmixer connector verify`** (Step 3c) — declared output schemas checked
+  against live payloads, select labels round-tripped against the service, and
+  `--record` saves sanitized samples so CI re-checks conformance offline from
+  then on.
+- **E2E flows** (Step 3b) need a bound account on the instance anyway; the local
+  login is where the test credentials get sorted out first.
 
-> "Ready to plan/run CLI tests for `<connector>`. Shall I go ahead?"
+Without it the connector ships on static validation alone — and real defects
+have shipped with every static gate green: a field Create accepted that the
+schema never declared, select labels inverted against the service
+(`references/15-live-verification.md`). A connector that skipped this gate is
+generated, not tested.
+
+So never ask a bare "shall I run tests?". **Make the case and hand the user a
+ready command:**
+
+1. **Prepare the exact login command from `auth.js`** — follow "Prepare the
+   login command" in `test-connector` Step 0 (auth type → command, the fields
+   or the OAuth app the user needs to have ready). Never guess the flags.
+2. **Say what the login buys and what the user will do**, in one message —
+   shape it like:
+
+   > "The connector is generated and reviewed, but nothing has been run against
+   > <service> yet. If you log in now, I can test every component against the
+   > real API, verify the output schemas against live payloads and record
+   > samples for CI — a much better tested connector. I've prepared the command:
+   > ```
+   > appmixer test auth login src/<vendor>/<connector>/auth.js
+   > ```
+   > It opens a browser where you enter <the fields from auth.js>. Shall I run
+   > it?"
+
+3. **Run it only after a yes** — the login is the user's action, and the tests
+   behind it make real API calls (`verify --write` creates records) and take a
+   while. Wait for the command to exit, then re-run the Step 0 presence check.
+
+The yes at this gate covers the test plan (CLI-2) and the component loop
+(CLI-3) — do not re-ask per component; report progress instead. Ask again only
+for the CLI-4 decisions and before `connector verify --write`.
+
+**If the user declines**, record `"localTests": "skipped-by-user"` in
+`pipeline-state.json`, continue with Step 3b / Step 4, and say plainly in the
+final summary that the connector was **not run against the real API**. Never
+present a connector that skipped this gate as tested.
 
 ---
 
@@ -206,10 +253,12 @@ Never run these automatically — they can take a long time and cost credits. Ev
 
 ### CLI-1. Auth (REQUIRED — human step)
 
-Authenticate via the CLI — run `appmixer test auth login src/<vendor>/<connector>/auth.js`
-(OAuth 2.0: add `-c <clientId> -s <clientSecret>` and optionally `-o scope1,scope2`).
-The command opens a browser where the user enters the API key fields or completes the
-OAuth consent — wait for them to finish.
+Run the login command prepared at the gate above (after the user's yes):
+`appmixer test auth login src/<vendor>/<connector>/auth.js`, with
+`-c <clientId> -s <clientSecret>` for OAuth 2.0 (`-o scope1,scope2` only to
+*extend* the scope `auth.js` declares). The command opens a browser where the
+user enters the API key fields or completes the OAuth consent — wait for them
+to finish.
 
 **`~/.config/configstore/appmixer.json` is the developer's live CLI session — leave it
 alone.** Never write, patch or delete keys in it: not to fix a failing command, not
@@ -223,14 +272,14 @@ rather than editing the store.
 
 ### CLI-2. Test plan
 
-**Ask user first** — confirm before running.
-
-Follow Step 0a of the `test-connector` skill — read the connector's component
-definitions and write an ordered `test-plan.json` directly (no sub-agent).
+Covered by the yes at the gate. Follow Step 0a of the `test-connector` skill —
+read the connector's component definitions and write an ordered
+`test-plan.json` directly (no sub-agent).
 
 ### CLI-3. Test + fix loop
 
-**Ask user first** before each component test run.
+Covered by the yes at the gate — report progress per component instead of
+re-asking.
 
 For each component in the test plan, test sequentially (port 2300 conflict if
 parallel) by following the `test-connector` skill (drives `appmixer test component`).
