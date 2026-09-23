@@ -12,19 +12,34 @@ picking "Doctor" created a Standard contact).
 ## When to run it
 
 After the CLI component test loop passes and before E2E flows. It reuses the
-credentials already stored by `appmixer test auth login` (configstore key
-`appmixer:<connector>`), so once component testing is set up, verify costs one
-command:
+credentials already stored by `appmixer test auth login` — both shapes, the
+apiKey login's `authFields` and the OAuth login's top-level `accessToken` (CLI
+≥ 2.6.0-dev.28; older CLIs read `authFields` only and report `No stored
+credentials` for a freshly logged-in OAuth connector) — so once component
+testing is set up, verify costs one command:
 
 ```bash
 appmixer connector verify <connector>              # schema conformance, read-only
 appmixer connector verify <connector> --write      # + enum round-trips (creates records!)
 appmixer connector verify <connector> --record     # save sanitized output shapes to artifacts/samples/
 appmixer connector verify <connector> --offline    # re-check conformance from samples, no credentials (CI)
-appmixer connector verify <c> --auth auth.json     # explicit credentials ({"apiKey": "..."})
+appmixer connector verify <c> --auth auth.json     # explicit credentials, see below
 ```
 
 Exit 0 = no fail/error findings; 1 otherwise.
+
+**`--auth <file>` is the only way to hand verify credentials it cannot resolve
+from the store** — never fix a `No stored credentials` error by editing
+`~/.config/configstore/appmixer.json`. The file is a JSON object of the
+connector's auth fields, the same names `context.auth` exposes:
+`{"apiKey": "…"}` for an apiKey connector, `{"accessToken": "…"}` for OAuth
+(add `refreshToken` / `clientId` / `clientSecret` only when a behavior reads
+them). Write it outside the repo (e.g. `mktemp`), with the value pasted by the
+user or read by a script that never prints it, and delete it right after the
+run. It is also the supported form of the **negative control** after an auth
+migration (apiKey → oauth2): verify with a file holding *only* the new field —
+if the components still read the old one they fail here, which proves the
+migration without touching the live store.
 
 ## The checks and what findings mean
 

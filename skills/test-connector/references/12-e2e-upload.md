@@ -130,18 +130,16 @@ duplicate instead of refreshing (see the stale-snapshot section). Retry every
 failed remove until it prints `… removed.`, and only then publish.
 
 **Verify what the server actually stored** (as the e2e user):
-`GET /components/<full.component.name>` returns the stored component **zip** — unzip
-it and compare a marker (version, a changed URL) with your local component.json.
+`appmixer component get` downloads the stored component **zip** — unzip it and
+compare a marker (version, a changed URL) with your local component.json.
 The zip may legitimately contain the SAME file several times (each publish of an
 existing version appends a copy): that is harmless **only when all copies are
 byte-identical AND carry your marker** — otherwise remove + publish again:
 
 ```bash
-# Reuse the CLI's stored login token and API URL (aligned with the e2e user in Step 1)
-TOKEN=$(node -e "console.log(require(require('os').homedir()+'/.config/configstore/appmixer.json').token)")
-BASE_URL=$(node -e "console.log(require(require('os').homedir()+'/.config/configstore/appmixer.json')['appmixer-url'].default.url)")
-curl -s -H "Authorization: Bearer $TOKEN" \
-  "$BASE_URL/components/<vendor>.<connector>.<module>.<Component>" -o /tmp/comp.zip
+# The CLI sends the login from Step 1 itself — never copy the session token out of
+# ~/.config/configstore/appmixer.json into a shell variable or a curl command line.
+appmixer component get <vendor>.<connector>.<module>.<Component> -o /tmp/comp.zip
 python3 - <<'EOF'
 import zipfile
 z = zipfile.ZipFile('/tmp/comp.zip')
@@ -214,11 +212,9 @@ call: hit a cheap component source endpoint with the account bound, the way the
 designer does:
 
 ```bash
-TOKEN=$(node -e "console.log(require(require('os').homedir()+'/.config/configstore/appmixer.json').token)")
-BASE_URL=$(node -e "console.log(require(require('os').homedir()+'/.config/configstore/appmixer.json')['appmixer-url'].default.url)")
-curl -s -X POST "$BASE_URL/component/<vendor>/<connector>/<module>/<ListComponent>?outPort=out" \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"componentId":"<any-component-id-with-this-account>","flowId":"<flowId>"}'
+# `component call` = the designer's static call (POST /component/...), authenticated by the CLI
+appmixer component call <vendor>.<connector>.<module>.<ListComponent> \
+  -c <any-component-id-with-this-account> -d '{"flowId":"<flowId>"}' --out-port out
 # Options/data back = token really works. 401/403 (Bad_OAuth_Token, INVALID_SESSION_ID) = dead account.
 ```
 
@@ -391,19 +387,34 @@ Alternative when definitions refuse to update in place: **bump the component
 `version`** in component.json (new version = new snapshot) and update the flows'
 `version` pins to match.
 
-Verify after:
+Verify after (the stored zip, fetched by the CLI — see Step 1):
 ```bash
-TOKEN=...
-curl -s -H "Authorization: Bearer $TOKEN" \
-  "$BASE_URL/components?limit=500" | python3 -c "
-import sys,json; items=json.loads(sys.stdin.read()); items=items if isinstance(items,list) else items.get('components',[])
-for i in items:
-    if i.get('name')=='<vendor>.<connector>.<module>.<Component>':
-        print(json.dumps({k:i[k] for k in ['inPorts','outPorts']}, indent=2)[:400]); break
-"
+appmixer component get <vendor>.<connector>.<module>.<Component> -o /tmp/comp.zip
+python3 - <<'EOF'
+import json, zipfile
+z = zipfile.ZipFile('/tmp/comp.zip')
+latest = [i for i in z.infolist() if i.filename.endswith('component.json')][-1]
+c = json.loads(z.read(latest))
+print(json.dumps({k: c.get(k) for k in ['version', 'inPorts', 'outPorts']}, indent=2)[:400])
+EOF
 ```
 
 ## Known Gotchas
+
+### Never lift a credential out of `~/.config/configstore/appmixer.json`
+That file is the developer's live CLI session: the platform login token plus
+every connector credential `appmixer test auth login` stored. Every check in
+this guide has a CLI form that sends the auth itself (`component get`,
+`component call`, `e2e …`, `test component`), so no recipe needs the raw value.
+Do not read a token or a service credential out of the file into a shell
+variable, a command line or a script — it lands in shell history, the process
+list and the session transcript, and transcripts get pasted into tickets. To get
+an independent look at the service API, route the request through the
+connector's own components (`appmixer test component …/MakeApiCall`, or the
+component under suspicion) — the CLI injects the stored auth, the value never
+materialises. The only sanctioned read is the presence check in
+`test-connector` Step 0: key names, never values. And never write, patch or
+delete keys in the file — see the CLI-1 rule in `build-connector`.
 
 ### Stores are created at import
 The `E2E Failed Tests` and `E2E Succeeded Tests` stores must exist with their
@@ -419,9 +430,8 @@ injects them automatically; there is nothing to do manually.
 If the variables check shows a component only exposes "Raw Output" instead of individual fields, the component's `generateOutputPortOptions` is failing. Common causes:
 1. **The source call fails server-side** — reproduce it directly (the way the designer does) and read the actual error:
    ```bash
-   curl -s -X POST "$BASE_URL/component/<vendor>/<connector>/<module>/<SourceComponent>?outPort=out" \
-     -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-     -d '{"messages":{"in":{...}},"transform":"./transformers#...","componentId":"<comp-id>","flowId":"<flow-id>"}'
+   appmixer component call <vendor>.<connector>.<module>.<SourceComponent> -c <comp-id> \
+     -d '{"messages":{"in":{...}},"transform":"./transformers#...","flowId":"<flow-id>"}' --out-port out
    ```
 2. **Missing `dummy` for required fields**: If inPort schema has required fields not needed for schema generation, send `"dummy"` as their value in source messages.
 3. **`ignoreAuth=true` — only for sources that genuinely need NO auth.** ⚠️ Do NOT

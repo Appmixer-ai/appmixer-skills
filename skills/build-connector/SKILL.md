@@ -209,8 +209,17 @@ Never run these automatically — they can take a long time and cost credits. Ev
 Authenticate via the CLI — run `appmixer test auth login src/<vendor>/<connector>/auth.js`
 (OAuth 2.0: add `-c <clientId> -s <clientSecret>` and optionally `-o scope1,scope2`).
 The command opens a browser where the user enters the API key fields or completes the
-OAuth consent — wait for them to finish. Never write `~/.config/configstore/appmixer.json`
-by hand; the CLI stores extra keys (e.g. `authFilePath`) that hand-written entries miss.
+OAuth consent — wait for them to finish.
+
+**`~/.config/configstore/appmixer.json` is the developer's live CLI session — leave it
+alone.** Never write, patch or delete keys in it: not to fix a failing command, not
+temporarily, not with a backup. Hand-written entries miss keys the CLI stores (e.g.
+`authFilePath`), and whatever you leave behind is what the developer's next `appmixer`
+command runs against. Never read a credential *value* out of it either — not into a shell
+variable, a command line or a script; the `test-connector` Step 0 presence check (key
+names only) is the sanctioned read. When a command cannot resolve credentials on its own,
+pass them explicitly (`connector verify --auth <file>`, see `15-live-verification.md`)
+rather than editing the store.
 
 ### CLI-2. Test plan
 
