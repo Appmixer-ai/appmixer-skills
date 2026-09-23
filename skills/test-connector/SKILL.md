@@ -137,22 +137,55 @@ If auth is missing: **set it up via the CLI — never write, patch or delete
 developer's live CLI session: the CLI stores more than `authFields` (e.g.
 `authFilePath`), hand-written entries break `appmixer test component` in
 non-obvious ways, and whatever you leave behind is what the developer's next
-`appmixer` command runs against. Run:
+`appmixer` command runs against.
 
-```bash
-# API key connectors:
-appmixer test auth login src/<vendor>/<connector>/auth.js
+Do not stop at "no credentials, ask the user" either. This one login is what
+turns a generated connector into a tested one — `appmixer test component`,
+`appmixer connector verify` (schema conformance against live payloads,
+`--record` samples for offline CI) and the E2E account all hang off it. Make
+that case in one message, with the command ready to run.
 
-# OAuth 2.0 connectors (client credentials required, scope optional):
-appmixer test auth login src/<vendor>/<connector>/auth.js \
-  -c <clientId> -s <clientSecret> [-o scope1,scope2]
-```
+### Prepare the login command (from `auth.js` — never guess the flags)
 
-The command starts a local server and opens a browser where the user enters the
-auth fields (API key) or completes the OAuth consent — this part is the user's,
-so tell them what to expect. You can prepare and run the command for them, but
-wait until it exits before testing. For OAuth this browser flow is the ONLY way
-to obtain tokens. Verify success by re-running the pre-flight check above.
+Read `src/<vendor>/<connector>/auth.js` and build the command from what it
+declares:
+
+- **`type: 'apiKey'`** — the browser form asks for every key of
+  `definition.auth` (`apiKey`, often a `subdomain` / `region` / `shard`):
+  ```bash
+  appmixer test auth login src/<vendor>/<connector>/auth.js
+  ```
+  List those fields with their `tooltip`s so the user has the values ready
+  before the browser opens.
+- **`type: 'oauth2'`** — the user needs an OAuth app registered at the
+  provider whose allowed redirect URL is
+  `http://localhost:2300/auth/<service name from service.json, e.g. appmixer:github>/callback`;
+  the scope comes from `definition.scope` in `auth.js` (`-o` only *extends*
+  it — list the scopes so the user can check the app grants them):
+  ```bash
+  appmixer test auth login src/<vendor>/<connector>/auth.js \
+    -c <clientId> -s <clientSecret>
+  ```
+  The client secret is the user's to type: hand them the command with the
+  placeholders and let them fill it in (or run it themselves), rather than
+  pasting the secret into a command you print.
+
+Then say what the login buys and what they will see, shaped like:
+
+> "Nothing has been run against <service> yet. Log in once and I can test every
+> component against the real API, verify the output schemas against live
+> payloads and record samples for CI. I've prepared the command:
+> `appmixer test auth login src/<vendor>/<connector>/auth.js` — it opens a
+> browser where you enter <fields>. Shall I run it?"
+
+The command starts a local server on port 2300 and opens a browser where the
+user enters the auth fields (API key) or completes the OAuth consent — this
+part is the user's. Run it after their yes and wait until it exits before
+testing. For OAuth this browser flow is the ONLY way to obtain tokens. Verify
+success by re-running the pre-flight check above.
+
+If the user declines, say so in your report — a connector without local auth
+was validated, not tested — and do not present it otherwise.
 
 ## Testing workflow
 
