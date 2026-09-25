@@ -121,7 +121,18 @@ vendor; the first segment names the vendor dir under `src/`).
 5. **Pagination** implemented for List/Find when the API supports it.
 6. **outputType** supported for Find components (flat, first, count, …).
 7. **tenantId / accountId** passed correctly for multi-tenant connectors.
-8. **Dynamic-source caching** — if the component is referenced as a `source.url`
+8. **MakeApiCall pins the origin** — the component sends the account's
+   credential to the URL it is given, so it MUST resolve the input against
+   the API base with the `URL` parser and reject a foreign origin,
+   credentials in the URL and protocol-relative input ("MakeApiCall" in
+   `07-component-types.md`). A `startsWith`/concatenation check, or an
+   unrestricted "full URL" input, = `error` (credential exfiltration).
+9. **Multiselect normalization** — every `multiselect` inspector input is
+   passed through the shared `lib.normalizeMultiselectInput()` before the
+   API call ("Multiselect Inputs" in `08-best-practices.md`); a raw value
+   breaks when it arrives as a comma-separated string from a variable.
+   `text` inputs that accept comma-separated values are NOT normalized.
+10. **Dynamic-source caching** — if the component is referenced as a `source.url`
    from any sibling `component.json` (detected in review step 5), its live fetch
    MUST be cached (`context.staticCache` + `context.lock`, TTL
    `context.config.listCacheTTL`) and errors suppressed for source calls, per
