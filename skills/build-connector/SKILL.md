@@ -169,6 +169,15 @@ Rules:
   inspector open — uncached sources trip API rate limits (429). For heavily
   rate-limited APIs, cache unconditionally in `receive()` (see the Xero
   `withCache` variant in `07-component-types.md`).
+- Every connector gets a `MakeApiCall` component ("MakeApiCall (Arbitrary
+  Authorized Call)" in `07-component-types.md`): it attaches the account's
+  credential to the URL it is given, so it MUST pin the origin with a
+  `resolveApiUrl()`-style check — string concatenation or `startsWith` is not
+  enough. Base URL, auth header and version headers come from the connector's
+  `lib.js`, shared with the other components.
+- `multiselect` inputs are normalized through `lib.normalizeMultiselectInput()`
+  ("Multiselect Inputs" in `08-best-practices.md`); the value may arrive as
+  a comma-separated string from a variable.
 - Do NOT create `package.json` unless the connector genuinely needs npm dependencies.
 - **Every trigger gets a `test(context)` method** so Flow Test Mode can emit one
   realistic item — follow `references/10-trigger-test-method.md` (thin wrapper

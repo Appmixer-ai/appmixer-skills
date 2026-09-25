@@ -6,6 +6,9 @@
 - Add one empty line after function definitions (including `receive`)
 - Use camelCase for variable names in JavaScript behavior files (destructure with aliases if needed)
 - Remove all unused variables and imports. If a property is not needed in the behavior logic, do not include it in component.json.
+- `context.httpRequest` options: no `json: true` (not an option) and no explicit `'Content-Type': 'application/json'` header — a JSON `data` object gets it by default. Set `Content-Type` only for another format (form-urlencoded, multipart).
+- Prefer `const { data } = await context.httpRequest({ ... })` over keeping the whole response, unless the status or headers are used.
+- Inspector inputs of type `toggle` declare `"defaultValue": false` (or `true` when the feature is on by default) — an undeclared toggle reads as `undefined`, not `false`.
 - Property names in component.json must exactly match those used in `context.messages.in.content`
 - Property names in component.json must NEVER use a pipe `|`. **New input** property names should be camelCase (no underscore `_`). Existing snake_case inputs are fine and must NOT be renamed — that is a breaking change for connector users (input re-binding). Enforced on changed/new inputs by the `input-property-naming` validator (`appmixer connector validate --changed`).
 
@@ -59,6 +62,7 @@ Behavior JS file MUST follow these rules:
 - Delete components must have `outPorts: ['out']`
 - Update or delete components must have at least one required input, which is the ID of the entity being updated or deleted
 - Find and List components must NOT include `limit` or `offset` inputs — pagination is handled internally with the maximum page size (see "Find (Items) Components" in `07-component-types.md`)
+- **Multiselect inputs**: an input whose inspector type is `multiselect` has schema type `["array", "string"]` and its behavior normalizes the value with the shared `lib.normalizeMultiselectInput()` — see "Multiselect Inputs" below. Do not normalize `text` inputs that happen to accept comma-separated values; they are passed to the API as typed.
 - **Unnecessary input fields**: do not create select fields with only one option. If a value is constant, hardcode it in the behavior file instead of making it a user input.
 - **Date/time inputs**: schema `"type": "string", "format": "date-time"` with inspector type `"date-time"` (date-only: `"format": "date"` + `config: { "enableTime": false }`). Do NOT use inspector type `"text"` for date/datetime fields. The full schema→inspector mapping is in "Type Mapping for Input Ports" (`05-component-config.md`).
 
@@ -227,6 +231,47 @@ for Dynamic Source Calls" in `07-component-types.md` for why:
     }
 }
 ```
+
+### Multiselect Inputs
+
+A `multiselect` inspector input arrives as an array when the user picks options
+in the designer, but as a string when the value comes from a variable or a
+previous component (`"a,b,c"` or a single `"a"`). Normalize it in one shared
+place before the API call, in the connector's `lib.js`:
+
+```javascript
+/**
+ * Normalize multiselect input (array or string) to an array.
+ * Strings are treated as single values or comma-separated lists.
+ * @param {string|string[]} input
+ * @param {object} context
+ * @param {string} fieldName human readable name for the error message
+ * @returns {string[]}
+ */
+normalizeMultiselectInput(input, context, fieldName) {
+
+    if (Array.isArray(input)) {
+        return input;
+    } else if (typeof input === 'string') {
+        return input.split(',').map(item => item.trim()).filter(item => item.length > 0);
+    } else {
+        throw new context.CancelError(`${fieldName} must be a string or an array`);
+    }
+}
+```
+
+In the component, normalize only the inputs whose inspector type is
+`multiselect`; leave optional ones `undefined` when empty:
+
+```javascript
+const statuses = rawStatuses
+    ? lib.normalizeMultiselectInput(rawStatuses, context, 'Statuses')
+    : undefined;
+```
+
+Then hand the array to the API in the shape it expects (an array in a JSON body,
+or `statuses[]` repeated query parameters). A `text` input documented as
+"comma-separated" is not a multiselect: pass it through as typed.
 
 ### File Handling
 

@@ -264,6 +264,53 @@ module.exports = {
 };
 ```
 
+### MakeApiCall (Arbitrary Authorized Call)
+
+**Purpose**: Let a flow call any endpoint of the service with the connected
+account's credential, for operations the connector has no dedicated component
+for. Every connector should ship one; name it exactly `MakeApiCall`.
+
+**Pattern**: `MakeApiCall` — one per connector, in the module that holds the
+other generic components (usually `core`).
+
+**Key Characteristics**:
+- Inputs: `url` (endpoint path), `method` (`GET`/`POST`/`PUT`/`PATCH`/`DELETE`,
+  default `GET`), `headers` and `parameters` (key-value), `body` (textarea, JSON).
+  `url` and `method` are required and asserted in the behavior file.
+- **Pins the origin.** The component attaches the account's credential to
+  whatever URL it is given, so an absolute URL pointing at a third-party host
+  would leak the secret. Resolve the input against the API base with the WHATWG
+  `URL` parser and reject any other origin, credentials in the URL, and
+  protocol-relative input (`//evil.com/x`). Do not use string concatenation or
+  `startsWith` checks — see `resolveApiUrl()` in the example `lib.js`.
+- Output: `{ statusCode, headers, body }` as a static schema; `body` is an
+  untyped object.
+- The tooltip says what the user types: a path relative to the base URL
+  (`/v1/projects`), and that a full URL is accepted only on the API host.
+  Never "Enter the full API endpoint URL" — that invites foreign hosts.
+- API-specific requirements go into `lib.js`, in one place shared with the
+  other components: the credential header (`authHeaders()`), a version header
+  the API requires (`X-GitHub-Api-Version`, `Notion-Version`), an `Accept`
+  header, or a non-JSON content type (Stripe: `application/x-www-form-urlencoded`).
+- Tenant-scoped APIs (Microsoft Dynamics, Xero-style per-org hosts) take the
+  base from the auth context (`context.auth.resource` or similar) instead of a
+  constant; the origin check stays.
+- Errors: `context.httpRequest` already throws on non-2xx, so no try/catch
+  unless the API hides error details in a 200 body.
+
+Before writing one, open two or three existing components of the connector and
+use the same base URL, auth header and client they use — consistency across the
+connector matters more than the template.
+
+**Example component.json**:
+See [`examples/make-api-call/component.json`](examples/make-api-call/component.json).
+
+**Example behavior**:
+See [`examples/make-api-call/MakeApiCall.js`](examples/make-api-call/MakeApiCall.js).
+
+**lib.js helpers (origin pinning, auth header, JSON/key-value parsing)**:
+See [`examples/make-api-call/lib.js`](examples/make-api-call/lib.js).
+
 ## 2. Trigger Components
 
 Trigger components monitor for events and start workflows when conditions are met. They use polling or webhooks.

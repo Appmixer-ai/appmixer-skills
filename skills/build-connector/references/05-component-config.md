@@ -184,6 +184,7 @@ Ensure `inPorts[0].schema.properties.<input_name>.type` and `inPorts[0].inspecto
 - `string` with `format: "date"` → `date-time` with `config: { enableTime: false }`
 - `integer` → `number`
 - `boolean` → `toggle`
+- `array` (or `["array", "string"]`, the value may arrive as a comma-separated string from a variable) → `multiselect`; the behavior normalizes it — see "Multiselect Inputs" in `08-best-practices.md`
 
 ### Output Port Schema Definition
 
