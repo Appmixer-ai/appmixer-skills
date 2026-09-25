@@ -170,11 +170,12 @@ Rules:
   rate-limited APIs, cache unconditionally in `receive()` (see the Xero
   `withCache` variant in `07-component-types.md`).
 - Every connector gets a `MakeApiCall` component ("MakeApiCall (Arbitrary
-  Authorized Call)" in `07-component-types.md`): it attaches the account's
-  credential to the URL it is given, so it MUST pin the origin with a
-  `resolveApiUrl()`-style check — string concatenation or `startsWith` is not
-  enough. Base URL, auth header and version headers come from the connector's
-  `lib.js`, shared with the other components.
+  Authorized Call)" in `07-component-types.md`). Its component.json layout is
+  enforced by the `makeapicall-standards` validator — copy the example and let
+  the validator judge it. The behavior MUST pin the origin with a
+  `resolveApiUrl()`-style check (it attaches the account's credential to the
+  URL it is given) — string concatenation or `startsWith` is not enough. Base
+  URL, auth header and version headers come from the connector's `lib.js`.
 - `multiselect` inputs are normalized through `lib.normalizeMultiselectInput()`
   ("Multiselect Inputs" in `08-best-practices.md`); the value may arrive as
   a comma-separated string from a variable.

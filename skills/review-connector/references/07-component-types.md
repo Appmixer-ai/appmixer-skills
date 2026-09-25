@@ -268,33 +268,45 @@ module.exports = {
 
 **Purpose**: Let a flow call any endpoint of the service with the connected
 account's credential, for operations the connector has no dedicated component
-for. Every connector should ship one; name it exactly `MakeApiCall`.
+for.
 
-**Pattern**: `MakeApiCall` — one per connector, in the module that holds the
-other generic components (usually `core`).
+**Pattern**: exactly `MakeApiCall` — one per connector, in the module that
+holds the other generic components (usually `core`). Other spellings
+(`MakeAPICall`) escape every MakeApiCall rule and are flagged.
 
-**Key Characteristics**:
-- Inputs: `url` (endpoint path), `method` (`GET`/`POST`/`PUT`/`PATCH`/`DELETE`,
-  default `GET`), `headers` and `parameters` (key-value), `body` (textarea, JSON).
-  `url` and `method` are required and asserted in the behavior file.
+**The shape of component.json is enforced, not described here.** The
+`makeapicall-standards` validator (`appmixer connector validate`) checks the
+standard from appmixer-components issue #1459: inputs `url` (text, index 1),
+`method` (select, index 2, default `GET`, all five verbs), `parameters`
+(key-value, index 3), `body` (textarea, index 4), `headers` (key-value,
+index 5); `url` and `method` required; key-value inputs declared as schema type
+`string`. `connector-has-makeapicall` fails a connector that ships without one.
+Copy [`examples/make-api-call/component.json`](examples/make-api-call/component.json)
+and run the validator rather than re-deriving the layout. For OAuth 2
+connectors `auth.scope` must not be empty — the most-privileged scope, or all
+of them when the endpoint cannot be known (warning otherwise).
+
+**What the validator cannot see — the behavior file**:
 - **Pins the origin.** The component attaches the account's credential to
   whatever URL it is given, so an absolute URL pointing at a third-party host
   would leak the secret. Resolve the input against the API base with the WHATWG
   `URL` parser and reject any other origin, credentials in the URL, and
   protocol-relative input (`//evil.com/x`). Do not use string concatenation or
   `startsWith` checks — see `resolveApiUrl()` in the example `lib.js`.
+- Asserts `url` and `method` with `CancelError`; parses `body` as JSON with a
+  clear error; turns the key-value rows into plain objects.
 - Output: `{ statusCode, headers, body }` as a static schema; `body` is an
-  untyped object.
-- The tooltip says what the user types: a path relative to the base URL
+  untyped object (the output-example rules exempt MakeApiCall for this reason).
+- The `url` tooltip says what the user types: a path relative to the base URL
   (`/v1/projects`), and that a full URL is accepted only on the API host.
   Never "Enter the full API endpoint URL" — that invites foreign hosts.
 - API-specific requirements go into `lib.js`, in one place shared with the
   other components: the credential header (`authHeaders()`), a version header
   the API requires (`X-GitHub-Api-Version`, `Notion-Version`), an `Accept`
   header, or a non-JSON content type (Stripe: `application/x-www-form-urlencoded`).
-- Tenant-scoped APIs (Microsoft Dynamics, Xero-style per-org hosts) take the
-  base from the auth context (`context.auth.resource` or similar) instead of a
-  constant; the origin check stays.
+- Tenant-scoped APIs (Microsoft Dynamics, per-org hosts) take the base from
+  the auth context (`context.auth.resource` or similar) instead of a constant;
+  the origin check stays.
 - Errors: `context.httpRequest` already throws on non-2xx, so no try/catch
   unless the API hides error details in a 200 body.
 
@@ -302,7 +314,7 @@ Before writing one, open two or three existing components of the connector and
 use the same base URL, auth header and client they use — consistency across the
 connector matters more than the template.
 
-**Example component.json**:
+**Example component.json** (passes `makeapicall-standards`):
 See [`examples/make-api-call/component.json`](examples/make-api-call/component.json).
 
 **Example behavior**:
