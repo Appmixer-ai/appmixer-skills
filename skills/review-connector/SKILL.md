@@ -75,7 +75,17 @@ vendor; the first segment names the vendor dir under `src/`).
    The smell is often spread across **several** components rather than visible in
    one file, so check the connector's component list and its test flows, not just
    the file in front of you.
-7. **Check against the rules below** and output the issue list. Report real
+7. **Run the workspace validator on the whole connector**, when the workspace
+   ships `scripts/validate.js` (appmixer-connectors does):
+   `node scripts/validate.js --connector <connector>`. It only reads files, so
+   it fits a read-only review. Read the full output. Failures outside the
+   component under review are connector debt: list them in the report's
+   **Connector debt** section so the user can decide whether to fix them. Do
+   not drop them because they are "not this component". Flag blind spots first:
+   `dynamic-outport-item-schema` (no `ITEM_SCHEMA` export) means the output
+   schema's titles and examples were never checked, so review that schema by
+   hand against `05-component-config.md`.
+8. **Check against the rules below** and output the issue list. Report real
    issues only — do not flag correct things.
 
 ## What to check
@@ -228,7 +238,12 @@ Report the findings as readable Markdown — no JSON. Structure:
    - Group identical findings that hit multiple components into ONE row listing
      the components — don't repeat the same finding per component.
    - When reviewing a whole connector, keep a single table for all components.
-3. **Passed checks** — a short bullet list of what was verified and found OK, so
+3. **Connector debt** (only when step 7 ran) — validator failures outside the
+   reviewed component: the count per rule, the affected components, and whether
+   each fix is mechanical or needs API knowledge, a live check or a breaking
+   change. End with the question for the user: fix now, in a separate PR, or
+   leave it. Write "none" when the connector is clean.
+4. **Passed checks** — a short bullet list of what was verified and found OK, so
    a clean review is distinguishable from a shallow one.
 
 If there are no findings, say so explicitly and still list the passed checks.

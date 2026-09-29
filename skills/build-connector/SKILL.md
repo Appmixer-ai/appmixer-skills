@@ -356,6 +356,9 @@ Run after Step 3a is complete (component list final).
    ```
    Fix every validator failure before proceeding (warnings: use judgement). Common
    lint issues: trailing spaces, `max-len` (120 char limit), extra blank lines.
+   When the connector existed before this change, failures in files you did not
+   touch are pre-existing debt. Handle them with the **Connector debt check**
+   below, not silently.
 
 2. **Publish** — follow the Git & Publish Rules below (bundle bump → pack →
    publish via the appmixer CLI).
@@ -366,15 +369,72 @@ Run after Step 3a is complete (component list final).
 
 When a connector already exists and you only need to add one or more new components (not rebuild from scratch), use a shorter flow:
 
+0. **Connector debt check** (below). Run it *before* you start, so the user
+   decides the scope while it is still cheap to change.
 1. **Research (optional)** — if the API endpoint is unknown, check the API docs.
 2. **Scaffold the new component(s)** using the existing connector structure as a
    reference:
-   - Copy a similar existing component directory
+   - Copy a similar existing component directory. The copy inherits its
+     source's defects: if the debt check listed findings for that component,
+     do not carry them into the new one.
    - Update `component.json`, `component.js`, and any output/transform files to match the new endpoint
    - Register the component in the connector's `package.json` if needed
+   - A new component that has a sibling for the same resource (Get next to
+     Find/List) returns the **same** item schema: same fields, same titles.
+     If the current rules make the new one differ from a legacy sibling, the
+     sibling is debt. Say so in the debt report instead of shipping two
+     shapes.
 3. **Test + Fix** (same as Step 3a) — auth is usually already set up. Follow
    the `test-connector` skill to test only the new components. Max 3 iterations.
-4. **Publish** — lint, commit, publish, push — same as Git & Publish Rules below.
+4. **Publish** — lint, run the validator again, commit, publish, push — same
+   as Step 4 and the Git & Publish Rules below.
+
+---
+
+## Connector debt check
+
+Only when the workspace ships `scripts/validate.js` (the appmixer-connectors
+repo does), and whenever you change a connector that existed before: adding
+components, fixing a bug, continuing a build.
+
+The CI gate and the pre-commit hook run `validate.js --changed`. That reports
+only *new* failures in the files you changed, so a PR can pass while the rest
+of the connector is out of standard. Validators are there to make connectors
+better, not only to stop regressions, so look at the whole connector:
+
+```bash
+node scripts/validate.js --connector <connector>   # whole connector, strict, prints every failure
+node scripts/validate.js --changed                 # your change only, must be clean
+```
+
+Read the full output (no `tail`, no `grep` for your own files). Sort each
+failure into one of two groups:
+
+- **Yours.** The failure is in a file you created or changed, or a new file
+  copied the problem from another one. Fix it. This is not debt.
+- **Pre-existing.** Everything else in the connector. Do not fix it on your
+  own initiative, and do not skip it silently either. Report it and let the
+  user decide.
+
+The report to the user, before you commit:
+
+- the count per rule, with the affected components
+- one line per rule saying what the failure means for users of the connector
+- which fixes are mechanical and which need API knowledge, a live check or a
+  breaking change (renamed inputs or ports, new OAuth scopes)
+- **blind spots first.** Some failures switch other checks off.
+  `dynamic-outport-item-schema` (no `ITEM_SCHEMA` export) means
+  `outport-nested-title-prefix` and `output-port-examples` never look at that
+  output. Its schema is effectively unvalidated, and whatever you copy from it
+  goes unchecked as well.
+
+Then ask one question: **fix it in this PR, in a separate PR, or leave it?**
+Record the answer in `pipeline-state.json` (`"validatorDebt": {"found": <n>,
+"decision": "fixed" | "separate-pr" | "left"}`) and put one line in the PR
+description. When the answer is "fix", re-run both commands and state the
+before/after counts. When a debt fix changes a schema, prove it changed
+nothing except what you meant to change, for example by diffing old and new
+with titles stripped.
 
 ---
 
