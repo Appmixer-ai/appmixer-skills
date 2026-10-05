@@ -151,6 +151,11 @@ by the flow name. Then:
      undefined (reading 'fn')` in an OLD component after a publish = stale
      per-version code snapshot — remove + republish that component (see
      `12-e2e-upload.md` "Stale Component Definition / Code After Publish").
+   - **`lib.fn is not a function` / `commons.fn is not a function` on SOME runs
+     only**, with the function present in the published code — an engine loader
+     race, not stale code. Do not republish; re-run, and stop + start a flow whose
+     polling trigger keeps failing (see `12-e2e-upload.md` "`x is not a function`
+     on Some Runs Only").
 2. **Read the failing component's `component.json`** to confirm expected
    inputs/outputs before changing variable paths.
 3. **Fix the flow JSON on disk**: variable paths, assert expressions, input

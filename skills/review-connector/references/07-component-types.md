@@ -484,6 +484,8 @@ See [`examples/hybrid-trigger/NewRecord.js`](examples/hybrid-trigger/NewRecord.j
     - MUST implement `tick(context)` method
     - MUST use `loadState()`/`saveState()` to track known items
     - MUST compare new items against known items to avoid duplicates
+    - MUST ask for the newest items first explicitly (sort by creation time, descending) — never rely on the API's default order
+    - MUST NOT treat "not in the known set" as "new" when the matching items do not fit on the page read — see "Results That Do Not Fit on One Page" below
     - Access user configuration via `context.properties` (NOT `context.messages.in.content`)
 
 2. **Webhook triggers (`webhook: true`)**:
@@ -500,6 +502,41 @@ See [`examples/hybrid-trigger/NewRecord.js`](examples/hybrid-trigger/NewRecord.j
     - Compare item IDs against known set from state
 
 ### Common Trigger Patterns
+
+#### Results That Do Not Fit on One Page
+
+A polling trigger reads one page of the newest items and diffs their IDs against
+the previous tick. That is only correct while **all** matching items fit on the
+page. With more of them, an item leaving the results (closed, archived, lost the
+filtered label) pulls an **older** item onto the page. It is not in the known set,
+so it fires as new.
+
+Real case: GitHub `NewIssue` on a repository with 492 open issues. Closing one of
+the 100 newest issues fired the trigger for an issue created over a year earlier.
+
+Store a **floor** next to the known IDs — the creation time of the oldest item
+read, and only when the results were truncated — and skip unseen items that are
+not newer than it:
+
+```javascript
+const { floor } = context.state;
+const newItems = items.filter(item => !known.has(item.id) && (!floor || item.created_at > floor));
+
+const oldest = items[items.length - 1];
+await context.saveState({
+    known: items.map(item => item.id),
+    // total > items.length (or has_more, a next-page link): there is more than was read.
+    floor: oldest && total > items.length ? oldest.created_at : null
+});
+```
+
+- No floor when everything fits on the page: every unseen item is then really new
+  to the results (reopened, newly labelled) and should still fire.
+- The floor needs the explicit newest-first sort; without it the oldest item on
+  the page means nothing.
+- Test it with **more matching items than one page**: remove one of the newest and
+  tick — nothing may fire. A test account with a handful of records never shows
+  this.
 
 #### Deduplication with Cache and Lock
 ```javascript

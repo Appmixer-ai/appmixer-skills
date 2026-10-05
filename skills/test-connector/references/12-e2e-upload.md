@@ -352,6 +352,51 @@ pass/fail per worker). Rebinding accounts, new flowIds or new componentIds do
 NOT help. Fix: **restart the engine workers**, or create a brand-new account
 (new accountId) and rebind. Real case: epic GetAppointment, 2026-07-17.
 
+## `x is not a function` on Some Runs Only — a Loader Race, Not a Stale Publish
+
+Rule this out **before** treating a missing-function error as stale code.
+
+Symptoms:
+- `lib.someFn is not a function` / `commons.someFn is not a function` — always on
+  the component's **first** call into a shared connector file, and the function
+  **is** in the published code. For `auth.js` the same thing shows as
+  `Missing 'type' property: apiKey | oauth | oauth2.` at flow start.
+- Only some runs fail. The stack names one worker directory
+  (`/tmp/tmp-<N>-<random>/…`); the same flow passes on other workers or on a retry.
+- Often several connectors fail the same way in the same worker at the same time.
+
+Cause: the engine writes a connector's shared files in place each time it first
+loads one of its components in a process. A second component of the same connector
+loaded at that moment can `require()` the shared file while it is empty and gets
+`{}`. Two polling triggers of one connector in one flow tick together, so a cold
+worker hits it easily. Seen on engine 6.5.8 and 6.6.0.
+
+Tell it apart from a stale publish by checking what the server stores:
+
+```bash
+appmixer component get <vendor>.<connector> -o /tmp/deployed.zip
+python3 - <<'EOF'
+import zipfile
+z = zipfile.ZipFile('/tmp/deployed.zip')
+for i in z.infolist():
+    if i.filename.endswith('lib.js'):
+        print(i.filename, i.file_size, b'someFn' in z.read(i))
+EOF
+```
+
+Every copy has the function → the stored code is fine, this is the race.
+
+What to do:
+- **Action components** recover on the next message — re-run the flow.
+- **Polling triggers stay broken on that worker** for tens of minutes: the engine
+  caches the component instance and every tick extends the cache. **Stop and start
+  the flow.** A failed tick loses nothing with a known-ID trigger; the next good
+  tick picks the item up.
+- **Do NOT remove + republish.** It fixes nothing here and clears the caches on
+  every worker, so all components load cold again and the race gets a new chance.
+  For the same reason the **first run right after any publish** may fail this way —
+  re-run before debugging.
+
 ## Stale Component Definition / Code After Publish
 
 `appmixer publish` **does not refresh already-existing component versions** — neither
