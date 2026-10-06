@@ -368,6 +368,24 @@ Symptoms:
 - Flow start rejected with 400 `Component transformation validation error` because
   stale inPort schemas are validated against current flow transforms.
 
+**First confirm the stored code really is stale.** A missing function at runtime does
+not prove it. Look at what the server stores:
+
+```bash
+appmixer component get <vendor>.<connector> -o /tmp/deployed.zip
+python3 - <<'EOF'
+import zipfile
+z = zipfile.ZipFile('/tmp/deployed.zip')
+for i in z.infolist():
+    if i.filename.endswith('lib.js'):
+        print(i.filename, i.file_size, b'someApiFn' in z.read(i))
+EOF
+```
+
+If the stored file already has the function, the publish is not the problem and
+remove + publish will not help: re-run the flow, and stop + start it when a polling
+trigger keeps failing.
+
 **Fix: remove + publish, as the e2e user** (see Step 1 — removes/publishes by a
 different CLI login do NOT touch the e2e user's copies), for every affected component:
 

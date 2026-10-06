@@ -216,6 +216,11 @@ port); if the provider only offers a status endpoint to poll, it MUST use a
    honors `context.properties` filters; emits exactly ONE item via `sendJson`
    on the correct port; throws (never fabricates synthetic data) when no real
    example exists.
+3. **Polling trigger that diffs known IDs** (per `07-component-types.md`
+   "Results That Do Not Fit on One Page"): asks for the newest items first
+   explicitly, and does not fire an older item that moves onto the page when a
+   newer one leaves the results (a stored floor, or all pages read). A known-ID
+   diff over a single page with neither is an `error`.
 
 ### Cross-cutting
 - Naming consistency with sibling components.

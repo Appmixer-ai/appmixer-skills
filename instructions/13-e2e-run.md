@@ -149,8 +149,9 @@ by the flow name. Then:
      URL** — the engine called the service during start (trigger `start()`) with a
      dead/wrong account; see the auth notes above. `Cannot read properties of
      undefined (reading 'fn')` in an OLD component after a publish = stale
-     per-version code snapshot — remove + republish that component (see
-     `12-e2e-upload.md` "Stale Component Definition / Code After Publish").
+     per-version code snapshot — check the stored code first, then remove +
+     republish that component (see `12-e2e-upload.md` "Stale Component Definition /
+     Code After Publish").
 2. **Read the failing component's `component.json`** to confirm expected
    inputs/outputs before changing variable paths.
 3. **Fix the flow JSON on disk**: variable paths, assert expressions, input
