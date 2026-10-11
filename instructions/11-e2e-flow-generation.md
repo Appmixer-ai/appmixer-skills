@@ -136,13 +136,24 @@ you run a deterministic validator and fix anything it flags, looping until clean
 9. **Bind every modifier in `lambda`** — a field that defines `modifiers` must have
    a non-empty lambda value (`{{{var-id}}}`); Assert clause `field` must not be
    empty. An empty binding silently ignores the modifier.
-9b. **String-typed inputs take STRINGS — serialize arrays/objects as JSON** —
-   key-value inspector inputs (MakeApiCall `headers`/`parameters`) declare
-   `"type": "string"` in the schema; the runtime parses either form, but a raw
-   array (`"headers": [{ "key": "Prefer", "value": "return=representation" }]`)
-   fails the designer's schema validation with a red "must be string" chip.
-   Write `"headers": "[{\"key\": \"Prefer\", \"value\": \"return=representation\"}]"`.
-   Enforced by `lambda-string-schema`.
+9b. **String-typed inputs take STRINGS — and key-value inputs take what the
+   Designer writes** — key-value inspector inputs (MakeApiCall `headers`/
+   `parameters`) declare `"type": "string"` in the schema, and the Designer
+   stores them as the **JSON string of an object**, one property per row
+   (`JSON.stringify(entriesObject)` in appmixer-fe
+   `inspector-field-input-key-value.vue`). Write exactly that:
+   `"headers": "{\"Prefer\": \"return=representation\"}"`. A raw array
+   (`"headers": [{ "key": "Prefer", … }]`) fails the designer's schema validation
+   with a red "must be string" chip, and the JSON string of an array
+   (`"[{\"key\": \"Prefer\", …}]"`) is a shape the Designer never produces: a
+   flow written that way tests something no user sends. Real case: until 2026-10
+   nearly every MakeApiCall parsed only `{key, value}` arrays and silently
+   dropped the headers and query parameters users set in the Designer, while
+   the E2E flows — written with array strings — kept passing
+   (appmixer-components#2911). Make the flow prove the values arrive: assert on
+   something the header or parameter changes (an `Accept` that switches the
+   response format, a filter that changes the first item), not just on a 200.
+   Enforced (string type) by `lambda-string-schema`.
 10. **Assert assertions** are only `equal`, `notEmpty`, `regex`.
 11. **Prefer modifiers over CodeBlock** (g_jsonPath/g_first/g_now+g_addTimeSpan/…);
     CodeBlock is a last resort.
