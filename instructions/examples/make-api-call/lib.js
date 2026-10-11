@@ -82,21 +82,40 @@ module.exports = {
     },
 
     /**
-     * Convert Appmixer key-value inspector rows into a plain object.
-     * @param {Array<{key: string, value: *}>} rows
+     * Convert a key-value inspector input into a plain object.
+     * The Designer stores the rows as the JSON string of an object
+     * ('{"Accept":"application/json"}'). A plain object and an array of
+     * {key, value} rows (also as a JSON string) are accepted too, for values
+     * mapped from a variable. Accepting only the array form silently drops
+     * every header and query parameter the user set.
+     * @param {string|object|Array<{key: string, value: *}>} value
      * @returns {object}
      */
-    kvToObject(rows) {
+    kvToObject(value) {
 
-        if (!Array.isArray(rows)) {
+        let input = value;
+        if (typeof input === 'string') {
+            if (!input.trim()) {
+                return {};
+            }
+            try {
+                input = JSON.parse(input);
+            } catch (error) {
+                throw new Error('Request Headers and Query Parameters must be a JSON object of key-value pairs.');
+            }
+        }
+        if (!input || typeof input !== 'object') {
             return {};
         }
+        const entries = Array.isArray(input)
+            ? input.filter(row => row && typeof row === 'object').map(row => [row.key, row.value])
+            : Object.entries(input);
         const result = {};
-        for (const row of rows) {
-            if (!row || typeof row.key !== 'string' || !row.key) {
+        for (const [key, val] of entries) {
+            if (typeof key !== 'string' || !key) {
                 continue;
             }
-            result[row.key] = row.value;
+            result[key] = val;
         }
         return result;
     }
