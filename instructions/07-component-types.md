@@ -294,7 +294,12 @@ of them when the endpoint cannot be known (warning otherwise).
   protocol-relative input (`//evil.com/x`). Do not use string concatenation or
   `startsWith` checks — see `resolveApiUrl()` in the example `lib.js`.
 - Asserts `url` and `method` with `CancelError`; parses `body` as JSON with a
-  clear error; turns the key-value rows into plain objects.
+  clear error; turns the key-value inputs into plain objects. **The Designer
+  stores a key-value input as the JSON string of an object**
+  (`'{"Accept":"application/json"}'`), so parse that string — accepting only an
+  array of `{key, value}` rows drops every header and query parameter the user
+  set, silently (appmixer-components#2911). `kvToObject()` in the example
+  `lib.js` handles the string, a plain object and the array form; copy it.
 - Output: `{ statusCode, headers, body }` as a static schema; `body` is an
   untyped object (the output-example rules exempt MakeApiCall for this reason).
 - The `url` tooltip says what the user types: a path relative to the base URL
