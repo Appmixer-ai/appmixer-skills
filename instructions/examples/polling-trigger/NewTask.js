@@ -6,10 +6,11 @@ module.exports = {
 
         const { projectId } = context.properties;
 
-        // Fetch items from API
+        // Fetch items from API, newest first
         const { data } = await context.httpRequest({
             method: 'GET',
             url: `https://api.service.com/projects/${projectId}/tasks`,
+            params: { sort: 'created_at', order: 'desc' },
             headers: {
                 'Authorization': `Bearer ${context.auth.accessToken}`
             }
@@ -18,6 +19,7 @@ module.exports = {
         // Load previously known items from state
         const state = await context.loadState();
         const known = state.known ? new Set(state.known) : null;
+        const { floor } = state;
 
         // Find new items by comparing with known items
         const tasks = data.tasks || [];
@@ -26,7 +28,8 @@ module.exports = {
 
         for (const task of tasks) {
             actual.push(task.id);
-            if (known && !known.has(task.id)) {
+            // An unseen task no newer than the floor was pulled onto a truncated page, it is not new
+            if (known && !known.has(task.id) && (!floor || task.created_at > floor)) {
                 newItems.push(task);
             }
         }
@@ -36,7 +39,11 @@ module.exports = {
             await context.sendJson(item, 'out');
         }
 
-        // Save current state for next tick
-        await context.saveState({ known: actual });
+        // Save current state for next tick; floor only when there are more tasks than were read
+        const oldest = tasks[tasks.length - 1];
+        await context.saveState({
+            known: actual,
+            floor: oldest && data.total > tasks.length ? oldest.created_at : null
+        });
     }
 };
