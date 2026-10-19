@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.1.0](https://github.com/Appmixer-ai/appmixer-skills/compare/v0.2.2...v1.1.0) (2026-10-19)
+
+
+### Features
+
+* connector debt check — run the validator on the whole connector and let the user decide on pre-existing failures ([#32](https://github.com/Appmixer-ai/appmixer-skills/issues/32)) ([5081fcf](https://github.com/Appmixer-ai/appmixer-skills/commit/5081fcf77df7ade535ae8e247b8be2108629c28f)), closes [#1351](https://github.com/Appmixer-ai/appmixer-skills/issues/1351)
+* **skills:** make the local login the explicit gate into testing, with the command prepared ([#30](https://github.com/Appmixer-ai/appmixer-skills/issues/30)) ([a6a8c31](https://github.com/Appmixer-ai/appmixer-skills/commit/a6a8c3122826fe6bda872c8525dc35f27f8e1c4b))
+
+
+### Bug Fixes
+
+* MakeApiCall key-value inputs are the JSON string of an object ([#35](https://github.com/Appmixer-ai/appmixer-skills/issues/35)) ([5cc0295](https://github.com/Appmixer-ai/appmixer-skills/commit/5cc0295c980d75233df619f2050409278e1d5045)), closes [appmixer-components#2911](https://github.com/Appmixer-ai/appmixer-components/issues/2911)
+* **skills:** keep credentials out of shell variables and the configstore untouched ([#29](https://github.com/Appmixer-ai/appmixer-skills/issues/29)) ([45321b8](https://github.com/Appmixer-ai/appmixer-skills/commit/45321b866510174030a688d99c41e7da3d65e1b9)), closes [#462](https://github.com/Appmixer-ai/appmixer-skills/issues/462) [#25](https://github.com/Appmixer-ai/appmixer-skills/issues/25) [#27](https://github.com/Appmixer-ai/appmixer-skills/issues/27)
+
 ## [1.0.0](https://github.com/Appmixer-ai/appmixer-skills/compare/v0.2.2...v1.0.0) (2026-09-04)
 
 

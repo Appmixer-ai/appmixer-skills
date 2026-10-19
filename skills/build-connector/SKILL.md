@@ -4,7 +4,7 @@ description: Build a new Appmixer connector end-to-end — gather requirements, 
 license: MIT
 metadata:
   author: Appmixer
-  version: "1.0.0"
+  version: "1.1.0"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---

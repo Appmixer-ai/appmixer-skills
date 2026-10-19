@@ -4,7 +4,7 @@ description: Test and validate an Appmixer connector — ordered test plan, a CL
 license: MIT
 metadata:
   author: Appmixer
-  version: "1.0.0"
+  version: "1.1.0"
   homepage: https://www.appmixer.com
   repository: https://github.com/Appmixer-ai/appmixer-skills
 ---
