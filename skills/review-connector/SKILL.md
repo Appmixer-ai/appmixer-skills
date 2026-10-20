@@ -85,7 +85,19 @@ vendor; the first segment names the vendor dir under `src/`).
    `dynamic-outport-item-schema` (no `ITEM_SCHEMA` export) means the output
    schema's titles and examples were never checked, so review that schema by
    hand against `05-component-config.md`.
-8. **Check against the rules below** and output the issue list. Report real
+8. **Place the connector in its family** — only when reviewing a whole
+   connector (or a new one), not a single component. Plenty of connectors are
+   one of a kind, but some belong to an obvious group doing the same job
+   against a different vendor — storage (`google/drive`, `box`, `dropbox`,
+   `microsoft/onedrive`, `microsoft/sharepoint`, `aws/s3`, `utils/ftp`), AI
+   (everything under `src/appmixer/ai/`, where the family is already the
+   directory), and the usual CRM / ticketing / e-commerce / calendar clusters.
+   When there is a family, list the components of one or two peers and compare.
+   Pick the best-maintained peer (for storage, `google/drive`), not the nearest
+   one — comparing against a weak peer only spreads its gaps. This is a
+   **soft** check — see "Family consistency" below — and its findings go to the
+   report's **Family suggestions** section, not the issues table.
+9. **Check against the rules below** and output the issue list. Report real
    issues only — do not flag correct things.
 
 ## What to check
@@ -226,6 +238,52 @@ port); if the provider only offers a status endpoint to poll, it MUST use a
 - Naming consistency with sibling components.
 - Inspector field labels match outPort schema field names.
 
+### Family consistency (soft — suggestions, not defects)
+
+Connectors in the same family should be recognizable to someone who already
+knows a sibling: a flow built on Drive should be rebuildable on SharePoint
+without relearning the vocabulary. Compare against one or two peers, in this
+order of value:
+
+1. **Missing operations** — `family.missing-operation`. What do peers offer
+   that this connector doesn't, and does the vendor's API actually support it?
+   This is the check worth doing; the rest is polish. It is how gaps surface —
+   at the time of writing, for instance, `microsoft/onedrive` had no delete,
+   search or copy although `google/drive` has all three and the Graph API
+   supports them. Name the peer that has it. A read-only review does not
+   research the vendor API: when you do not know whether the API supports the
+   operation, phrase the suggestion as a question ("does the API allow
+   deleting a file?") rather than as a gap.
+2. **Gratuitous naming divergence** — `family.naming-divergence`. Same concept,
+   different name: `GetFile` vs `GetFileMetadata`, `query` vs `q`, `fileTypes`
+   vs `fileTypesRestriction`. For a **new, unreleased** component, suggest
+   adopting the family's existing name — it is free now. For an **already
+   released** one, record it as a note for a future migration and do not offer
+   a rename as the fix: renaming a published component breaks live flows and
+   costs a major bump.
+3. **Family conventions** — `family.convention`. Behavior the family has
+   settled on beyond the general rules — for storage, a Find whose query is
+   empty lists the folder instead of failing, so no separate List component is
+   needed. The general shape rules (`outputType`, `notFound`, `ITEM_SCHEMA`,
+   `{}` from Delete/Update) are already checked above as defects; report a
+   breach of those in the issues table, not here.
+
+Do **not** report these — each is a legitimate difference, not drift:
+
+- **Output field names that follow the vendor's API** (`modified_at` vs
+  `modifiedTime` vs `lastModifiedDateTime`). Keep the vendor's vocabulary. A
+  synthetic normalized one stops matching the vendor's docs and the connector's
+  own MakeApiCall output, which costs more than it buys.
+- **Operations the API genuinely cannot do.** S3 has no folders, no move and no
+  rename; FTP has no IDs, no search and no sharing; Dropbox is path-based where
+  the others are ID-based. A family is a resemblance, not a lowest common
+  denominator — do not propose faking a capability to fill a slot.
+- **Vendor-specific components with no peer analogue** — Box locking and
+  comments, Graph `ListDrives`/`ListSites`, S3 buckets, Drive `GooglePicker`.
+  Breadth beyond the family is a feature.
+- **Input order, labels and tooltips**, and differences that exist because the
+  underlying APIs differ rather than because nobody looked.
+
 ## Output format
 
 Report the findings as readable Markdown — no JSON. Structure:
@@ -248,7 +306,12 @@ Report the findings as readable Markdown — no JSON. Structure:
    each fix is mechanical or needs API knowledge, a live check or a breaking
    change. End with the question for the user: fix now, in a separate PR, or
    leave it. Write "none" when the connector is clean.
-4. **Passed checks** — a short bullet list of what was verified and found OK, so
+4. **Family suggestions** (only when step 8 ran) — the peer(s) compared
+   against, then one bullet per finding with its `family.*` rule id, missing
+   operations first. No severity and no count in the header line: these are
+   suggestions for the user to weigh, not defects. Write "none" when the
+   connector matches its family.
+5. **Passed checks** — a short bullet list of what was verified and found OK, so
    a clean review is distinguishable from a shallow one.
 
 If there are no findings, say so explicitly and still list the passed checks.
