@@ -168,9 +168,18 @@ vendor; the first segment names the vendor dir under `src/`).
    into a host (`https://${context.auth.domain}.service.com`) MUST pass an
    allowlist check first (`/^[a-z0-9][a-z0-9-]*$/i`), on the value as stored,
    in one helper used by `auth.js` and every component (`serviceOrigin()` in
-   `examples/auth/api-key.js`). Unchecked = `error` (credential exfiltration:
-   `evil.example/x?` sends the API key, the access token, or in
-   `requestAccessToken` the OAuth client secret to `evil.example`).
+   `examples/auth/api-key.js`). Severity follows the file:
+   - **`auth.js` unchecked = `error`** (credential exfiltration: `evil.example/x?`
+     sends the API key, the access token, or in `requestAccessToken` the OAuth
+     client secret of the platform's app to `evil.example`).
+   - **A component that reads the stored value unchecked = `advice`**, when
+     `auth.js` checks it. The stored value passed that check at login. An
+     account stored before the check could only have been created by its owner,
+     against a host that answered the login, so it holds that owner's own key or
+     a token the host issued — no other user's credential. Using the helper
+     everywhere is still right for new code; on an existing connector it is a
+     follow-up, not a blocker. Same split as the `auth-field-in-request-host`
+     validator (failure in `auth.js`, warning elsewhere).
 
 ### Async components only (when review step 6 answered YES)
 
