@@ -1,3 +1,13 @@
+'use strict';
+
+// Only a plain subdomain may reach the request host - see api-key.js.
+const freshdeskOrigin = function(domain) {
+    if (typeof domain !== 'string' || !/^[a-z0-9][a-z0-9-]*$/i.test(domain)) {
+        throw new Error('Invalid Freshdesk domain. Enter the subdomain only, e.g. "example" for example.freshdesk.com.');
+    }
+    return `https://${domain}.freshdesk.com`;
+};
+
 module.exports = {
     type: 'apiKey',
     definition: {
@@ -18,7 +28,7 @@ module.exports = {
         requestProfileInfo: async (context) => {
             return context.httpRequest({
                 method: 'GET',
-                url: `https://${context.domain}.freshdesk.com/api/v2/agents/me`,
+                url: `${freshdeskOrigin(context.domain)}/api/v2/agents/me`,
                 auth: {
                     user: context.apiKey,
                     password: 'X'
@@ -30,7 +40,7 @@ module.exports = {
             const encoded = Buffer.from(credentials).toString('base64');
             await context.httpRequest({
                 method: 'GET',
-                url: `https://${context.domain}.freshdesk.com/api/v2/agents/me`,
+                url: `${freshdeskOrigin(context.domain)}/api/v2/agents/me`,
                 headers: {
                     'Authorization': `Basic ${encoded}`
                 }
