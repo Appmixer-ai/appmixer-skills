@@ -163,6 +163,14 @@ vendor; the first segment names the vendor dir under `src/`).
    `error` — inspector opens fire concurrent bursts that trip API rate limits
    (429). Self-references used only for `generateOutputPortOptions` (static
    options) are exempt and must not call the API at all.
+11. **User input in the request host** — check `auth.js`, `lib.js` and the
+   behavior file together. A subdomain, instance or region field interpolated
+   into a host (`https://${context.auth.domain}.service.com`) MUST pass an
+   allowlist check first (`/^[a-z0-9][a-z0-9-]*$/i`), on the value as stored,
+   in one helper used by `auth.js` and every component (`serviceOrigin()` in
+   `examples/auth/api-key.js`). Unchecked = `error` (credential exfiltration:
+   `evil.example/x?` sends the API key, the access token, or in
+   `requestAccessToken` the OAuth client secret to `evil.example`).
 
 ### Async components only (when review step 6 answered YES)
 
@@ -233,6 +241,15 @@ port); if the provider only offers a status endpoint to poll, it MUST use a
    explicitly, and does not fire an older item that moves onto the page when a
    newer one leaves the results (a stored floor, or all pages read). A known-ID
    diff over a single page with neither is an `error`.
+4. **Plugin route scopes every event to its tenant** (connectors with
+   `plugin.js` + `routes.js`, per "Tenant isolation" in `07-component-types.md`).
+   Every `context.triggerListeners` call either carries the tenant in
+   `eventName` (`${type}:${tenantId}`) or passes a `filter` matched against
+   `listener.params`. When the tenant cannot be determined it delivers nothing
+   (fail closed). A constant `eventName` with no `filter` = `error`: one
+   tenant's events reach every other tenant's flows. A route with `auth: false`
+   and no signature check that routes by an id from the payload = `error`
+   (anyone can inject events into a tenant's flows).
 
 ### Cross-cutting
 - Naming consistency with sibling components.

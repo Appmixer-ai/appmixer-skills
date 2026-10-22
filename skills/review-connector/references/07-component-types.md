@@ -412,10 +412,33 @@ See [`examples/plugin-webhook/NewEvent.js`](examples/plugin-webhook/NewEvent.js)
 |---|---|---|
 | `context.http.router.register({ method, path, options })` | `routes.js` | Mount an HTTP route under `/plugins/<vendor>/<service>` |
 | `context.onListenerAdded(cb)` | `routes.js` | Hook fired when a trigger calls `addListener` — validate / transform `listener.params` |
-| `context.triggerListeners({ eventName, payload, filter })` | `routes.js` (inside route handler) | Fan an event out to all subscribed listeners matching `eventName` and optional `filter` |
+| `context.triggerListeners({ eventName, payload, filter })` | `routes.js` (inside route handler) | Fan an event out to all subscribed listeners matching `eventName` and `filter` — scope it to the tenant, see below |
 | `context.addListener(eventName, params)` | trigger `start()` | Register this trigger instance as a consumer of `eventName` |
 | `context.removeListener(eventName)` | trigger `stop()` | Unregister this instance |
 | `context.messages.webhook.content.data` | trigger `receive()` | The payload from `triggerListeners` |
+
+**Tenant isolation: every event reaches only its own tenant's listeners**
+
+One endpoint receives the events of every workspace, portal and organization that
+installed the app, and `triggerListeners` delivers to **every** listener of the
+`eventName` that passes the `filter`. A call with a constant `eventName` and no
+`filter` sends one tenant's data to the flows of all the others. Real case: Slack
+`team_join` delivered the profile of anyone joining any workspace to every New
+User trigger (appmixer-components#2937).
+
+- **Scope each call** in one of two ways. Put the tenant in the event name
+  (`${type}:${tenantId}`, with the trigger's `addListener` using the same name),
+  as Xero, WhatsApp and HubSpot do. Or pass a `filter` that compares the event's
+  tenant with a value stored in `listener.params` (resolve it in
+  `onListenerAdded`, e.g. Slack `auth.test` → `user_id`).
+- **Fail closed.** When the tenant cannot be determined (missing id in the
+  payload, an authorization lookup the upstream refused), deliver nothing and
+  log. Never fall back to delivering to everyone.
+- **The tenant id must come from a verified request.** A route without signature
+  verification lets anyone who knows a tenant id inject events into that
+  tenant's flows. Verify the signature first, then trust the ids in the payload.
+- **Test it:** call the handler with an event of tenant A and assert that the
+  `filter` rejects a listener of tenant B, or that the `eventName` carries A's id.
 
 **When to use this pattern (vs. section 2's per-trigger webhook URL)**
 
