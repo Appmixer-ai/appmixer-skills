@@ -1,0 +1,12 @@
+{
+    "id": "small-attio-update-task",
+    "size": "small",
+    "connector": "attio",
+    "remove": [
+        "src/appmixer/attio/core/UpdateTask"
+    ],
+    "expect": [
+        "appmixer.attio.core.UpdateTask"
+    ],
+    "prompt": "Add a new component to the existing `attio` connector (`src/appmixer/attio`):\n\n- **UpdateTask** (Update), component id `appmixer.attio.core.UpdateTask` — Update the deadline, completion or assignees of a task. Attio does not allow changing the content of a task."
+}

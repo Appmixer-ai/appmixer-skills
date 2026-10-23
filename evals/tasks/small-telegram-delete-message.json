@@ -1,0 +1,12 @@
+{
+    "id": "small-telegram-delete-message",
+    "size": "small",
+    "connector": "telegram",
+    "remove": [
+        "src/appmixer/telegram/core/DeleteMessage"
+    ],
+    "expect": [
+        "appmixer.telegram.core.DeleteMessage"
+    ],
+    "prompt": "Add a new component to the existing `telegram` connector (`src/appmixer/telegram`):\n\n- **DeleteMessage** (Delete), component id `appmixer.telegram.core.DeleteMessage` — Deletes a message from a chat. A bot can delete its own messages for up to 48 hours, and any message in a group only when it has the \"Delete messages\" admin right. This cannot be undone."
+}
