@@ -514,6 +514,7 @@ See [`examples/hybrid-trigger/NewRecord.js`](examples/hybrid-trigger/NewRecord.j
     - MUST compare new items against known items to avoid duplicates
     - MUST ask for the newest items first explicitly (sort by creation time, descending) — never rely on the API's default order
     - MUST NOT treat "not in the known set" as "new" when the matching items do not fit on the page read — see "Results That Do Not Fit on One Page" below
+    - MUST NOT save a partial or suspiciously empty answer as the new state — see "A Partial or Empty Answer Keeps the State" below
     - Access user configuration via `context.properties` (NOT `context.messages.in.content`)
 
 2. **Webhook triggers (`webhook: true`)**:
@@ -565,6 +566,35 @@ await context.saveState({
 - Test it with **more matching items than one page**: remove one of the newest and
   tick — nothing may fire. A test account with a handful of records never shows
   this.
+
+#### A Partial or Empty Answer Keeps the State
+
+The known set is replaced by every tick's page, so one bad answer wipes it. When
+the provider is degraded, a search or list endpoint can time out with a partial
+page (GitHub search: `incomplete_results: true`) or answer with no items at all.
+Saved as the state, that answer leaves `known` empty (and the floor unset), and the
+next normal tick fires the **whole page** of old items as new.
+
+Real case: GitHub `NewIssue` during a GitHub Issues incident fired 100 old issues
+about 32 times in two hours. Each one ran the downstream flow and hit its quota.
+
+Return before saving when the answer is partial, or empty while the state still
+knows items:
+
+```javascript
+const known = Array.isArray(context.state.known) ? new Set(context.state.known) : null;
+
+// A degraded answer must not become the state: the next tick would re-fire the page.
+if (res.data.incomplete_results || (known?.size && !items.length)) {
+    return;
+}
+```
+
+- Use the provider's own partial-result signal where it has one (`incomplete_results`,
+  a `partial` flag, a timeout status).
+- Skipping an empty answer loses nothing: an item created meanwhile is not in the
+  kept known set, so the next complete answer still fires it.
+- Test it: tick, answer the next tick with an empty page, tick again — nothing may fire.
 
 #### Deduplication with Cache and Lock
 ```javascript

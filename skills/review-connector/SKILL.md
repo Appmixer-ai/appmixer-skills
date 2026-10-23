@@ -249,7 +249,10 @@ port); if the provider only offers a status endpoint to poll, it MUST use a
    "Results That Do Not Fit on One Page"): asks for the newest items first
    explicitly, and does not fire an older item that moves onto the page when a
    newer one leaves the results (a stored floor, or all pages read). A known-ID
-   diff over a single page with neither is an `error`.
+   diff over a single page with neither is an `error`. Per "A Partial or Empty
+   Answer Keeps the State", a tick that saves a partial answer, or an empty one
+   while the state knows items, as the new state is an `error` too: the next
+   tick fires the whole page again.
 4. **Plugin route scopes every event to its tenant** (connectors with
    `plugin.js` + `routes.js`, per "Tenant isolation" in `07-component-types.md`).
    Every `context.triggerListeners` call either carries the tenant in

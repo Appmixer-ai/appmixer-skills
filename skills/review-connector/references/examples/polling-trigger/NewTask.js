@@ -20,9 +20,15 @@ module.exports = {
         const state = await context.loadState();
         const known = state.known ? new Set(state.known) : null;
         const { floor } = state;
+        const tasks = data.tasks || [];
+
+        // A degraded answer (partial, or empty while tasks are known) must not become the state:
+        // the next tick would fire the whole page again
+        if (data.incomplete || (known?.size && !tasks.length)) {
+            return;
+        }
 
         // Find new items by comparing with known items
-        const tasks = data.tasks || [];
         const newItems = [];
         const actual = [];
 

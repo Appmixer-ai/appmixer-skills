@@ -18,6 +18,11 @@ module.exports = {
 
         // Use lib helper for state comparison
         const known = Array.isArray(context.state.known) ? new Set(context.state.known) : null;
+        // A degraded answer (partial, or empty while tasks are known) must not become the state:
+        // the next tick would fire the whole page again
+        if (data.incomplete || (known?.size && !data.tasks.length)) {
+            return;
+        }
         const { diff, actual } = lib.getNewItems(known, data.tasks, 'id');
         // An unseen task no newer than the floor was pulled onto a truncated page, it is not new
         const { floor } = context.state;
