@@ -29,7 +29,7 @@ The rules to check live in the `references/` directory next to this SKILL.md:
 | `08-best-practices.md` | Coding standards, naming, error handling |
 | `10-trigger-test-method.md` | Trigger `test(context)` rules for Flow Test Mode |
 | `14-async-components.md` | Jobs that finish later — self-callback vs. continuation chain |
-| `18-ai-agents.md` | AI Agent components — ports, the `tool` port mechanisms, memory, provider mapping |
+| `18-ai-agents.md` | AI Agent components — ports, the `tools` port mechanisms, memory, provider mapping |
 
 Complete example files (component.json, behaviors, auth.js, lib.js) are in
 `references/examples/`. Real-world example connectors (when you want a
@@ -268,21 +268,26 @@ Check against `references/18-ai-agents.md`:
 1. **`model` or `instructions` as component properties** instead of inputs on the
    `in` port — `error` on a new agent (they cannot be bound to flow variables);
    `warning` on an existing one that keeps the properties as a fallback.
-2. **`tools` or `mcp` port on a new agent** — `warning`. A `Tool Start` and an MCP
-   server belong on the `tool` port; the legacy ports stay only where flows use them.
-3. **`sendJson` on the `tool` port** — `error`. The engine enqueues one copy per
-   link, so every plain tool on the port runs. A `Tool Start` is called through
+2. **A separate `tool` or `mcp` port on a new agent** — `warning`. Every tool,
+   MCP servers included, belongs on the `tools` port; `ai/openai` keeps its
+   released `mcp` port only for existing flows.
+3. **`sendJson` on the `tools` port while a plain tool or an MCP server is on it**
+   — `error`. The engine enqueues one copy per link, so every tool on the port
+   runs. Next to other tools a `Tool Start` is called through
    `POST /flows/{flowId}/components/{id}?enqueueOnly=true` with the agent's
-   `correlationId`, and its `Tool Output` is read from the flow state.
+   `correlationId`; `sendJson` is right only when the port holds Tool Starts only.
 4. **A function definition without `parameters`** — `error` for Mistral (422),
    `warning` elsewhere; a tool without inputs declares an empty object schema.
 5. **A tool call left unanswered** (timeout or parse error not turned into an
    output text, or `executeComponentTool` allowed to throw) — `error`: the next
    request is rejected, or the whole agent retries because one tool failed.
+   Two calls of the same `Tool Start` run at once — `error`: they share the
+   flow-state key and can swap outputs.
 6. **Instructions stored inside the thread history** — `warning`: a thread then
    runs on stale instructions and loses them when the history is summarized.
-7. **`tool.js` / `toolChain.js` / `mcp.js` that differ from the newest agent's**
-   — `warning`, name the drift; the files are copied, not shared.
+7. **`tool.js` / `toolChain.js` / `mcp.js` that differ from `ai/mistral`'s**
+   — `warning`, name the drift; the files are copied, not shared. Compare
+   agents only: `ai/mcptools` (MCP Gateway) differs on purpose.
 8. **Model content read as a string only** — `warning`: reasoning models return a
    list of chunks; take the `text` parts.
 

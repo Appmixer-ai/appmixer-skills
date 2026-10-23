@@ -360,9 +360,10 @@ polling, not the component's completion path, and is a sign the component is
 built in the wrong shape.
 
 **AI Agents need three E2E flows and a unit test file** — see
-`references/18-ai-agents.md` → "Testing an agent": the `tool` port with a plain
-tool, a chain and a branching `Tool Start`; `Tool Start` with both branches plus
-thread memory read back from the data store; files as context. Prompts must force
+`references/18-ai-agents.md` → "Testing an agent": the `tools` port with a plain
+tool, a chain and a branching `Tool Start` (webhook delivery); a `Tool Start` alone
+on the port called twice (port delivery) plus thread memory read back from the data
+store; files as context. Prompts must force
 the tool and the asserts must match the tool's exact text, not the model's prose.
 Condition clauses are `input` / `operator` / `value` — a clause written with
 Assert's `field` / `expected` is always true and the branch test passes by accident.

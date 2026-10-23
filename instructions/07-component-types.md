@@ -328,6 +328,12 @@ See [`examples/make-api-call/MakeApiCall.js`](examples/make-api-call/MakeApiCall
 **lib.js helpers (origin pinning, auth header, JSON/key-value parsing)**:
 See [`examples/make-api-call/lib.js`](examples/make-api-call/lib.js).
 
+### AI Agent (LLM connectors)
+
+An LLM connector's `AIAgent` is none of the shapes above: it answers a prompt by
+calling the tools wired to its `tools` port. All agents share one contract —
+ports, inputs, the shared `tool.js`, testing — described in `18-ai-agents.md`.
+
 ## 2. Trigger Components
 
 Trigger components monitor for events and start workflows when conditions are met. They use polling or webhooks.
