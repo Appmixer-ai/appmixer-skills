@@ -50,6 +50,7 @@ https://github.com/appmixer-ai/appmixer-connectors.
 | `10-trigger-test-method.md` | Trigger `test(context)` for Flow Test Mode — patterns per trigger group |
 | `11-e2e-flow-generation.md` | Generating E2E test flows into `artifacts/test-flows/` (used by Step 3b) |
 | `14-async-components.md` | Jobs that finish later — self-callback vs. continuation chain |
+| `18-ai-agents.md` | AI Agent components — the `tool` port (plain tools, `Tool Start` chains, MCP), memory, files, testing |
 
 Consult these when generating code, debugging failures, or reviewing output.
 
@@ -61,6 +62,14 @@ callback URL parameter or a companion status endpoint. Getting this wrong is
 expensive to undo later: it changes the component's ports, so fixing it after
 release is a breaking change. Never solve it by returning the id and leaving the
 user to poll in the flow, and never expose the callback URL as a component input.
+
+**Before writing an AI Agent for an LLM connector, read `18-ai-agents.md`.** All
+agents share one contract: `model`, `instructions`, `prompt`, `threadId`, `fileId`,
+`storeId` on the `in` port, ports `out` and `tool` only, the shared `tool.js` /
+`toolChain.js` / `mcp.js` copied unchanged from the newest agent, and a `Tool Start`
+on the `tool` port called through the engine route — never `sendJson`, which would
+run every tool on the port. Do not add the legacy `tools` and `mcp` ports to a new
+agent.
 
 ## Pipeline Overview
 
