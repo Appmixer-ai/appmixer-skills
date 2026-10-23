@@ -1,0 +1,12 @@
+{
+    "id": "small-airtop-create-window",
+    "size": "small",
+    "connector": "airtop",
+    "remove": [
+        "src/appmixer/airtop/core/CreateWindow"
+    ],
+    "expect": [
+        "appmixer.airtop.core.CreateWindow"
+    ],
+    "prompt": "Add a new component to the existing `airtop` connector (`src/appmixer/airtop`):\n\n- **CreateWindow** (Create), component id `appmixer.airtop.core.CreateWindow` — Open a new browser window inside an Airtop session and navigate it to a URL. Returns the window ID needed by the page operations."
+}

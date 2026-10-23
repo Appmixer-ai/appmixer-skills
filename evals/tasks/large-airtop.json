@@ -1,0 +1,21 @@
+{
+    "id": "large-airtop",
+    "size": "large",
+    "connector": "airtop",
+    "remove": [
+        "src/appmixer/airtop"
+    ],
+    "expect": [
+        "appmixer.airtop.core.ClickElement",
+        "appmixer.airtop.core.CreateSession",
+        "appmixer.airtop.core.CreateWindow",
+        "appmixer.airtop.core.FindSessions",
+        "appmixer.airtop.core.GetSession",
+        "appmixer.airtop.core.MakeApiCall",
+        "appmixer.airtop.core.QueryPage",
+        "appmixer.airtop.core.TakeScreenshot",
+        "appmixer.airtop.core.TerminateSession",
+        "appmixer.airtop.core.TypeText"
+    ],
+    "prompt": "[New Connector] Airtop — cloud browser automation\n\nNew connector `appmixer:airtop` for [Airtop](https://www.airtop.ai) cloud browser automation. API-key auth, 10 components covering the session → window → interact → terminate lifecycle: CreateSession, GetSession, FindSessions, TerminateSession, CreateWindow, QueryPage, ClickElement, TypeText, TakeScreenshot, MakeApiCall."
+}
