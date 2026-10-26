@@ -181,6 +181,13 @@ vendor; the first segment names the vendor dir under `src/`).
      everywhere is still right for new code; on an existing connector it is a
      follow-up, not a blocker. Same split as the `auth-field-in-request-host`
      validator (failure in `auth.js`, warning elsewhere).
+12. **Every output send is awaited or returned** (per `06-component-behavior.md`
+   → "Sending Output"). A bare `context.sendJson(...)` / `send` / `sendArray`
+   statement, or a send inside a `forEach` callback, is an `error`. The
+   component resolves before the output is sent: an Each item can be reported
+   as `dropped`, and a failed send is swallowed. Also check that callers await
+   helpers that send (`lib.sendArrayOutput`). The `send-output-awaited`
+   validator cannot follow helpers.
 
 ### Async components only (when review step 6 answered YES)
 

@@ -55,6 +55,7 @@ Behavior JS file MUST follow these rules:
 - Every required input in the component.json must be also asserted in the behavior file
 - If a required input is missing, throw exception: `throw new context.CancelError('<human_readable_input_name> is required!')`
 - Delete components must return an empty object, e.g., `return context.sendJson({}, 'out');` at the end of the function
+- Every `context.sendJson` / `send` / `sendArray` must be awaited, or returned when it is the last statement. Never send from a `forEach` callback; use `for…of` with `await`. See `06-component-behavior.md` → "Sending Output"
 
 ## component.json Requirements
 

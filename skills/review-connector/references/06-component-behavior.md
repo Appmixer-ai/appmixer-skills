@@ -36,6 +36,52 @@ module.exports = {
 };
 ```
 
+### Sending Output: Always `await` or `return`
+
+`context.sendJson()`, `context.send()` and `context.sendArray()` return a
+promise. **Every send MUST be awaited, or returned when it is the last
+statement.** `receive()`, `tick()` and `start()` must not resolve while a send
+is still in flight.
+
+The engine acks the input message as soon as the component's promise resolves.
+A send that has not finished by then is counted only when it reaches the queue:
+
+- Inside an engine-tracked **Each** loop, the item can finish before its output
+  is counted. A sequential loop starts the next item next to it, and output that
+  reaches `Continue Each` too late is reported as `dropped`.
+- A **flow run** can be declared finished before the late send lands.
+- A **failed send is never attributed to the message**. `receive()` has already
+  succeeded, so retry and error handling never see the failure.
+
+The engine deliberately does not wait for sends that were not awaited.
+Awaiting them is the component's job.
+
+```javascript
+// ❌ Wrong: the promise is dropped
+context.sendJson(item, 'out');
+
+// ❌ Wrong: forEach discards what the callback returns, async or not
+items.forEach(async item => {
+    await context.sendJson(item, 'out');
+});
+
+// ✅ Right: the last statement returns the send
+return context.sendJson(item, 'out');
+
+// ✅ Right: one at a time, in order
+for (const item of items) {
+    await context.sendJson(item, 'out');
+}
+
+// ✅ Right: in parallel, the map callback returns each send
+await Promise.all(items.map(item => context.sendJson(item, 'out')));
+```
+
+A helper that sends (`lib.sendArrayOutput`) must be awaited by its caller as
+well. The `send-output-awaited` validator flags a bare send statement and a send
+inside a `forEach` callback. It cannot follow a helper whose promise the caller
+drops, so check those by hand.
+
 ## Advanced Features
 
 ### Scheduling Work Later: `context.setTimeout`
