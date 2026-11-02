@@ -37,6 +37,29 @@ done < <(find "$REPO_ROOT/instructions/examples" -type f \( -name '*.json' -o -n
 [[ $EX_OK == 1 ]] && ok "all instructions/examples files parse (JSON + node --check)" \
                   || fail "invalid example files (see above)"
 
+echo "── find-tasks example writes RFC 4180 CSV ──────────────────────────"
+# The canonical lib.js is copied into every new connector. Its toCsv must keep a
+# comma, a double quote or a line break inside the cell (quoted, inner quotes
+# doubled), write JSON for arrays, an empty cell for null, and take the cells by
+# header column (appmixer-components#2994).
+CSV_OUT="$(node - "$REPO_ROOT/instructions/examples/find-tasks/lib.js" <<'EOF'
+const lib = require(process.argv[2]);
+const saved = [];
+const context = {
+    componentId: 'c1', flowDescriptor: { c1: { label: 'Find' } }, config: {}, CancelError: Error,
+    async saveFileStream(name, buffer) { saved.push(buffer.toString('utf8')); return { fileId: 'f1' }; },
+    async sendJson() {}, async log() {}
+};
+lib.sendArrayOutput({ context, outputType: 'file', records: [
+    { name: 'First, "quote"\r\nnext', tags: ['Ada', 'Ben'], note: null },
+    { note: 'x', name: 'plain' }
+] }).then(() => process.stdout.write(JSON.stringify(saved[0])));
+EOF
+)"
+CSV_EXPECTED='"name,tags,note\n\"First, \"\"quote\"\"\r\nnext\",\"[\"\"Ada\"\",\"\"Ben\"\"]\",\nplain,,x"'
+[[ "$CSV_OUT" == "$CSV_EXPECTED" ]] && ok "find-tasks lib.js toCsv quotes cells and maps them by header column" \
+                                    || { echo "  got: $CSV_OUT"; echo "  want: $CSV_EXPECTED"; fail "find-tasks lib.js toCsv output"; }
+
 echo "── no stale script-era references ──────────────────────────────────"
 E2E_OK=1
 # the E2E tooling moved into the appmixer CLI — nothing may reference the

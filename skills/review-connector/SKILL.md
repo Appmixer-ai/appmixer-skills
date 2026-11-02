@@ -188,6 +188,14 @@ vendor; the first segment names the vendor dir under `src/`).
    as `dropped`, and a failed send is swallowed. Also check that callers await
    helpers that send (`lib.sendArrayOutput`). The `send-output-awaited`
    validator cannot follow helpers.
+13. **CSV output quoting** — if the connector defines `toCsv` (lib.js,
+   lib.generated.js or a commons file), a cell holding a comma, a double quote
+   or a line break MUST be quoted with its inner quotes doubled (RFC 4180), and
+   cells MUST be taken by header column, not `Object.values(record)` ("outputType
+   Helper Functions" in `07-component-types.md`). An unquoted join, or an
+   `Object.values` row, = `error`, rule `csv-cells-quoted`: a JSON-stringified
+   array always holds commas and quotes, so every record with an array field
+   splits into extra columns.
 
 ### Async components only (when review step 6 answered YES)
 

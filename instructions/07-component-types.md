@@ -37,6 +37,16 @@ Components with `outputType` (Find/List) **MUST** use standardized lib.js helper
 
 **Canonical implementation:** copy [`examples/find-tasks/lib.js`](examples/find-tasks/lib.js)
 
+**CSV output (`outputType: "file"`):** `toCsv` MUST write RFC 4180 cells — a value
+holding a comma, a double quote or a line break is quoted with its inner quotes
+doubled, `null`/`undefined` is an empty cell, objects and arrays are JSON — and
+MUST take cells by header column, never `Object.values(record)`, so a record with
+a different key order or a missing key stays under the right header. An empty
+result set returns `''`. Copy `csvCell` + `toCsv` from the example; the
+`csv-cells-quoted` validator fails a `toCsv` that never doubles quotes or reads
+`Object.values`. A JSON-stringified array always holds commas and quotes, so an
+unquoted join corrupts every record with an array field.
+
 **Required behavior pattern:**
 ```javascript
 const lib = require('../../lib');
