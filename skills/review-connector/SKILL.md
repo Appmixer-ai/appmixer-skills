@@ -30,6 +30,7 @@ The rules to check live in the `references/` directory next to this SKILL.md:
 | `10-trigger-test-method.md` | Trigger `test(context)` rules for Flow Test Mode |
 | `14-async-components.md` | Jobs that finish later — self-callback vs. continuation chain |
 | `18-ai-agents.md` | AI Agent components — ports, the `tools` port mechanisms, memory, provider mapping |
+| `19-security-dependency-fixes.md` | Dependency changes — lockfile in sync for `npm ci`, Node 18, no bundled HTTP client |
 
 Complete example files (component.json, behaviors, auth.js, lib.js) are in
 `references/examples/`. Real-world example connectors (when you want a
@@ -308,6 +309,14 @@ Check against `references/18-ai-agents.md`:
    agents only: `ai/mcptools` (MCP Gateway) differs on purpose.
 8. **Model content read as a string only** — `warning`: reasoning models return a
    list of chunks; take the `text` parts.
+
+### Dependency changes only (a `package.json` or `package-lock.json` changed)
+Check against `references/19-security-dependency-fixes.md`:
+- `package-lock.json` changed together with its `package.json` and in sync (`npm ci` passes) — **error** otherwise: the engine installs with `npm ci`.
+- The new versions run on Node 18 (`engines.node`, not ESM-only) — **error** otherwise.
+- No connector-level `axios` / `request` / `node-fetch`; HTTP goes through `context.httpRequest` — **error** for a newly added one.
+- `overrides` used only for transitive dependencies, with the reason in the commit or PR.
+- One `bundle.json` bump per changed connector with a changelog entry; the root lockfile is not mixed into a connector PR.
 
 ### Cross-cutting
 - Naming consistency with sibling components.
