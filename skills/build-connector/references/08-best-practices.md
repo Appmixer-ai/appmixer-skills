@@ -45,8 +45,8 @@
 
 **Adding an OAuth scope to an existing connector is a breaking change** —
 every existing user has to re-authenticate. Bump `bundle.json` to the next
-major version, prefix the changelog entry with `BREAKING:`, and say in the PR
-description that users must re-authenticate (example entry in
+major version, prefix the changelog entry with `BREAKING:`, and tell the user
+in your report that existing users must re-authenticate (example entry in
 "OAuth 2.0 Authentication", `02-authentication.md`).
 
 ## Component Behavior (JavaScript) Requirements

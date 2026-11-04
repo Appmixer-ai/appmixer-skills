@@ -3,7 +3,7 @@
 ## Fixing a Bug in an Existing Component
 
 1. **Measure the cause before you write it down.** Reproduce it against the live
-   API or read it out of the flow logs. A cause that goes into a PR description or
+   API or read it out of the flow logs. A cause that goes into your report or
    a changelog must be an observation, not a guess.
 2. **Keep the fix inside the existing structure and limit it to what the bug
    needs.** No refactoring, no new capability, no handling of states you have not
@@ -23,14 +23,13 @@ As you work on connectors, you will discover information that is not yet
 documented: gotchas, undocumented API behaviors, edge cases, patterns that
 turned out to matter.
 
-These instructions are the **single source of truth** — this repo's
-`instructions/` directory. Consumer repositories (appmixer-connectors' Copilot
-instructions, each skill's `references/`) are generated or synced copies; a
-learning written into a copy is lost on the next sync.
+The files you read these rules from (a skill's `references/`) are copies of
+the skills' instructions and are replaced on the next update, so a learning
+written into them is lost.
 
-1. **Capture insights** where they belong: add them to the appropriate
-   `instructions/*.md` file **in this repository** (a pull request when you
-   work elsewhere).
+1. **Capture insights** where they last: in the connector itself (a comment
+   at the code it concerns, its README) and in your report to the user, as a
+   suggested note for the instructions with the file it belongs in.
 2. **Be concise**: brief and actionable.
 3. **Include context**: explain *why* it matters, not just *what* it is.
 
@@ -43,12 +42,3 @@ Write:
 > "The email quota endpoint can time out when the database is under heavy
 > load. If tests show timeout errors, raise the query timeout or check for
 > long-running queries first."
-
-Commit such updates as documentation improvements:
-
-```
-docs(instructions): add note about email quota endpoint timeouts
-```
-
-After a change here, run `node scripts/sync-references.mjs` so the skills'
-`references/` copies stay in sync (CI checks this with `--check`).

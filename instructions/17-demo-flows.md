@@ -40,7 +40,7 @@ chip instead of the named field the picker offers.
 The `raw-output-declared-field` flow validator (appmixer CLI, basic ruleset)
 warns on the Raw Output form.
 
-## Verify before committing
+## Verify before shipping
 
 Import the flow on a live instance and check the variable chips the way the
 designer does — every used variable must be among the offered ones:

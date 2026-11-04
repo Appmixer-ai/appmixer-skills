@@ -20,7 +20,7 @@ you run a deterministic validator and fix anything it flags, looping until clean
    It is a complete, working example.
 
    ⚠️ **The template is the ONLY structural source of truth. Do NOT copy patterns
-   from other connectors' committed test flows** — many pre-date the current
+   from other connectors' existing test flows** — many pre-date the current
    rules and still contain deprecated shapes, most notoriously
    `appmixer.utils.test.BeforeAll` (forbidden — the `no-beforeall` validator
    rejects it) and components without `errorHandling`. If a flow you are looking
@@ -149,8 +149,7 @@ you run a deterministic validator and fix anything it flags, looping until clean
    flow written that way tests something no user sends. Real case: until 2026-10
    nearly every MakeApiCall parsed only `{key, value}` arrays and silently
    dropped the headers and query parameters users set in the Designer, while
-   the E2E flows — written with array strings — kept passing
-   (appmixer-components#2911). Make the flow prove the values arrive: assert on
+   the E2E flows — written with array strings — kept passing. Make the flow prove the values arrive: assert on
    something the header or parameter changes (an `Accept` that switches the
    response format, a filter that changes the first item), not just on a 200.
    Enforced (string type) by `lambda-string-schema`.

@@ -50,7 +50,7 @@ For services using OAuth 2.0 flow.
 > Adding new OAuth scopes to an existing connector is a **breaking change**. Existing users will need to re-authenticate to grant the new permissions. This must be reflected in the connector's `bundle.json`:
 > - Bump the **major** version (e.g. `2.2.0` → `3.0.0`)
 > - Document the scope change clearly in the changelog entry
-> - Include a note in the PR description warning reviewers that existing users will be asked to re-authenticate
+> - Tell the user, in your report, that existing users of the connector will be asked to re-authenticate
 >
 > Example `bundle.json` changelog entry:
 > ```json
