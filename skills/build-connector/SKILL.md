@@ -56,11 +56,11 @@ https://github.com/appmixer-ai/appmixer-connectors.
 Consult these when generating code, debugging failures, or reviewing output.
 
 **Before changing a `package.json` or `package-lock.json` for a security reason
-(a Dependabot alert, a `security` issue), read `19-security-dependency-fixes.md`.**
+(a security advisory, an `npm audit` finding), read `19-security-dependency-fixes.md`.**
 The engine installs with `npm ci` on Node 18: a lockfile out of sync, or a fixed
 version that needs Node 20, makes the connector uninstallable. A bundled HTTP
 client is removed in favour of `context.httpRequest`, not upgraded; with no
-Node-18 fix, say so in the issue instead of forcing it.
+Node-18 fix, report it instead of forcing it.
 
 **Before writing any component whose operation does not finish inside one
 request — a transcription, a render, a scrape/dataset job, an enrichment, a

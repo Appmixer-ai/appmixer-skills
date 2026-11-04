@@ -316,7 +316,7 @@ Check against `references/19-security-dependency-fixes.md`:
 - The new versions run on Node 18 (`engines.node`, not ESM-only) — **error** otherwise.
 - No connector-level `axios` / `request` / `node-fetch`; HTTP goes through `context.httpRequest` — **error** for a newly added one.
 - `overrides` used only for transitive dependencies, with the reason in the commit or PR.
-- One `bundle.json` bump per changed connector with a changelog entry; the root lockfile is not mixed into a connector PR.
+- One `bundle.json` bump per changed connector with a changelog entry; workspace-root tooling is not changed together with connectors.
 
 ### Cross-cutting
 - Naming consistency with sibling components.

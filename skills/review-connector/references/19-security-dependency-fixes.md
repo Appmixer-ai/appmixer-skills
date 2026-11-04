@@ -1,7 +1,7 @@
 # Security Dependency Fixes
 
-How to fix a vulnerable npm dependency of a connector: a Dependabot alert, an
-`npm audit` finding, or a `security` issue raised from one. The fix is usually
+How to fix a vulnerable npm dependency of a connector — a published security
+advisory, an `npm audit` finding, a scanner report. The fix is usually
 small; what breaks it is the runtime it has to load in. Read this before
 touching a `package.json` or `package-lock.json` for a security reason.
 
@@ -17,9 +17,9 @@ touching a `package.json` or `package-lock.json` for a security reason.
 - So a vulnerability reported **only in a lockfile** (a transitive dependency)
   is a real production version, not noise: `npm ci` installs exactly what the
   lockfile says.
-- The repository's **root** `package.json` / `package-lock.json` is dev tooling
-  (lint, tests, validators). It never ships. Do not mix its fixes into a
-  connector PR.
+- A `package.json` at the **workspace root** (lint, tests, validators) is dev
+  tooling and never ships with a connector. Fix it separately from connector
+  changes.
 
 ## The runtime is Node 18
 
@@ -61,9 +61,8 @@ Pick the first that applies:
 4. **Deprecated with no fix** (`request`, `request-promise`). Replace the
    library: `context.httpRequest`, or a maintained client.
 5. **No release works on Node 18.** Do not force it and do not silence the
-   alert. Leave the dependency, record the reason in the issue (the fixed
-   version, its `engines`, what fails) and hand it back (pipeline: Needs
-   input).
+   finding. Leave the dependency and report why it cannot be fixed yet: the
+   fixed version, its `engines`, what fails.
 
 Packages not published to npm (for example SheetJS `xlsx`, served from its
 own CDN) go into the connector as a vendored tarball next to `package.json`
@@ -93,15 +92,13 @@ unpacks a module into `<module>-<version>` from its `module.json` (or
 `service.json`): bump that `version` too, so the new code lands in a new
 directory.
 
-## One issue, one PR
+## Scope of the change
 
-- One PR fixes **every manifest** the issue lists (the same package in several
-  connectors). Branch `security/<issue>-<package>`.
+- Fix **every manifest** that carries the vulnerable package in one change
+  (the same package in several connectors), so no connector stays behind.
 - Each changed connector gets **one** `bundle.json` patch bump (a minor if
   behaviour changes, for example a replaced HTTP client) and a changelog entry
   a user understands: `Security: updated <package> to <version> (<advisory id>).`
-- The PR body links the issue with a closing keyword:
-  `Fixes Appmixer-ai/appmixer-components#<n>`.
 - Do not refactor around the fix. If a replacement changes behaviour, keep the
   component's inputs and outputs identical.
 
@@ -114,4 +111,4 @@ A security fix must not change what the connector does:
   change;
 - for a replaced library: compare the requests the old and new code send (the
   same URL, method, headers and body for the same input) and the outputs;
-- the connector's E2E flows (the Testing stage of the pipeline runs them).
+- the connector's E2E flows (`09-testing.md`).
