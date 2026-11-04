@@ -90,7 +90,7 @@ appmixer login <e2e-user@email>     # prompts for the password
 
 **Run the workspace validators for the WHOLE connector first** (when the
 workspace ships them — the appmixer-connectors repo does; skip otherwise) —
-pre-commit only validates CHANGED files, so long-standing bugs (e.g. a dynamic
+checks of changed files never look at the rest, so long-standing bugs (e.g. a dynamic
 outPort source missing a required input → empty variable pickers / invalid
 chips in the designer) survive for months until someone runs the full check:
 
@@ -100,18 +100,17 @@ node scripts/validate.js --connector <connector>   # from the workspace root
 # on untouched components are threshold-gated and may be left alone
 ```
 
-**⚠️ Run the validators from `dev`, not from the branch.** The validator set
-lives in the repo, so a branch cut before a validator was added never runs it
-and reports a clean connector. Real case: a branch predating
-`component-icon-svg` and `tick-requires-tick-flag` validated clean while 14 icon
-failures waited on the other side of the rebase. Rebase first, or copy the
-missing `scripts/validators/*.js` in from `dev` before trusting a clean run.
+**⚠️ Use the current validators.** The validator set lives in the workspace, so
+an outdated copy never runs the rules added since and reports a clean
+connector. Real case: a copy predating `component-icon-svg` and
+`tick-requires-tick-flag` validated clean while 14 icon failures were waiting.
+Update the workspace's validators before trusting a clean run.
 
-**"Legacy findings may be left alone" applies to the repo-wide run, not to
-commits.** The pre-commit hook validates every CHANGED file strictly, with no
-thresholds, so a one-line fix in a connector that carries pre-existing debt is
-blocked by that debt rather than by your change. Either clear it, or commit with
-`--no-verify` and say so in your report.
+**"Legacy findings may be left alone" applies to the whole-workspace run, not
+to the files you change.** A check of changed files (`validate.js --changed`)
+is strict, with no thresholds, so a one-line fix in a connector that carries
+pre-existing debt fails on that debt rather than on your change. Either clear
+it, or tell the user which failures were already there.
 
 Pack and publish (absolute zip path — `pack` writes the zip into the CWD and stale
 zips from earlier sessions may exist elsewhere in the repo; a relative `publish`

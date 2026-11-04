@@ -286,7 +286,7 @@ holds the other generic components (usually `core`). Other spellings
 
 **The shape of component.json is enforced, not described here.** The
 `makeapicall-standards` validator (`appmixer connector validate`) checks the
-standard from appmixer-components issue #1459: inputs `url` (text, index 1),
+standard: inputs `url` (text, index 1),
 `method` (select, index 2, default `GET`, all five verbs), `parameters`
 (key-value, index 3), `body` (textarea, index 4), `headers` (key-value,
 index 5); `url` and `method` required; key-value inputs declared as schema type
@@ -308,7 +308,7 @@ of them when the endpoint cannot be known (warning otherwise).
   stores a key-value input as the JSON string of an object**
   (`'{"Accept":"application/json"}'`), so parse that string — accepting only an
   array of `{key, value}` rows drops every header and query parameter the user
-  set, silently (appmixer-components#2911). `kvToObject()` in the example
+  set, silently. `kvToObject()` in the example
   `lib.js` handles the string, a plain object and the array form; copy it.
 - Output: `{ statusCode, headers, body }` as a static schema; `body` is an
   untyped object (the output-example rules exempt MakeApiCall for this reason).
@@ -440,7 +440,7 @@ installed the app, and `triggerListeners` delivers to **every** listener of the
 `eventName` that passes the `filter`. A call with a constant `eventName` and no
 `filter` sends one tenant's data to the flows of all the others. Real case: Slack
 `team_join` delivered the profile of anyone joining any workspace to every New
-User trigger (appmixer-components#2937).
+User trigger.
 
 - **Scope each call** in one of two ways. Put the tenant in the event name
   (`${type}:${tenantId}`, with the trigger's `addListener` using the same name),

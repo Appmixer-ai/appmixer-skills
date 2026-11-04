@@ -368,7 +368,7 @@ Run after Step 3a is complete (component list final).
    touch are pre-existing debt. Handle them with the **Connector debt check**
    below, not silently.
 
-2. **Publish** — follow the Git & Publish Rules below (bundle bump → pack →
+2. **Publish** — follow the Publish & Version Control Rules below (bundle bump → pack →
    publish via the appmixer CLI).
 
 ---
@@ -394,8 +394,8 @@ When a connector already exists and you only need to add one or more new compone
      shapes.
 3. **Test + Fix** (same as Step 3a) — auth is usually already set up. Follow
    the `test-connector` skill to test only the new components. Max 3 iterations.
-4. **Publish** — lint, run the validator again, commit, publish, push — same
-   as Step 4 and the Git & Publish Rules below.
+4. **Publish** — lint, run the validator again, bump, publish — same
+   as Step 4 and the Publish & Version Control Rules below.
 
 ---
 
@@ -405,9 +405,8 @@ Only when the workspace ships `scripts/validate.js` (the appmixer-connectors
 repo does), and whenever you change a connector that existed before: adding
 components, fixing a bug, continuing a build.
 
-The CI gate and the pre-commit hook run `validate.js --changed`. That reports
-only *new* failures in the files you changed, so a PR can pass while the rest
-of the connector is out of standard. Validators are there to make connectors
+`validate.js --changed` reports only *new* failures in the files you changed,
+so a change can pass it while the rest of the connector is out of standard. Validators are there to make connectors
 better, not only to stop regressions, so look at the whole connector:
 
 ```bash
@@ -424,7 +423,7 @@ failure into one of two groups:
   own initiative, and do not skip it silently either. Report it and let the
   user decide.
 
-The report to the user, before you commit:
+The report to the user, before you finish the change:
 
 - the count per rule, with the affected components
 - one line per rule saying what the failure means for users of the connector
@@ -436,10 +435,10 @@ The report to the user, before you commit:
   output. Its schema is effectively unvalidated, and whatever you copy from it
   goes unchecked as well.
 
-Then ask one question: **fix it in this PR, in a separate PR, or leave it?**
+Then ask one question: **fix it in this change, in a separate one, or leave it?**
 Record the answer in `pipeline-state.json` (`"validatorDebt": {"found": <n>,
-"decision": "fixed" | "separate-pr" | "left"}`) and put one line in the PR
-description. When the answer is "fix", re-run both commands and state the
+"decision": "fixed" | "separate-pr" | "left"}`) and put one line in your final
+report. When the answer is "fix", re-run both commands and state the
 before/after counts. When a debt fix changes a schema, prove it changed
 nothing except what you meant to change, for example by diffing old and new
 with titles stripped.
@@ -455,25 +454,23 @@ the `appmixer` CLI where needed.
 
 ---
 
-## Git & Publish Rules
+## Publish & Version Control Rules
 
-**Git safety (applies to every push; only relevant when the workspace is git-managed):**
+**Version control** (only when the workspace uses one — the skills do not
+assume any particular tool or hosting):
 
-- **Confirm the push target with the user before the FIRST push of the session** —
-  state the remote URL and branch and wait for approval; subsequent pushes to the
-  same remote+branch may proceed without re-asking.
-- **Feature branches only** — never push to `dev`/`main`/`master`, never force-push.
-- **Check where `origin` points** (`git remote get-url origin`): if it is a shared
-  upstream and the user hasn't explicitly confirmed direct write access, propose
-  a fork workflow instead (`gh repo fork --remote` adds a fork and a remote) and
-  push there.
+- **Follow the workspace's own conventions** for where changes go (branches,
+  commit messages, review). When they are not evident, ask the user.
+- **Never share changes without the user's go** — no push, upload or opened
+  review request until the user confirmed where it goes. Once confirmed for the
+  session, later updates to the same place may proceed without re-asking.
+- **Never rewrite history others may have** (no force-push, no rewriting a
+  shared branch) and never write to a protected or release line directly.
 
 After every meaningful change (component created, refactored, fixed):
 
-1. **Commit** to the appropriate branch in the workspace repo:
-   - New connector: `feature/<connector>-connector`
-   - Fixes/improvements: `fix/<connector>-<description>` or the current feature branch
-   - Use descriptive commit messages
+1. **Save** the change the way the workspace does (with version control: a
+   commit with a descriptive message).
 
 2. **Publish** to the Appmixer instance via the appmixer CLI (run from the
    workspace root; ask the user for the instance URL/login if the CLI is not
@@ -486,7 +483,8 @@ After every meaningful change (component created, refactored, fixed):
    ```
    Publish the whole module (not individual components) when there's a service dependency.
 
-3. **Push** the branch to origin after commits.
+3. **Share** the changes (push, upload, review request) only as the user
+   confirmed — see Version control above.
 
 ### Always bump bundle.json before publishing
 - **Patch** (`x.x.+1`) — bug fixes, no new inputs/outputs

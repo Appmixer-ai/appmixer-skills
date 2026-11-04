@@ -85,6 +85,7 @@ const csvCell = (value) => {
 };
 
 const toCsv = (records) => {
+    // An empty result set is ordinary (new account, filter matches nothing): an empty file, not a crash.
     if (!records.length) return '';
     // Cells are taken by header column, not Object.values(record), so a record with
     // a different key order or a missing key stays under the right header.

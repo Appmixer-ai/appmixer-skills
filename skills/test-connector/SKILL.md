@@ -310,7 +310,7 @@ reuses the credentials Step 0 stored, so it costs one command:
 ```bash
 appmixer connector verify <connector>            # read-only schema conformance
 appmixer connector verify <connector> --write    # + enum round-trips (creates + cleans up records)
-appmixer connector verify <connector> --record   # save sanitized output shapes to artifacts/samples/ (commit them)
+appmixer connector verify <connector> --record   # save sanitized output shapes to artifacts/samples/ (keep them)
 ```
 
 Interpret findings per `references/15-live-verification.md`: FAIL
@@ -319,7 +319,7 @@ WARN returned-but-undeclared = candidates to declare; round-trip FAIL names
 the option whose label the service disagrees with. `--write` needs the
 connector's `artifacts/verify.json` round-trip specs (authored by
 `build-connector`) and must never run against a production tenant. After a
-green `--record`, commit `artifacts/samples/` so CI can re-check conformance
+green `--record`, keep `artifacts/samples/` with the connector so conformance can be re-checked
 offline (`--offline`, no credentials). If verify reports `No stored
 credentials`, pass them with `--auth <file>` (an OAuth connector needs
 `{"accessToken": "…"}`) — never patch the configstore to make it resolve; the
@@ -372,10 +372,9 @@ Assert's `field` / `expected` is always true and the branch test passes by accid
 
 If testing leads to fixes:
 
-1. **Commit** to the appropriate branch in the workspace repo (feature/fix
-   branch — never `dev`/`main`).
+1. **Bump `bundle.json`** and add a changelog entry (see build-connector,
+   "Always bump bundle.json before publishing").
 2. **Publish** the connector module (`appmixer pack` + `appmixer publish` via the configured appmixer CLI).
-3. **Push** the branch — confirm the push target (remote URL + branch) with the
-   user before the first push of the session; never force-push. If `origin` is
-   the shared upstream and the user hasn't confirmed direct write access,
-   propose a fork (`gh repo fork --remote`) and push there.
+3. **Version control** — follow build-connector's "Publish & Version Control Rules":
+   save the changes the way the workspace does, and never share them
+   (push, upload) without the user's go.

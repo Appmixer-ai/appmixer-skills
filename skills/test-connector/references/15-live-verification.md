@@ -112,9 +112,9 @@ rule**: recipes, never concrete IDs — the same file must work on any tenant.
 
 `--record` saves each read component's output SHAPE with every value replaced
 by a type placeholder — live payloads carry PII (patient names, emails) and
-none of it may reach the repo; the sanitizer guarantees no original value
-survives. Commit the samples: `--offline` then re-checks conformance against
-them with no credentials at all, which is the CI leg. Re-record whenever the
+none of it may be stored; the sanitizer guarantees no original value
+survives. Keep the samples with the connector: `--offline` then re-checks
+conformance against them with no credentials at all. Re-record whenever the
 service adds fields or a component's mapping changes. Samples capture the
 COMPONENT's output (after `expandIds` etc.), not the raw API response — that
 is the contract flows actually see.

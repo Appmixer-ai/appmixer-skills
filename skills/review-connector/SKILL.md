@@ -379,7 +379,7 @@ Report the findings as readable Markdown — no JSON. Structure:
 3. **Connector debt** (only when step 7 ran) — validator failures outside the
    reviewed component: the count per rule, the affected components, and whether
    each fix is mechanical or needs API knowledge, a live check or a breaking
-   change. End with the question for the user: fix now, in a separate PR, or
+   change. End with the question for the user: fix now, in a separate change, or
    leave it. Write "none" when the connector is clean.
 4. **Family suggestions** (only when step 8 ran) — the peer(s) compared
    against, then one bullet per finding with its `family.*` rule id, missing

@@ -790,7 +790,7 @@ See [`examples/e2e-test-flow.json`](examples/e2e-test-flow.json).
 #### Reference Test Flows
 
 `examples/e2e-test-flow.json` is the only structural reference. Do NOT copy
-patterns from other connectors' committed test flows — many pre-date the current
+patterns from other connectors' existing test flows — many pre-date the current
 rules (`BeforeAll`, missing `errorHandling`, readable component ids); see
 `11-e2e-flow-generation.md`.
 
