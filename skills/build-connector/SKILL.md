@@ -143,6 +143,10 @@ method, required/optional parameters, response shape, auth mechanism, and rate
 limits. If the docs link to an OpenAPI/Swagger spec, read the relevant paths
 from it.
 
+Note the URLs as you go: the API reference, the auth page, the changelog or
+release notes, the machine-readable spec. They go into
+`artifacts/api-sources.json` in 1d.
+
 ### 1d. Scaffold core files
 
 Under `src/<vendor>/<connector>/`:
@@ -153,6 +157,10 @@ Under `src/<vendor>/<connector>/`:
    `changelog: { "1.0.0": ["Initial release."] }`.
 3. **auth.js** — matching the auth type (see `02-authentication.md`).
 4. **quota.js** — rate limits from the docs, or sensible defaults.
+5. **artifacts/api-sources.json** — where the vendor documents the API (see
+   `01-connectors.md`, "artifacts/api-sources.json"): `apiReference` is required;
+   `changelog` and `openApi` are `null` only after you looked for them. Only URLs
+   you opened.
 
 ### 1e. Generate components
 
@@ -380,6 +388,8 @@ When a connector already exists and you only need to add one or more new compone
 0. **Connector debt check** (below). Run it *before* you start, so the user
    decides the scope while it is still cheap to change.
 1. **Research (optional)** — if the API endpoint is unknown, check the API docs.
+   If the connector has no `artifacts/api-sources.json`, create it from the docs
+   you read; if it has one, update `checkedAt` and anything that changed.
 2. **Scaffold the new component(s)** using the existing connector structure as a
    reference:
    - Copy a similar existing component directory. The copy inherits its
