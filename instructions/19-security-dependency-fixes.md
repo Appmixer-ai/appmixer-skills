@@ -107,8 +107,8 @@ directory.
 A security fix must not change what the connector does:
 
 - unit tests of each changed connector, on Node 18 as above;
-- `node scripts/validate.js --connector <connector>` and eslint, as for any
-  change;
+- `appmixer connector validate <connector>` (or the workspace's wrapper of
+  it) and eslint when the workspace has it, as for any change;
 - for a replaced library: compare the requests the old and new code send (the
   same URL, method, headers and body for the same input) and the outputs;
 - the connector's E2E flows (`09-testing.md`).

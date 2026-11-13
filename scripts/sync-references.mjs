@@ -23,7 +23,8 @@ const MANIFEST = {
         '06-component-behavior.md', '07-component-types.md',
         '08-best-practices.md', '09-testing.md', '10-trigger-test-method.md',
         '11-e2e-flow-generation.md', '14-async-components.md', '17-demo-flows.md',
-        '15-live-verification.md', '18-ai-agents.md', '19-security-dependency-fixes.md', 'examples'
+        '15-live-verification.md', '16-agent-instructions.md', '18-ai-agents.md',
+        '19-security-dependency-fixes.md', 'examples'
     ],
     'review-connector': [
         '04-components.md', '05-component-config.md', '06-component-behavior.md',

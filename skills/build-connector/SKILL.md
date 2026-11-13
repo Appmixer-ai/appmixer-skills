@@ -1,6 +1,6 @@
 ---
 name: build-connector
-description: Build a new Appmixer connector end-to-end — gather requirements, research the API, scaffold and generate components, then drive testing and publishing via the appmixer CLI. Use when user wants to create/scaffold/build a new connector, add components to an existing one, continue an in-progress connector build, or discusses the connector development workflow. Triggers on "new connector", "create connector", "init connector", "build connector", "implement test()", "make trigger testable".
+description: Build a new Appmixer connector end-to-end — gather requirements, research the API, scaffold and generate components, then drive testing and publishing via the appmixer CLI. Use when user wants to create/scaffold/build a new connector, add components to an existing one, fix a bug in an existing component, continue an in-progress connector build, or discusses the connector development workflow. Triggers on "new connector", "create connector", "init connector", "build connector", "implement test()", "make trigger testable".
 license: MIT
 metadata:
   author: Appmixer
@@ -50,6 +50,7 @@ https://github.com/appmixer-ai/appmixer-connectors.
 | `10-trigger-test-method.md` | Trigger `test(context)` for Flow Test Mode — patterns per trigger group |
 | `11-e2e-flow-generation.md` | Generating E2E test flows into `artifacts/test-flows/` (used by Step 3b) |
 | `14-async-components.md` | Jobs that finish later — self-callback vs. continuation chain |
+| `16-agent-instructions.md` | Fixing a bug in an existing component — measured cause, smallest fix, one regression test; where to record what you learn |
 | `18-ai-agents.md` | AI Agent components — the `tools` port (plain tools, chains, `Tool Start`, MCP), memory, files, testing |
 | `19-security-dependency-fixes.md` | Fixing a vulnerable npm dependency — `npm ci` lockfiles, Node 18, `overrides`, one PR per issue |
 
@@ -367,16 +368,22 @@ Running verify (read-only, `--write` round-trips, `--record` samples,
 
 Run after Step 3a is complete (component list final).
 
-1. **Lint + workspace validator** — catch errors early. This step is **optional
-   and workspace-provided**: run it only when the workspace ships the tooling
-   (an eslint config, a `scripts/validate.js` — the appmixer-connectors repo
-   has both); a bare customer workspace has neither and that is fine — skip to
-   publishing.
+1. **Validator + lint** — catch errors early. The connector validators ship
+   with the appmixer CLI, so the validator runs in **every** workspace:
    ```bash
-   # from the workspace root, only if the workspace provides these
+   # from the workspace root
+   appmixer connector validate <connector>
+   ```
+   A workspace may wrap that command to add rules of its own — the
+   appmixer-connectors repo does (`node scripts/validate.js --connector
+   <connector>`, same flags otherwise). Use the wrapper when there is one.
+
+   Lint is **optional and workspace-provided**: run it only when the workspace
+   ships an eslint config (appmixer-connectors does); a bare customer workspace
+   has none and that is fine.
+   ```bash
    npm install   # only needed once
    ./node_modules/.bin/eslint src/<vendor>/<connector>/ --ext .js
-   node scripts/validate.js --connector <connector>
    ```
    Fix every validator failure before proceeding (warnings: use judgement). Common
    lint issues: trailing spaces, `max-len` (120 char limit), extra blank lines.
@@ -417,20 +424,48 @@ When a connector already exists and you only need to add one or more new compone
 
 ---
 
+## Fixing a Bug in an Existing Component
+
+A bug fix is not a rebuild: none of Steps 1–3 apply as written. Read
+`references/16-agent-instructions.md` first and follow its three rules:
+
+1. **Measure the cause before you write it down.** Reproduce the bug against
+   the live API (`appmixer test component`, following `test-connector`) or read
+   it out of the flow logs. The cause in your report and in the changelog is an
+   observation, not a guess.
+2. **Keep the fix inside the existing structure and as small as the bug
+   needs.** No refactoring, no new capability, no handling of states you have
+   not seen. Report further improvements separately and let the user decide.
+3. **One regression test that fails on the old code**, plus a test of the
+   behaviour that must stay — in `artifacts/test/` (`09-testing.md`, "Unit
+   Tests"). Not a suite.
+
+Around the fix: run the **Connector debt check** (below) before you start,
+re-test the fixed component, then bump `bundle.json` (patch) and publish per
+the Publish & Version Control Rules.
+
+---
+
 ## Connector debt check
 
-Only when the workspace ships `scripts/validate.js` (the appmixer-connectors
-repo does), and whenever you change a connector that existed before: adding
-components, fixing a bug, continuing a build.
+Whenever you change a connector that existed before: adding components, fixing
+a bug, continuing a build.
 
-`validate.js --changed` reports only *new* failures in the files you changed,
-so a change can pass it while the rest of the connector is out of standard. Validators are there to make connectors
-better, not only to stop regressions, so look at the whole connector:
+`connector validate --changed` reports only *new* failures in the files you
+changed, so a change can pass it while the rest of the connector is out of
+standard. Validators are there to make connectors better, not only to stop
+regressions, so look at the whole connector:
 
 ```bash
-node scripts/validate.js --connector <connector>   # whole connector, strict, prints every failure
-node scripts/validate.js --changed                 # your change only, must be clean
+appmixer connector validate <connector>   # whole connector, strict, prints every failure
+appmixer connector validate --changed     # your change only, must be clean
 ```
+
+(With a workspace wrapper, the same two runs are `node scripts/validate.js
+--connector <connector>` and `node scripts/validate.js --changed`.) `--changed`
+compares with a git base ref, `dev` by default: pass `--base <ref>` when the
+workspace's main line has another name, and skip the `--changed` run when the
+workspace is not a git repository.
 
 Read the full output (no `tail`, no `grep` for your own files). Sort each
 failure into one of two groups:

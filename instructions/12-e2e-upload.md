@@ -88,29 +88,34 @@ appmixer login <e2e-user@email>     # prompts for the password
 # non-interactive alternative: printf '%s\n' "$PASSWORD" | appmixer login <e2e-user@email>
 ```
 
-**Run the workspace validators for the WHOLE connector first** (when the
-workspace ships them — the appmixer-connectors repo does; skip otherwise) —
-checks of changed files never look at the rest, so long-standing bugs (e.g. a dynamic
-outPort source missing a required input → empty variable pickers / invalid
-chips in the designer) survive for months until someone runs the full check:
+**Run the validators for the WHOLE connector first** — checks of changed files
+never look at the rest, so long-standing bugs (e.g. a dynamic outPort source
+missing a required input → empty variable pickers / invalid chips in the
+designer) survive for months until someone runs the full check:
 
 ```bash
-node scripts/validate.js --connector <connector>   # from the workspace root
-# triage the failures for the components you are about to test; legacy findings
-# on untouched components are threshold-gated and may be left alone
+appmixer connector validate <connector>   # from the workspace root
+# a workspace wrapper, when there is one, adds its own rules:
+#   node scripts/validate.js --connector <connector>   (appmixer-connectors)
 ```
 
-**⚠️ Use the current validators.** The validator set lives in the workspace, so
-an outdated copy never runs the rules added since and reports a clean
-connector. Real case: a copy predating `component-icon-svg` and
-`tick-requires-tick-flag` validated clean while 14 icon failures were waiting.
-Update the workspace's validators before trusting a clean run.
+Fix the failures in the components you are about to test. Failures in
+components you did not touch are pre-existing debt: do not fix them on your own
+initiative and do not drop them silently — tell the user which ones were
+already there and let them decide (the "Connector debt check" in
+`build-connector`).
 
-**"Legacy findings may be left alone" applies to the whole-workspace run, not
-to the files you change.** A check of changed files (`validate.js --changed`)
-is strict, with no thresholds, so a one-line fix in a connector that carries
-pre-existing debt fails on that debt rather than on your change. Either clear
-it, or tell the user which failures were already there.
+**⚠️ Use the current validators.** They ship with the appmixer CLI, so an
+outdated CLI never runs the rules added since and reports a clean connector.
+Real case: a validator set predating `component-icon-svg` and
+`tick-requires-tick-flag` validated clean while 14 icon failures were waiting.
+Update the CLI (`npm i -g appmixer@latest`) before trusting a clean run.
+
+**A whole-workspace run is threshold-gated; a scoped run is strict.** Run with
+no connector argument, validators that have an entry in the workspace's
+thresholds file fail only above their cap. `connector validate <connector>` and
+`--changed` ignore the thresholds, so a connector that carries pre-existing
+debt shows all of it.
 
 Pack and publish (absolute zip path — `pack` writes the zip into the CWD and stale
 zips from earlier sessions may exist elsewhere in the repo; a relative `publish`
