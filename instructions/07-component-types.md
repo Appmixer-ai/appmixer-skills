@@ -702,6 +702,17 @@ When using `source` to dynamically populate field options or output port schemas
 }
 ```
 
+**`ignoreAuth=true` on a source URL — only for a source that needs no account**
+
+With `?ignoreAuth=true` the engine calls the source component **without** the
+account. That is right only for a source that never touches it, such as one that
+returns static options. A source that reads `context.auth` (a list or describe
+endpoint, a per-tenant host) then builds its request from `undefined`, fails
+with 500 `Invalid URL`, and the designer shows red "Invalid URL" chips with every
+output variable invalid. The designer sends the caller's bound account by
+itself, so a source that needs auth carries no `ignoreAuth`. Do not add it by
+default.
+
 **Using `variableFetch` / `isSource` for Dynamic Source Calls**
 
 When a component is used as a dynamic data source (via `source` URL in inspector), four rules apply: **inspector field is `text`**, **dependencies are optional**, **error suppression**, and **response caching**.

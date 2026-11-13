@@ -77,10 +77,12 @@ vendor; the first segment names the vendor dir under `src/`).
    The smell is often spread across **several** components rather than visible in
    one file, so check the connector's component list and its test flows, not just
    the file in front of you.
-7. **Run the workspace validator on the whole connector**, when the workspace
-   ships `scripts/validate.js` (appmixer-connectors does):
-   `node scripts/validate.js --connector <connector>`. It only reads files, so
-   it fits a read-only review. Read the full output. Failures outside the
+7. **Run the validator on the whole connector**:
+   `appmixer connector validate <connector>` from the workspace root. The
+   validators ship with the appmixer CLI, so this works in every workspace;
+   when the workspace wraps the command to add its own rules (appmixer-connectors:
+   `node scripts/validate.js --connector <connector>`), run the wrapper. It
+   only reads files, so it fits a read-only review. Read the full output. Failures outside the
    component under review are connector debt: list them in the report's
    **Connector debt** section so the user can decide whether to fix them. Do
    not drop them because they are "not this component". Flag blind spots first:
@@ -114,8 +116,11 @@ vendor; the first segment names the vendor dir under `src/`).
 7. **outPorts** — static components have a typed schema with **`type` + `example`
    on every leaf property** (and `title` for the label); List/Find have an
    `outputType` input and a dynamic `source`; correct JSON Schema types; no
-   invented fields. Dynamic `source` URLs carry `ignoreAuth=true` and supply all
-   of the target's required inputs (`"dummy"` for ones that don't shape the schema).
+   invented fields. Dynamic `source` URLs supply all of the target's required
+   inputs (`"dummy"` for ones that don't shape the schema). `ignoreAuth=true`
+   belongs only on a source that never touches the account; on a source that
+   reads `context.auth` it is an `error` ("`ignoreAuth=true` on a source URL"
+   in `07-component-types.md`).
 8. **Dynamic output options quality (`getOutputPortOptions`)** — the generated
    options MUST derive from a single shared schema const where every leaf has
    `type` + `title` (human label, e.g. "Event ID", not the raw field name) +

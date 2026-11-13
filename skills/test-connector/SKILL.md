@@ -196,8 +196,13 @@ guess IDs or use placeholders like `"1"`, `"test-id"`.
 
 For each input in the component's `component.json`:
 
-- **Check auth context first** — read `appmixer.json` `authFields`; they often hold
-  real values (`locationId`, `accountId`, …).
+- **Auth context first** — a value the connector keeps in its auth fields
+  (`locationId`, `accountId`, a subdomain) reaches the component through
+  `context.auth`: the CLI injects the stored auth, so it needs no input from
+  you. Do not read it out of `appmixer.json` — the same entry holds the API key
+  or token, and Step 0 allows key names only. When a component *input* needs
+  such a value, get it the way a user would: from the connector's own
+  List/Find/Get component, or `MakeApiCall`.
 - **Reuse earlier test outputs** — if a prior component (e.g. `CreateDeal`) was
   tested, its output (in `test-plan.json`) may contain the IDs you need.
 - **Entity-reference inputs** (names ending in `_id` or referencing another entity —
@@ -251,7 +256,8 @@ Record the result (status, reason) for the component in `test-plan.json`.
 
 ## Critical rules
 
-- Read auth context FIRST; never guess or use placeholder IDs.
+- Never guess or use placeholder IDs, and never read a value out of
+  `appmixer.json` to get one (Step 0: key names only).
 - Resolve ALL entity-reference inputs via Find/List/Get/Create before testing;
   prefer Find over List.
 - Never hardcode tenant-specific IDs from previous outputs — re-resolve dynamically.
