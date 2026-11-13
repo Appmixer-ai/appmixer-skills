@@ -11,8 +11,9 @@ you run a deterministic validator and fix anything it flags, looping until clean
 
 ## How it works
 
-1. **Pick the components** to cover (one trigger or action per flow; default: all
-   testable components of the connector).
+1. **Pick the components** to cover (one scenario per flow — the CRUD chain of one
+   entity, a List/Find pair, one trigger with its provoke; default: all testable
+   components of the connector).
 2. **Read the canonical template**
    [`examples/e2e-test-flow.json`](examples/e2e-test-flow.json)
    (shipped next to this document) — copy its structure (OnStart →

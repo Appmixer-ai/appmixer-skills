@@ -305,8 +305,8 @@ Output port fields should include `example` values so users see realistic sample
                     "type": "object",
                     "title": "Assignee",
                     "properties": {
-                        "id": { "type": "string", "example": "u-42" },
-                        "name": { "type": "string", "example": "Jane Doe" }
+                        "id": { "type": "string", "title": "Assignee.ID", "example": "u-42" },
+                        "name": { "type": "string", "title": "Assignee.Name", "example": "Jane Doe" }
                     }
                 }
             }
@@ -330,6 +330,6 @@ Output port fields should include `example` values so users see realistic sample
 ]
 ```
 
-**Background:** Until recently, `schema.example` on JSON Schema output ports was not rendered in the variable picker — only `options[k].schema.example` worked. That bug was fixed (see Appmixer-ai/appmixer-core#3734), so JSON Schema with per-property `example` is now the recommended approach.
+**Background:** Until recently, `schema.example` on JSON Schema output ports was not rendered in the variable picker — only `options[k].schema.example` worked. That bug was fixed, so JSON Schema with per-property `example` is now the recommended approach.
 
 ---

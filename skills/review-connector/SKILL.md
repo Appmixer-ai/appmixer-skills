@@ -22,8 +22,10 @@ The rules to check live in the `references/` directory next to this SKILL.md:
 
 | File | Content |
 |------|---------|
-| `04-components.md` | Component structure, component.json schema |
-| `05-component-config.md` | Config, transforms, modifiers/lambda patterns |
+| `01-connectors.md` | Connector files — service.json, bundle.json, quota.js, icons, `artifacts/api-sources.json` |
+| `02-authentication.md` | auth.js patterns, auth fields in the request host, OAuth scopes |
+| `04-components.md` | Component structure, general principles |
+| `05-component-config.md` | component.json schema, input type mapping, output port schemas, nested titles, examples |
 | `06-component-behavior.md` | Behavior file (.js) patterns |
 | `07-component-types.md` | Actions, triggers, dynamic components |
 | `08-best-practices.md` | Coding standards, naming, error handling |
@@ -47,7 +49,10 @@ reference implementation): https://github.com/appmixer-ai/appmixer-connectors
 
 A full component name, e.g. `appmixer.MSPowerBI.core.CreateDashboard`
 (`<vendor>.<connector>.<module>.<Component>` — `appmixer` is only the default
-vendor; the first segment names the vendor dir under `src/`).
+vendor; the first segment names the vendor dir under `src/`), or a whole
+connector (`<vendor>.<connector>`, or its directory). For a connector, run the
+process below for every component, do steps 3, 7 and 8 once, apply
+"Connector-level files", and report in a single table.
 
 ## Review process
 
@@ -138,16 +143,25 @@ vendor; the first segment names the vendor dir under `src/`).
    `warning` (rule `outport.item-schema-missing`); exported but with no `required`
    on a payload that is polymorphic or has optional fields = `warning`
    (`outport.required-missing`).
-8. **inspector.inputs** — labels, descriptions, types for all inputs;
+9. **inspector.inputs** — labels, descriptions, types for all inputs;
    entity-reference inputs have a `source` pointing to a List/Find component.
-9. **quota** — present for components that call external APIs.
+10. **quota** — present for components that call external APIs.
+11. **Input types** (per `08-best-practices.md`, "component.json Requirements",
+   and "Type Mapping for Input Ports" in `05-component-config.md`): a date or
+   date-time input rendered as inspector `text` = `warning`; a `toggle` without
+   `defaultValue` = `info` (it reads as `undefined`, not `false`); a select with
+   a single option = `info`; a **new** input name with a pipe `|` = `error`,
+   with snake_case = `warning` (existing inputs are never renamed).
 
 ### Behavior file (.js)
 1. **HTTP client** matches the connector's established pattern (consistency is paramount).
 2. **Auth** uses the same fields/headers as `auth.js`; no hardcoded credentials.
 3. **Error handling** — API errors handled and wrapped with context, not crashing.
 4. **Output** — sent on the correct port; no undefined/null output.
-5. **Pagination** implemented for List/Find when the API supports it.
+5. **List/Find page size** — one request with the API's maximum page size, that
+   maximum named in the description, no `limit`/`offset` inputs ("Find (Items)
+   Components" in `07-component-types.md`). A new `limit`/`offset` input =
+   `warning`.
 6. **outputType** supported for Find components (flat, first, count, …).
 7. **tenantId / accountId** passed correctly for multi-tenant connectors.
 8. **MakeApiCall pins the origin** — the component sends the account's
@@ -179,7 +193,7 @@ vendor; the first segment names the vendor dir under `src/`).
    - **`auth.js` unchecked = `error`** (credential exfiltration: `evil.example/x?`
      sends the API key, the access token, or in `requestAccessToken` the OAuth
      client secret of the platform's app to `evil.example`).
-   - **A component that reads the stored value unchecked = `advice`**, when
+   - **A component that reads the stored value unchecked = `info`**, when
      `auth.js` checks it. The stored value passed that check at login. An
      account stored before the check could only have been created by its owner,
      against a host that answered the login, so it holds that owner's own key or
@@ -202,6 +216,13 @@ vendor; the first segment names the vendor dir under `src/`).
    `Object.values` row, = `error`, rule `csv-cells-quoted`: a JSON-stringified
    array always holds commas and quotes, so every record with an array field
    splits into extra columns.
+14. **Required inputs asserted** — every input in `schema.required` is checked
+   in the behavior and a missing one throws `context.CancelError('<Name> is
+   required!')` (`08-best-practices.md`). Missing assert = `warning`.
+15. **`context.setTimeout` below one minute** — a delay under 60 000 ms, or a
+   total duration computed from one, = `warning`: production rounds it up to a
+   minute silently while `appmixer test component` does not ("Scheduling Work
+   Later" in `06-component-behavior.md`).
 
 ### Async components only (when review step 6 answered YES)
 
@@ -320,8 +341,30 @@ Check against `references/19-security-dependency-fixes.md`:
 - `package-lock.json` changed together with its `package.json` and in sync (`npm ci` passes) — **error** otherwise: the engine installs with `npm ci`.
 - The new versions run on Node 18 (`engines.node`, not ESM-only) — **error** otherwise.
 - No connector-level `axios` / `request` / `node-fetch`; HTTP goes through `context.httpRequest` — **error** for a newly added one.
-- `overrides` used only for transitive dependencies, with the reason in the commit or PR.
-- One `bundle.json` bump per changed connector with a changelog entry; workspace-root tooling is not changed together with connectors.
+- `overrides` used only for transitive dependencies, with the reason in the change description — **warning** otherwise.
+- One `bundle.json` bump per changed connector with a changelog entry; workspace-root tooling is not changed together with connectors — **warning** otherwise.
+
+### Connector-level files (a whole-connector review, or when one of them changed)
+
+Check against `references/01-connectors.md` and `references/02-authentication.md`:
+
+1. **service.json / bundle.json** — both carry the same `<vendor>.<connector>`
+   name, matching the directory; mismatch = `error`. An unreleased connector has
+   exactly one `bundle.json` version entry ("Single Version Rule") — extra
+   pre-created versions = `warning`.
+2. **Icons are SVG** — `service.json` and every `component.json` carry a
+   `data:image/svg+xml` URI; a PNG or JPEG data URI = `error` (it fails the
+   `component-icon-svg` validator).
+3. **`artifacts/api-sources.json`** — present, with `apiReference`; `changelog`
+   and `openApi` either a URL or an explicit `null`. Missing file on a new
+   connector = `warning`, rule `connector.api-sources-missing`. A read-only
+   review does not open the URLs.
+4. **A new OAuth scope on an existing connector** without a major `bundle.json`
+   bump and a `BREAKING:` changelog entry = `error`: every existing user has to
+   re-authenticate ("OAuth 2.0 Authentication" in `02-authentication.md`).
+5. **`requestProfileInfo` of an `apiKey` auth** returns the profile, or an object
+   with the obfuscated key when the API has no profile endpoint
+   ("auth.js Requirements" in `08-best-practices.md`) — `warning` otherwise.
 
 ### Cross-cutting
 - Naming consistency with sibling components.

@@ -16,12 +16,11 @@ module.exports = {
         const { message, priority, count } = context.messages.in.content;
 
         // Perform the action
-        const response = await context.httpRequest({
+        const { data } = await context.httpRequest({
             method: 'POST',
             url: 'https://api.service.com/messages',
             headers: {
-                'Authorization': `Bearer ${context.auth.accessToken}`,
-                'Content-Type': 'application/json'
+                'Authorization': `Bearer ${context.auth.accessToken}`
             },
             data: {
                 text: message,
@@ -31,7 +30,7 @@ module.exports = {
         });
 
         // Return the result
-        return context.sendJson(response.data, 'out');
+        return context.sendJson(data, 'out');
     }
 };
 ```
