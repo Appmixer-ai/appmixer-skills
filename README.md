@@ -308,12 +308,11 @@ The branch is recorded in `skills-lock.json` (`"ref": "dev"`), so a later
 Re-running `add` re-installs over the existing copies. Switching back to the
 released version is the same `add` without the `/tree/dev` suffix.
 
-**Pre-release CLI:** the E2E part of `test-connector` needs an `appmixer` CLI
-with the `e2e` commands (>= 2.6.0). Until that version is on npm, install the
-CLI from its repo branch (announced with each testing round):
+**CLI version:** the skills need an `appmixer` CLI with the `e2e`,
+`connector validate` and `connector verify` commands (>= 2.6.0, on npm):
 
 ```bash
-npm i -g git+ssh://git@github.com/Appmixer-ai/appmixer-cli.git#<branch>
+npm i -g appmixer@latest
 ```
 
 ## Configuration

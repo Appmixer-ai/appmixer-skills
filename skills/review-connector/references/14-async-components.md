@@ -4,7 +4,7 @@ Some provider operations do not finish inside one request: transcription,
 enrichment, rendering, video encoding, a human approval. The component must
 return control immediately **and still deliver the result into the same flow**.
 
-This file covers the two shapes that work and the four that do not.
+This file covers the two shapes that work and the ones that do not.
 
 ## Decision rule
 

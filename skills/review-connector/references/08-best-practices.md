@@ -62,7 +62,7 @@ Behavior JS file MUST follow these rules:
 `component.json` file MUST follow these rules:
 - Delete components must have `outPorts: ['out']`
 - Update or delete components must have at least one required input, which is the ID of the entity being updated or deleted
-- Find and List components must NOT include `limit` or `offset` inputs — pagination is handled internally with the maximum page size (see "Find (Items) Components" in `07-component-types.md`)
+- Find and List components must NOT include `limit` or `offset` inputs — the component makes one request with the API's maximum page size (see "Find (Items) Components" in `07-component-types.md`)
 - **Multiselect inputs**: an input whose inspector type is `multiselect` has schema type `["array", "string"]` and its behavior normalizes the value with the shared `lib.normalizeMultiselectInput()` — see "Multiselect Inputs" below. Do not normalize `text` inputs that happen to accept comma-separated values; they are passed to the API as typed.
 - **Unnecessary input fields**: do not create select fields with only one option. If a value is constant, hardcode it in the behavior file instead of making it a user input.
 - **Date/time inputs**: schema `"type": "string", "format": "date-time"` with inspector type `"date-time"` (date-only: `"format": "date"` + `config: { "enableTime": false }`). Do NOT use inspector type `"text"` for date/datetime fields. The full schema→inspector mapping is in "Type Mapping for Input Ports" (`05-component-config.md`).
@@ -97,7 +97,7 @@ Behavior JS file MUST follow these rules:
 ## Performance
 
 - **Caching**: Cache frequently accessed data (e.g., user lists, configuration)
-- **Pagination**: Handle large datasets with proper pagination
+- **Pagination**: triggers and internal helpers page through large datasets; Find/List components do not (one request, maximum page size)
 - **Locking**: Use locking mechanisms for shared resources
 - **Batching**: Batch API calls when possible to reduce requests
 

@@ -22,7 +22,7 @@ A subdomain, instance, region or store field (`https://${context.domain}.service
 puts user input into the host of a request that carries a credential: the API
 key, the access token, and in `requestAccessToken` the **client secret of the
 OAuth app**. Typed as `evil.example/x?`, the field sends that credential to
-`evil.example`. Applies to API-key and OAuth connectors alike (appmixer-core#4752,
+`evil.example`. Applies to API-key and OAuth connectors alike (real case:
 Zendesk).
 
 - **Allowlist the value before building any URL.** A subdomain is

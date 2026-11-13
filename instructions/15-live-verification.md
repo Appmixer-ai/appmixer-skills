@@ -127,5 +127,5 @@ is the contract flows actually see.
 - Roundtrip needs the entity to be retrievable (a Get/Find/List sibling) and
   the create to echo the stored entity; operations merely named `Create*`
   (transcriptions, embeddings) are not roundtrip material.
-- Only request/response components run under verify — triggers and webhooks
-  belong to E2E flows, not here.
+- A trigger is sampled only through its read-only `test()` method. `start()`,
+  `tick()` and webhook delivery are not run here — they belong to E2E flows.

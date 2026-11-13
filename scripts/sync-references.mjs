@@ -27,7 +27,7 @@ const MANIFEST = {
         '19-security-dependency-fixes.md', 'examples'
     ],
     'review-connector': [
-        '04-components.md', '05-component-config.md', '06-component-behavior.md',
+        '01-connectors.md', '02-authentication.md', '04-components.md', '05-component-config.md', '06-component-behavior.md',
         '07-component-types.md', '08-best-practices.md', '10-trigger-test-method.md',
         '14-async-components.md', '18-ai-agents.md', '19-security-dependency-fixes.md', 'examples'
     ],
