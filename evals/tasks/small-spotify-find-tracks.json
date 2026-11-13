@@ -1,0 +1,12 @@
+{
+    "id": "small-spotify-find-tracks",
+    "size": "small",
+    "connector": "spotify",
+    "remove": [
+        "src/appmixer/spotify/core/FindTracks"
+    ],
+    "expect": [
+        "appmixer.spotify.core.FindTracks"
+    ],
+    "prompt": "Add a new component to the existing `spotify` connector (`src/appmixer/spotify`):\n\n- **FindTracks** (Find: outputType + notFound), component id `appmixer.spotify.core.FindTracks` — Search the Spotify catalogue for tracks and score how well each result matches the requested artist and title. Built for hand-typed tracklists: typos, \"ft\"/\"+\" collaborators and \"/four tet rmx\" version suffixes still match. Results below the minimum score leave through the Not Found port."
+}

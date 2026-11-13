@@ -1,0 +1,12 @@
+{
+    "id": "small-wordpress-new-post",
+    "size": "small",
+    "connector": "wordpress",
+    "remove": [
+        "src/appmixer/wordpress/posts/NewPost"
+    ],
+    "expect": [
+        "appmixer.wordpress.posts.NewPost"
+    ],
+    "prompt": "Add a new component to the existing `wordpress` connector (`src/appmixer/wordpress`):\n\n- **NewPost** (polling trigger), component id `appmixer.wordpress.posts.NewPost` — Trigger that fires every time a new post is added."
+}
