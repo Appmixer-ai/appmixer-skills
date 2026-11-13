@@ -160,8 +160,9 @@ process below for every component, do steps 3, 7 and 8 once, apply
 4. **Output** — sent on the correct port; no undefined/null output.
 5. **List/Find page size** — one request with the API's maximum page size, that
    maximum named in the description, no `limit`/`offset` inputs ("Find (Items)
-   Components" in `07-component-types.md`). A new `limit`/`offset` input =
-   `warning`.
+   Components" in `07-component-types.md`). A `limit`/`offset` input on a new
+   component = `error` (it fails the `find-list-no-pagination` validator); on
+   a released component it is connector debt, not a rename to make.
 6. **outputType** supported for Find components (flat, first, count, …).
 7. **tenantId / accountId** passed correctly for multi-tenant connectors.
 8. **MakeApiCall pins the origin** — the component sends the account's
