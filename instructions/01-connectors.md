@@ -13,6 +13,8 @@ connector_name/
 ├── bundle.json       # Bundle metadata and changelog
 ├── package.json      # Dependencies (optional)
 ├── quota.js          # Rate limiting rules (optional)
+├── artifacts/
+│   └── api-sources.json   # Where the vendor documents the API (required for a new connector)
 └── core/             # Default module for components
     ├── ComponentName/
     │   ├── ComponentName.js    # Component behavior/logic
@@ -179,3 +181,47 @@ module.exports = {
 - **resource**: An identifier of the resource to which the rule applies. This can be referenced in component manifests in the quota.resources section.
 
 ---
+### artifacts/api-sources.json
+
+Where the vendor documents the API the connector wraps. A scheduled check reads this
+file to notice API changes (a deprecated endpoint, a new version, a changed auth
+flow), so the links must be the vendor's own pages and must live with the connector,
+not only in the issue that asked for it.
+
+```json
+{
+    "apiReference": "https://developers.example.com/api/reference",
+    "authDocs": "https://developers.example.com/api/authentication",
+    "changelog": "https://developers.example.com/changelog",
+    "openApi": "https://developers.example.com/openapi.json",
+    "baseUrl": "https://api.example.com/v2",
+    "apiVersion": "v2",
+    "checkedAt": "2026-11-11"
+}
+```
+
+- `apiReference` (required): the API reference you built the components from.
+- `authDocs`: the page that describes the authentication you implemented in `auth.js`.
+- `changelog`: the vendor's API changelog, release notes or deprecation page (an RSS or
+  Atom feed if there is one). `null` when the vendor publishes none.
+- `openApi`: a URL of a machine-readable spec (OpenAPI/Swagger JSON or YAML, a GraphQL
+  schema, a Postman collection). `null` when there is none. This is the best source
+  for a change check, so look for it.
+- `baseUrl`, `apiVersion`: what the components call. `apiVersion` is `null` for an
+  unversioned API.
+- `checkedAt`: the day you last read these pages (`YYYY-MM-DD`).
+
+Rules:
+
+- Only URLs you opened while building. Never a guessed URL, never a competitor's or a
+  third party's page about the API.
+- The file sits in the connector's `artifacts/` folder, next to `test-flows/`:
+  `src/<vendor>/<connector>/artifacts/api-sources.json`. A vendor folder whose modules
+  wrap different APIs (`google/gmail`, `google/drive`) keeps one file at the vendor
+  level with the shared fields at the top and a `modules` map for what differs:
+  `"modules": { "gmail": { "apiReference": "...", "openApi": "..." } }`.
+- When the issue you build from carries these links (the Connector research flow
+  writes an `api-sources` block into its issues), verify them and copy them.
+- When you add components to a connector that has no `api-sources.json`, create it.
+  When it exists and you read the docs again, update `checkedAt` and whatever changed.
+
