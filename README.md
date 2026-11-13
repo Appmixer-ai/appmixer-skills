@@ -205,6 +205,7 @@ Requires the [`appmixer` CLI](https://www.npmjs.com/package/appmixer) (`npm i -g
   ```
   The connector design conventions ship inside the skills (each skill's `references/` directory) — the workspace does not need to provide them. When the workspace is a git repo, skills commit generated code to feature branches and ask before the first push of a session.
 - The [`appmixer` CLI](https://www.npmjs.com/package/appmixer) (`npm i -g appmixer`; version 2.6.0+ for E2E flow testing) — used for component testing, publishing and E2E runs; configure with `appmixer url` + `appmixer login`
+- Version requirements per feature — CLI, instance and the tested combination — are in [docs/compatibility.md](docs/compatibility.md)
 
 ## Vendors
 
@@ -218,6 +219,8 @@ The skills determine the vendor without extra configuration:
 4. **When scaffolding a new connector**, `build-connector` asks for the vendor if it can't be inferred (default suggestion: `appmixer`).
 
 ## Installation
+
+Per-agent differences — where skills land, how to invoke and update them, and what an agent needs to run the whole pipeline — are in [docs/agents.md](docs/agents.md).
 
 ### Claude Code Plugin ⭐ Recommended
 
