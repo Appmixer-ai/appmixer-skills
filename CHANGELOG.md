@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.2.0](https://github.com/Appmixer-ai/appmixer-skills/compare/v1.1.0...v1.2.0) (2026-11-16)
+
+
+### Features
+
+* **build-connector:** artifacts/api-sources.json — where the vendor documents the API ([#46](https://github.com/Appmixer-ai/appmixer-skills/issues/46)) ([8478768](https://github.com/Appmixer-ai/appmixer-skills/commit/8478768160904e57a19979ca1787dfcd591d2f39))
+* **instructions:** security dependency fixes (19) ([#44](https://github.com/Appmixer-ai/appmixer-skills/issues/44)) ([df3999e](https://github.com/Appmixer-ai/appmixer-skills/commit/df3999ee3a60f370140456933a6e5240bcb5c260)), closes [Appmixer-ai/appmixer-components#3011](https://github.com/Appmixer-ai/appmixer-components/issues/3011)
+
+
+### Bug Fixes
+
+* **examples:** toCsv quotes cells per RFC 4180 and maps them by header column ([#43](https://github.com/Appmixer-ai/appmixer-skills/issues/43)) ([5f85d71](https://github.com/Appmixer-ai/appmixer-skills/commit/5f85d713e0c4353cfd525e3d0d60002577f5d861)), closes [Appmixer-ai/appmixer-components#2994](https://github.com/Appmixer-ai/appmixer-components/issues/2994)
+* validator runs from the CLI, credentials stay in the store, one MakeApiCall output shape ([#47](https://github.com/Appmixer-ai/appmixer-skills/issues/47)) ([bd0d1ab](https://github.com/Appmixer-ai/appmixer-skills/commit/bd0d1abbd270e1cf55597520841023f00b9a5698))
+* verify before E2E, one page for Find/List, review covers connector files ([#48](https://github.com/Appmixer-ai/appmixer-skills/issues/48)) ([a9211b5](https://github.com/Appmixer-ai/appmixer-skills/commit/a9211b5017abaca901524905657c1fb2d2550c1d))
+
 ## [1.1.0](https://github.com/Appmixer-ai/appmixer-skills/compare/v0.2.2...v1.1.0) (2026-10-19)
 
 
