@@ -33,8 +33,10 @@ There is no sub-agent to spawn.
 
 ## Prerequisites
 
-- **`appmixer` CLI** — installed and configured (`appmixer url` + login). This is
-  an external tool the skill drives; it is a prerequisite, not a bundled dependency.
+- **`appmixer` CLI** — installed, version **2.6.0 or newer** (`appmixer --version`;
+  the first with `test component --test`, `connector verify` and the `e2e`
+  commands), and configured (`appmixer url` + login). This is an external tool
+  the skill drives; it is a prerequisite, not a bundled dependency.
 - **Connector npm dependencies** — connectors may declare their own runtime deps
   (e.g. `request-promise` in `microsoft/`); a missing one makes
   `appmixer test component` fail with `Cannot find module`. Install them once per
@@ -73,6 +75,12 @@ appmixer test component src/<vendor>/<connector>/core/<Component> \
 - **Dynamic output schema** (List/Find with `outputType`): add
   `-p '{"generateOutputPortOptions": true}'` with the same inputs to get the
   schema options instead of live data.
+- **Triggers**: `appmixer test component <trigger dir> --test` (properties via
+  `-p '{...}'`) invokes the trigger's `test(context)` the way Flow Test Mode
+  does — read-only, and it must emit one real item. To exercise the production
+  path as well, run the real `tick()` loop: the same `-p` properties, a short
+  `-t` tick period, and a matching resource created mid-run (through one of the
+  connector's own components); watch for the emitted message.
 - Run **one test at a time** and wait for the result before the next.
 
 ## Step 0a: Create the test plan (if missing)
@@ -274,27 +282,18 @@ Record the result (status, reason) for the component in `test-plan.json`.
 - **STOP immediately** on `[ERROR]: Mongo DB not connected!` or
   `[ERROR]: Request failed with status code 403!`.
 
-## Known CLI limitations (version ≤ 2.3.4)
+## Known CLI limitations
 
-Check the installed version with `appmixer --version`. On 2.3.4 and older:
-
-- **`context.staticCache` / `context.lock` are not implemented** — any component
-  code path that touches them fails with `TypeError: Missing static cache` (thrown
-  when `.get()`/`.set()` is called, not on property access). This is a CLI
-  limitation, NOT a component bug: connectors MUST still implement the caching
-  patterns required by the design rules (dynamic sources, `getProjectApiToken`-style
-  lookups). Until the CLI ships staticCache support, cached code paths simply
-  cannot be exercised via `appmixer test component` — test the component's
-  non-cached path if it has one, otherwise record the component as
-  `not-cli-testable (staticCache)` in `test-plan.json` and verify it on a live
-  instance instead. Do NOT rewrite a component just to dodge this error.
-- **No `--test` flag on ≤ 2.3.4** — a trigger's `test(context)` method can be
-  invoked via `appmixer test component <dir> --test` from CLI **2.6.0**. On
-  older CLIs verify trigger behavior by running the real `tick()` loop (run the
-  component with `-p` properties and a short `-t` tick period, create a matching
-  resource mid-run via the service API, and watch for the emitted message);
-  `test()` itself is then verified by code review or Flow Test Mode on a live
-  instance.
+- **`context.staticCache` / `context.lock` in `appmixer test component`** — when a
+  code path that touches them fails with `TypeError: Missing static cache`
+  (thrown when `.get()`/`.set()` is called, not on property access), the CLI's
+  local runtime does not implement them. This is a CLI limitation, NOT a
+  component bug: connectors MUST still implement the caching patterns required
+  by the design rules (dynamic sources, `getProjectApiToken`-style lookups).
+  Test the component's non-cached path if it has one, otherwise record the
+  component as `not-cli-testable (staticCache)` in `test-plan.json` and verify
+  it on a live instance instead. Do NOT rewrite a component just to dodge this
+  error.
 
 ## Troubleshooting
 
@@ -303,7 +302,7 @@ Check the installed version with `appmixer --version`. On 2.3.4 and older:
 | **404 Not Found** | Resolve a real ID via a Find/List component (prefer Find). |
 | **400 / Invalid ID** | The ID is wrong or tenant-specific — re-resolve via Find/List. |
 | **Validation Error** | Check `component.json` input requirements; adjust test data. |
-| **Auth Failed (401/403)** | Verify the connector's auth is configured (Step 0). |
+| **Auth Failed (401/403)** | Stop, do not retry. Verify the connector's auth is configured (Step 0) and that the key or token has the scopes the endpoint needs. |
 | **Rate Limit** | Add delays between tests. |
 | **Output Schema Mismatch** | Actual output ≠ declared schema — fix the component logic or the schema. |
 | **Cannot read properties of undefined (reading 'execute')** | Read 2–3 sibling components and follow their established pattern. |

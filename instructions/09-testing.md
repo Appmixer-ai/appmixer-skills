@@ -211,7 +211,7 @@ The ProcessE2EResults component is REQUIRED and must be configured with:
                             }
                         },
                         "lambda": {
-                            "recipients": "jirka@client.io",
+                            "recipients": "test@example.com",
                             "testCase": "E2E Connector Name - feature",
                             "result": "{{{result-var}}}"
                         }
@@ -224,10 +224,10 @@ The ProcessE2EResults component is REQUIRED and must be configured with:
 ```
 
 **Key Fields**:
-- `successStoreId`: Store ID for successful test results (use standard value)
-- `failedStoreId`: Store ID for failed test results (use standard value)
-- `recipients`: Email address for test result notifications
-- `testCase`: Human-readable test name (e.g., "Google Docs E2E")
+- `successStoreId`: Store ID for successful test results (any placeholder ID — `appmixer e2e import` creates the stores and injects the real IDs)
+- `failedStoreId`: Store ID for failed test results (same)
+- `recipients`: Email address for test result notifications (not injected at import — set it yourself)
+- `testCase`: the flow name (e.g., "E2E Google Docs - images")
 - `result`: Variable reference to AfterAll component output
 
 #### Modifier Functions (Prefer Over CodeBlock)
@@ -312,7 +312,7 @@ Tests must pass on repeated runs without input changes:
 - **Unique inputs**: Use `g_timestamp` or `g_uuid4` modifier functions for unique identifiers (e.g. `e2e-{{{ts-var}}}@test.com`). Prefer modifiers over CodeBlock.
 - **Avoid hardcoded dates**: Use `g_now` + `g_addTimeSpan` to compute future dates dynamically. Hardcoded dates expire and tests break.
 - **Create + Delete cleanup**: If the API rejects duplicates (e.g. contacts by email), the test MUST delete created resources at the end — after AfterAll (see Required Components).
-- **Search/Find race conditions**: Many APIs have eventual consistency. A record created 1 second ago may not appear in search results. Best approach: search for a pre-existing test record instead of a just-created one. Alternatives: insert `appmixer.utils.timers.Wait` with `interval: "1m"` (minimum unit is minutes — a CodeBlock cannot delay, see its gotchas above), or put a Get-by-ID between Create and Find.
+- **Search/Find race conditions**: Many APIs have eventual consistency. A record created 1 second ago may not appear in search results. Verify a just-created record with Get-by-ID or a consistent list filter rather than a search (`11-e2e-flow-generation.md` rule 16). A pre-existing record avoids the race too, but ties the flow to one tenant (see "Tenant-Bound Values in Flows"). Otherwise insert `appmixer.utils.timers.Wait` with `interval: "1m"` (minimum unit is minutes — a CodeBlock cannot delay, see its gotchas above), or put a Get-by-ID between Create and Find.
 - **Cross-component variable references**: When referencing variables from indirect upstream components (2+ hops), prefer direct upstream references. E.g. use `$.find-items.out.id` instead of `$.create-item.out.id` when the update is triggered by find.
 
 #### Provider Latency Is a Design Input
@@ -357,7 +357,8 @@ pass.
 If no deterministic provocation exists, do not ship a flow that cannot pass.
 Remove it, cover the component with review plus its `test()` method, and write
 down why in `artifacts/test-flows/README.md` so the next person does not re-add
-it.
+it. (An event a human can fire by hand is a different case: that flow stays, as a
+manual harness with a sticky note — `11-e2e-flow-generation.md` rule 18.)
 
 #### Tenant-Bound Values in Flows
 
@@ -590,7 +591,7 @@ For `equal` assertions comparing dynamic values (from SetVariable or component o
 - Place SetVariable component early in flow (immediately after OnStart)
 - Define ALL values that will be used in Assert comparisons
 - Use descriptive variable names (e.g., `taskContent`, `updatedTaskContent`)
-- For unique test data, use `{{{g_timestamp()}}}` or `{{{g_now()}}}` functions
+- For unique test data, use the `g_timestamp` / `g_uuid4` modifier functions on the input that consumes the value (see "Modifier Functions" above)
 
 **Example SetVariable Configuration:**
 ```json
@@ -716,7 +717,6 @@ component ids are specified at the top of this document and not repeated here.)
 1. **Test Realistic Workflows**
     - Create → Modify → Read → Delete sequence
     - Test main user journeys
-    - Include error cases where appropriate
 
 2. **Multiple Assert Components - Separate Branches**
     - **CRITICAL**: If a flow has more than one Assert component, they MUST be in separate branches

@@ -79,7 +79,8 @@ async function requestTickets(context, urlOrParams, normalizedEmbed) {
     const { auth } = context;
     const url = typeof urlOrParams === 'string'
         ? urlOrParams
-        : `https://${auth.domain}.example.com/api/v2/tickets?${urlOrParams.toString()}`;
+        // serviceOrigin() allowlists the subdomain - see 02-authentication.md
+        : `${lib.serviceOrigin(auth.domain)}/api/v2/tickets?${urlOrParams.toString()}`;
     const credentials = Buffer.from(`${auth.apiKey}:X`).toString('base64');
     const res = await context.httpRequest({
         url, headers: { Authorization: `Basic ${credentials}` }
@@ -125,8 +126,9 @@ trigger's `test()`).
    updates). In both, `throw new context.CancelError('<why + how to trigger it for real>')`.
    **Never hand-craft synthetic data** — fake IDs, phone numbers, `wamid.TEST…`, canned message
    bodies. It makes the test pass while testing nothing and emits data that matches no real run,
-   which is worse than no `test()` at all. (Only exception: Group E timer triggers, whose payload
-   is legitimately *computed* — real dates — not invented.)
+   which is worse than no `test()` at all. (Only exceptions: Group E timer triggers, whose payload
+   is legitimately *computed* — real dates — and Group F form triggers, whose payload is
+   derived from the fields the user configured.)
 6. **No quota abuse.** Reuse the same lib helpers `tick()` uses so the call goes through the
    same quota manager and rate limiter.
 
@@ -207,7 +209,8 @@ the sibling triggers `UpdatedTicket` (cursor on `updated_at`), `DeletedTicket`
 ```javascript
 // lib.js — single source of truth for request shape, mapping and pagination
 async function apiCall(context, { method = 'GET', url, params, data, headers = {} } = {}) {
-    const baseUrl = `https://${context.auth.domain}.freshdesk.com/api/v2`;
+    // freshdeskOrigin() allowlists the subdomain - see 02-authentication.md
+    const baseUrl = `${freshdeskOrigin(context.auth.domain)}/api/v2`;
     const credentials = Buffer.from(`${context.auth.apiKey}:X`).toString('base64');
     return context.httpRequest({
         method,
@@ -238,7 +241,7 @@ async test(context) {
 
     const { records } = await requestTickets(context, params, normalizedEmbed);
     if (!records.length) {
-        throw new Error('No recent tickets to use as test data.');
+        throw new context.CancelError('No recent tickets to use as test data.');
     }
     return context.sendJson(records[0], 'ticket');
 }
@@ -274,7 +277,7 @@ async fetchLatestExample(context) {
 // InviteeCreated.js
 async test(context) {
     const invitee = await commons.fetchLatestExample(context);
-    if (!invitee) throw new Error('No recent invitees to use as test data.');
+    if (!invitee) throw new context.CancelError('No recent invitees to use as test data.');
     return context.sendJson(commons.toWebhookShape(context, invitee, 'invitee.created'), 'out');
 }
 ```
@@ -295,9 +298,9 @@ async test(context) {
     const web = new WebClient(context.auth.accessToken);
     const { messages } = await web.conversations.history({ channel: channelId, limit: 1 });
     const sample = (messages || [])[0];
-    if (!sample) throw new Error('No recent messages in the channel to use as test data.');
+    if (!sample) throw new context.CancelError('No recent messages in the channel to use as test data.');
     if (ignoreBotMessages && sample.subtype === 'bot_message') {
-        throw new Error('The most recent message is a bot message.');
+        throw new context.CancelError('The most recent message is a bot message.');
     }
     sample.text = new Entities().decode(sample.text);
     return context.sendJson(sample, 'message');
@@ -322,7 +325,7 @@ async test(context) {
     // Same computation start()/receive() use — no timeout set, no state touched.
     const nextDate = this.getNextRun(context, { now, previousDate: null, firstTime: true });
     if (!nextDate) {
-        throw new Error('No next run within the configured schedule (end date reached).');
+        throw new context.CancelError('No next run within the configured schedule (end date reached).');
     }
 
     return context.sendJson({
@@ -346,7 +349,7 @@ See `src/appmixer/utils/forms/FormTrigger/FormTrigger.js`.
 test(context) {
     const fields = (context.properties.fields && context.properties.fields.ADD) || [];
     if (!fields.length) {
-        throw new Error('No form fields defined.');
+        throw new context.CancelError('No form fields defined.');
     }
 
     const entry = {};

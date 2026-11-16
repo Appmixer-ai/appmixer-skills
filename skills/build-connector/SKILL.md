@@ -24,6 +24,8 @@ testing the `test-connector` skill. No sub-agents, no install scripts.
   `APPMIXER_SKILL_CONNECTORS_DIR` at the workspace root (optional override).
   If no workspace exists yet, ask the user where to create one (`mkdir -p
   <dir>/src/<vendor>`) and continue from there.
+- **`appmixer` CLI 2.6.0 or newer** (`appmixer --version`) — the validator, the
+  component tests, `connector verify` and the `e2e` commands all come from it.
 - **Design conventions** — bundled in this skill's own `references/` directory;
   no extra setup needed to read them.
 
@@ -40,19 +42,21 @@ https://github.com/appmixer-ai/appmixer-connectors.
 | `00-overview.md` | Appmixer architecture overview |
 | `01-connectors.md` | Connector structure, service.json, bundle.json |
 | `02-authentication.md` | Auth patterns (API key, OAuth, etc.) |
-| `03-plugins.md` | Plugins — services, custom fields, extending the platform |
+| `03-plugins.md` | Plugin files (`plugin.js`, `routes.js`, `jobs.js`) — where shared helpers must live, `context.log` signature |
 | `04-components.md` | Component structure and component.json |
-| `05-component-config.md` | Transforms, modifiers, lambda patterns |
+| `05-component-config.md` | component.json schema, attribute order, input type mapping, output port schemas, nested titles, examples |
 | `06-component-behavior.md` | Behavior file patterns |
 | `07-component-types.md` | Actions, triggers, dynamic components |
 | `08-best-practices.md` | Coding standards, naming, error handling |
 | `09-testing.md` | E2E flow design, modifier functions, deterministic patterns |
 | `10-trigger-test-method.md` | Trigger `test(context)` for Flow Test Mode — patterns per trigger group |
-| `11-e2e-flow-generation.md` | Generating E2E test flows into `artifacts/test-flows/` (used by Step 3b) |
+| `11-e2e-flow-generation.md` | Generating E2E test flows into `artifacts/test-flows/` (used by Step 3c) |
 | `14-async-components.md` | Jobs that finish later — self-callback vs. continuation chain |
+| `15-live-verification.md` | `appmixer connector verify` — authoring `artifacts/verify.json`, what the findings mean (used by Step 3b) |
 | `16-agent-instructions.md` | Fixing a bug in an existing component — measured cause, smallest fix, one regression test; where to record what you learn |
+| `17-demo-flows.md` | Optional demo flows in `artifacts/demo-flows/` — conventions, the schema-variable rule |
 | `18-ai-agents.md` | AI Agent components — the `tools` port (plain tools, chains, `Tool Start`, MCP), memory, files, testing |
-| `19-security-dependency-fixes.md` | Fixing a vulnerable npm dependency — `npm ci` lockfiles, Node 18, `overrides`, one PR per issue |
+| `19-security-dependency-fixes.md` | Fixing a vulnerable npm dependency — `npm ci` lockfiles, Node 18, `overrides`, one bump per connector |
 
 Consult these when generating code, debugging failures, or reviewing output.
 
@@ -76,7 +80,8 @@ user to poll in the flow, and never expose the callback URL as a component input
 agents share one contract: `model`, `instructions`, `prompt`, `threadId`, `fileId`,
 `storeId` on the `in` port, ports `out` and `tools` only — every tool (component,
 chain, `Tool Start`, MCP server) goes on `tools` — and the shared `tool.js` /
-`toolChain.js` / `mcp.js` copied unchanged from `ai/mistral`. Do not add a separate
+`toolChain.js` / `mcp.js` copied unchanged from `ai/mistral` (in the
+appmixer-connectors repo). Do not add a separate
 `tool` or `mcp` port.
 
 ## Pipeline Overview
@@ -86,21 +91,21 @@ Step 1: BUILD      → Requirements → research the API → scaffold + componen
 Step 2: REVIEW     → Audit against standards, fix findings              [review-connector]
 Step 3a: TEST CLI  → gate: local login (make the case, prepare the command, ask)
                      → component test loop → finalize                   [test-connector]
-Step 3b: TEST E2E  → generate flows (this skill) → upload + run          [test-connector]
-Step 3c: VERIFY    → author artifacts/verify.json (this skill) → run     [test-connector]
+Step 3b: VERIFY    → author artifacts/verify.json (this skill) → run     [test-connector]
+Step 3c: TEST E2E  → generate flows (this skill) → upload + run          [test-connector]
 Step 4: PUBLISH    → Lint, bundle bump, pack & publish via the appmixer CLI
 ```
 
-Step 3b: flow *generation* is this skill's job
+Step 3b: authoring `artifacts/verify.json` (fixture recipes + enum round-trip
+specs) is this skill's job — see `references/15-live-verification.md` for the
+format and rules (account-agnostic recipes, mandatory round-trip cleanup);
+running `appmixer connector verify` belongs to `test-connector`.
+
+Step 3c: flow *generation* is this skill's job
 (`references/11-e2e-flow-generation.md`); uploading and running the flows on a
 live instance belongs to `test-connector` (its `references/12-e2e-upload.md`
 and `13-e2e-run.md`). All E2E tooling ships with the appmixer CLI
 (`appmixer e2e import|run|list|results|export|validate|rm`).
-
-Step 3c: authoring `artifacts/verify.json` (fixture recipes + enum round-trip
-specs) is this skill's job — see `references/15-live-verification.md` for the
-format and rules (account-agnostic recipes, mandatory round-trip cleanup);
-running `appmixer connector verify` belongs to `test-connector`.
 
 Progress is tracked in
 `src/<vendor>/<connector>/artifacts/ai-artifacts/pipeline-state.json` —
@@ -205,6 +210,9 @@ Rules:
   ("Multiselect Inputs" in `08-best-practices.md`); the value may arrive as
   a comma-separated string from a variable.
 - Do NOT create `package.json` unless the connector genuinely needs npm dependencies.
+- Where a rule asks for a test (an auth field that becomes part of the request
+  host, plugin tenant isolation, a polling trigger's paging, an AI Agent), write
+  it as a unit test in `artifacts/test/` — `09-testing.md`, "Unit Tests".
 - **Every trigger gets a `test(context)` method** so Flow Test Mode can emit one
   realistic item — follow `references/10-trigger-test-method.md` (thin wrapper
   over the shared request+mapping path, read-only, no state writes, throw when
@@ -237,11 +245,11 @@ whole local test chain:
 
 - **`appmixer test component`** (Step 3a) — every component executes locally
   against the real API with real inputs; the CLI injects the stored auth.
-- **`appmixer connector verify`** (Step 3c) — declared output schemas checked
+- **`appmixer connector verify`** (Step 3b) — declared output schemas checked
   against live payloads, select labels round-tripped against the service, and
   `--record` saves sanitized samples so CI re-checks conformance offline from
   then on.
-- **E2E flows** (Step 3b) need a bound account on the instance anyway; the local
+- **E2E flows** (Step 3c) need a bound account on the instance anyway; the local
   login is where the test credentials get sorted out first.
 
 Without it the connector ships on static validation alone — and real defects
@@ -278,7 +286,7 @@ The yes at this gate covers the test plan (CLI-2) and the component loop
 for the CLI-4 decisions and before `connector verify --write`.
 
 **If the user declines**, record `"localTests": "skipped-by-user"` in
-`pipeline-state.json`, continue with Step 3b / Step 4, and say plainly in the
+`pipeline-state.json`, continue with Step 3c / Step 4, and say plainly in the
 final summary that the connector was **not run against the real API**. Never
 present a connector that skipped this gate as tested.
 
@@ -329,21 +337,7 @@ Ask user about consistently failing components: remove or keep?
 
 ---
 
-## Step 3b: Test E2E
-
-Generate E2E test flows into `src/<vendor>/<connector>/artifacts/test-flows/`
-following `references/11-e2e-flow-generation.md` (coverage rules, template,
-validator loop). Then hand off to the `test-connector` skill, which publishes
-the connector, imports the flows (`appmixer e2e import`) and runs them on a
-live instance (`appmixer e2e run` — its `references/12-e2e-upload.md` and
-`13-e2e-run.md`). Skip this step if the user
-has no live instance — continue with Step 4.
-
-Optionally ship 1–2 presentable demo flows in `artifacts/demo-flows/`
-(`references/17-demo-flows.md` — conventions and the schema-variable rule).
-
-
-## Step 3c: Author the live-verification spec
+## Step 3b: Author the live-verification spec
 
 Write `src/<vendor>/<connector>/artifacts/verify.json` following
 `references/15-live-verification.md`:
@@ -360,7 +354,26 @@ Write `src/<vendor>/<connector>/artifacts/verify.json` following
    delete action).
 
 Running verify (read-only, `--write` round-trips, `--record` samples,
-`--offline`) belongs to the `test-connector` skill.
+`--offline`) belongs to the `test-connector` skill, after the component loop
+passes and before the E2E flows.
+
+---
+
+## Step 3c: Test E2E
+
+Generate E2E test flows into `src/<vendor>/<connector>/artifacts/test-flows/`
+following `references/11-e2e-flow-generation.md` (coverage rules, template,
+validator loop). Then hand off to the `test-connector` skill, which publishes
+the connector, imports the flows (`appmixer e2e import`) and runs them on a
+live instance (`appmixer e2e run` — its `references/12-e2e-upload.md` and
+`13-e2e-run.md`). Skip this step if the user
+has no live instance — continue with Step 4.
+
+That hand-off is the connector's first publish: run Step 4's validator + lint
+before it, and for a connector that existed before, bump `bundle.json` first.
+
+Optionally ship 1–2 presentable demo flows in `artifacts/demo-flows/`
+(`references/17-demo-flows.md` — conventions and the schema-variable rule).
 
 ---
 
@@ -411,7 +424,6 @@ When a connector already exists and you only need to add one or more new compone
      source's defects: if the debt check listed findings for that component,
      do not carry them into the new one.
    - Update `component.json`, `component.js`, and any output/transform files to match the new endpoint
-   - Register the component in the connector's `package.json` if needed
    - A new component that has a sibling for the same resource (Get next to
      Find/List) returns the **same** item schema: same fields, same titles.
      If the current rules make the new one differ from a legacy sibling, the

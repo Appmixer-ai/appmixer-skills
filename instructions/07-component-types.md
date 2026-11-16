@@ -173,7 +173,7 @@ module.exports = {
             throw new context.CancelError('Task ID is required!');
         }
 
-        const response = await context.httpRequest({
+        const { data } = await context.httpRequest({
             method: 'GET',
             url: `https://api.service.com/tasks/${taskId}`,
             headers: {
@@ -181,7 +181,7 @@ module.exports = {
             }
         });
 
-        return context.sendJson(response.data, 'out');
+        return context.sendJson(data, 'out');
     }
 };
 ```
@@ -352,7 +352,7 @@ Trigger components monitor for events and start workflows when conditions are me
 
 - Set `"trigger": true` in component.json
 - Use `tick()` method for polling triggers
-- Use `webhook()` method for webhook triggers
+- Use `start()` / `stop()` to register and unregister the webhook and `receive()` to handle its payload, for webhook triggers
 - Store state to track changes
 
 ### Trigger Kinds

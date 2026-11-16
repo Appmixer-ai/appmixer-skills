@@ -56,7 +56,7 @@ Describes the connector service and its metadata.
     "properties": {
         "name": {
             "type": "string",
-            "description": "The name of the service, lower case, use the `appmixer.${CONNECTOR_NAME}` format "
+            "description": "The name of the service, lower case, use the `${VENDOR}.${CONNECTOR_NAME}` format (default vendor: `appmixer`) "
         },
         "label": {
             "type": "string",
@@ -130,7 +130,7 @@ Contains bundle metadata and version history.
     "properties": {
         "name": {
             "type": "string",
-            "description": "The name of the bundle, lower case, use the `appmixer.${CONNECTOR_NAME}` format. This is the same as the name in service.json file."
+            "description": "The name of the bundle, lower case, use the `${VENDOR}.${CONNECTOR_NAME}` format (default vendor: `appmixer`). This is the same as the name in service.json file."
         },
         "version": {
             "type": "string",
@@ -186,7 +186,7 @@ module.exports = {
 Where the vendor documents the API the connector wraps. A scheduled check reads this
 file to notice API changes (a deprecated endpoint, a new version, a changed auth
 flow), so the links must be the vendor's own pages and must live with the connector,
-not only in the issue that asked for it.
+not only in the request that asked for it.
 
 ```json
 {
@@ -220,8 +220,8 @@ Rules:
   wrap different APIs (`google/gmail`, `google/drive`) keeps one file at the vendor
   level with the shared fields at the top and a `modules` map for what differs:
   `"modules": { "gmail": { "apiReference": "...", "openApi": "..." } }`.
-- When the issue you build from carries these links (the Connector research flow
-  writes an `api-sources` block into its issues), verify them and copy them.
+- When the request you build from already carries these links, verify them and
+  copy them.
 - When you add components to a connector that has no `api-sources.json`, create it.
   When it exists and you read the docs again, update `checkedAt` and whatever changed.
 
