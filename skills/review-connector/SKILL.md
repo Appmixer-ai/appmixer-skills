@@ -158,9 +158,12 @@ process below for every component, do steps 3, 7 and 8 once, apply
 2. **Auth** uses the same fields/headers as `auth.js`; no hardcoded credentials.
 3. **Error handling** — API errors handled and wrapped with context, not crashing.
 4. **Output** — sent on the correct port; no undefined/null output.
-5. **List/Find page size** — one request with the API's maximum page size, that
-   maximum named in the description, no `limit`/`offset` inputs ("Find (Items)
-   Components" in `07-component-types.md`). A `limit`/`offset` input on a new
+5. **Find page size** — one request with the API's maximum page size, that
+   maximum named in the description together with a hint to narrow the filters,
+   no `limit`/`offset` inputs ("Find (Items) Components" in
+   `07-component-types.md`). A **public List component** (`List…` without
+   `"private": true`) on a new component = `error`: it should be a Find with the
+   API's filters, or a private dropdown source. A `limit`/`offset` input on a new
    component = `error` (it fails the `find-list-no-pagination` validator); on
    a released component it is connector debt, not a rename to make.
 6. **outputType** supported for Find components (flat, first, count, …).

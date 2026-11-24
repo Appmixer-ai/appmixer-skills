@@ -186,8 +186,10 @@ For each component, under `src/<vendor>/<connector>/core/<ComponentName>/`:
    based on the API documentation.
 
 Rules:
-- Follow Appmixer conventions strictly (component types table: Get/List/Find/
-  Create/Update/Delete/Trigger semantics per `07-component-types.md`).
+- Follow Appmixer conventions strictly (component types table: Get/Find/
+  Create/Update/Delete/Trigger semantics per `07-component-types.md`). Do not
+  generate public List components: offer a Find with the API's filters, and
+  add a `List…` component only as a `"private": true` dropdown source.
 - Keep HTTP client, auth handling, and output conventions consistent across all
   generated components.
 - Every component referenced as a dropdown `source.url` (dynamic inspector
