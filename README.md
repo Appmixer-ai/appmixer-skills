@@ -238,9 +238,15 @@ claude
 /plugin install appmixer@appmixer-skills
 ```
 
-### Claude Desktop / Claude.ai
+### Claude Desktop
 
-Each skill directory under `skills/` is self-contained (SKILL.md + `references/`) — zip the ones you want and upload them to your project.
+Claude Desktop installs the same plugin as Claude Code. Open **Plugins**, choose **Add** → add a marketplace, enter `Appmixer-ai/appmixer-skills`, then install the `appmixer` plugin from it.
+
+The skills write files into a local workspace and run the `appmixer` CLI, so use them in a session that has a folder and a shell (Claude Code in the desktop app), not in a plain chat.
+
+### Claude.ai
+
+Each skill directory under `skills/` is self-contained (SKILL.md + `references/`) — zip the ones you want and upload them to your project. Without a local workspace and the `appmixer` CLI the skills can only advise; they cannot scaffold, test or publish.
 
 ### Cursor, GitHub Copilot, Windsurf, Cline, and others (via Open Agent Skills)
 
