@@ -57,6 +57,7 @@ https://github.com/appmixer-ai/appmixer-connectors.
 | `17-demo-flows.md` | Optional demo flows in `artifacts/demo-flows/` — conventions, the schema-variable rule |
 | `18-ai-agents.md` | AI Agent components — the `tools` port (plain tools, chains, `Tool Start`, MCP), memory, files, testing |
 | `19-security-dependency-fixes.md` | Fixing a vulnerable npm dependency — `npm ci` lockfiles, Node 18, `overrides`, one bump per connector |
+| `20-mcp-servers.md` | MCP server connectors (`appmixer.mcpservers.*`) — remote first, fixed vendor URL, auth reuse, rewriting a stdio one |
 
 Consult these when generating code, debugging failures, or reviewing output.
 
@@ -75,6 +76,12 @@ callback URL parameter or a companion status endpoint. Getting this wrong is
 expensive to undo later: it changes the component's ports, so fixing it after
 release is a breaking change. Never solve it by returning the id and leaving the
 user to poll in the flow, and never expose the callback URL as a component input.
+
+**Before adding or rewriting an MCP server connector (`appmixer.mcpservers.*`), read
+`20-mcp-servers.md`.** If the vendor runs an official remote MCP server, the
+connector calls it over Streamable HTTP at a fixed URL — no bundled `server.js`,
+no stdio child process — and reuses the main connector's auth when the remote
+server accepts it. A local stdio server is only for vendors without a hosted one.
 
 **Before writing an AI Agent for an LLM connector, read `18-ai-agents.md`.** All
 agents share one contract: `model`, `instructions`, `prompt`, `threadId`, `fileId`,
