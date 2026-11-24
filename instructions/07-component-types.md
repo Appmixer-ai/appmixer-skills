@@ -14,9 +14,11 @@ Action components perform operations when triggered by input data. They don't ru
 - Returns array of items
 - Includes `outputType` for array vs individual items (outputType is always the last property in inPorts schema with maximum index)
 - Has `notFound` output port for when no items match
-- Limited by query/filter parameters
-- No pagination, no limit. Returns maximum items per one page. Maximum number of items mentioned in description.
+- Limited by query/filter parameters: expose the filters the API offers (search text, status, owner, date range, parent …) so the user can narrow the result to what they need
+- No pagination, no limit. One request with the API's maximum page size; items beyond that one page are not returned.
+- **The description must say so**: name the maximum and tell the user to narrow the filters, e.g. `"Find tasks by name, status or assignee. Returns at most 100 tasks (one page); narrow the filters if the task you need is not among them."`
 - **IMPORTANT**: Do NOT include `limit` or `offset` fields in component inputs - these are not supported by Appmixer Find components
+- If the API has no filters at all, the component is still a Find (there are no public List components, see below); its description names the maximum and says that it returns the first page only
 
 **Example component.json structure**:
 See [`examples/find-tasks/component.json`](examples/find-tasks/component.json).
@@ -133,21 +135,16 @@ This changes nothing for the designer: the emitted options are byte-identical.
 It exists so `validate` can see the contract offline and `verify` can honour
 `required`.
 
-### List (Items) Components
+### List (Items) Components: not public
 
-**Purpose**: Retrieve all items of a specific type. Use when the service doesn't provide filter/search options.
+**Do not create public List components.** A component that promises "all items" cannot keep that promise: a flow message has a size limit (about 2 MB by default), a failure on a later page makes the engine run the whole component again from the first page (with "One item at a time" output, items already sent are sent again), and every page counts against the user's quota. Use a **Find** component with filters instead (see above).
 
-**Pattern**: `List{EntityName}` (e.g., `ListTasks`, `ListUsers`, `ListProjects`)
+A `List{EntityName}` component is allowed only as a **private dynamic-input source**:
+- `"private": true` in `component.json`, so it does not appear in the Designer's component list; it is used only through `source.url` of other components' inputs
+- one request with the API's maximum page size, no `outputType`, returns `{ items }` (or the shape its `toSelectArray` transform expects)
+- follows the dynamic-source rules in "Using `variableFetch` / `isSource` for Dynamic Source Calls" below (error suppression, caching)
 
-**Key Characteristics**:
-- Returns array of items by default
-- Includes `outputType` for array vs individual items
-- IMPORTANT: Ignore pagination or limits—use the maximum available page size
-- Mention maximum page size count in description
-- Same `limit`/`offset` rule as Find components above
-
-**Example component.json structure**:
-See [`examples/list-forms/component.json`](examples/list-forms/component.json).
+Existing public List components in released connectors are legacy: do not add new ones, and do not rename or remove an existing one in a minor version (it breaks saved flows).
 
 ### Get (Item) Components
 
