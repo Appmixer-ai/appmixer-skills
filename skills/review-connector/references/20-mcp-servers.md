@@ -119,8 +119,10 @@ module.exports = {
    app, write a normal `oauth2` auth.js against the vendor's authorization server
    (the protected-resource metadata at `/.well-known/oauth-protected-resource`
    names it). If the server only supports **dynamic client registration** (no
-   app you can pre-register), stop and raise it — there is no agreed pattern for
-   storing a DCR client yet.
+   app you can pre-register), it needs the engine auth type `mcpOauth`
+   (discovery + registration + PKCE in the engine, `auth.js` names only the MCP
+   URL — Appmixer-ai/appmixer-core#5249). Until that type is available, stop and
+   raise it; do not hand-roll registration or PKCE in `auth.js`.
 4. **Never put a credential in the URL**, even where the vendor still accepts it
    (Firecrawl once documented `/{API_KEY}/v2/mcp`): URLs end up in logs.
 
