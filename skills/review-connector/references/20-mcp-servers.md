@@ -118,11 +118,15 @@ module.exports = {
 3. **OAuth-only remote servers.** If the vendor lets you pre-register an OAuth
    app, write a normal `oauth2` auth.js against the vendor's authorization server
    (the protected-resource metadata at `/.well-known/oauth-protected-resource`
-   names it). If the server only supports **dynamic client registration** (no
-   app you can pre-register), it needs the engine auth type `mcpOauth`
-   (discovery + registration + PKCE in the engine, `auth.js` names only the MCP
-   URL — Appmixer-ai/appmixer-core#5249). Until that type is available, stop and
-   raise it; do not hand-roll registration or PKCE in `auth.js`.
+   names it). If the server has no app you can pre-register — the client is
+   obtained by **CIMD** (a client metadata document) or **dynamic client
+   registration** — the pattern is a module-level plugin (public CIMD document,
+   discovery, one registration stored in the plugin's service state) plus an
+   `oauth2` auth.js with PKCE. It depends on two engine changes
+   (Appmixer-ai/appmixer-core#5249) and has no released reference connector yet:
+   until it has one, stop and raise it instead of inventing a variant. In
+   particular, a PKCE verifier derived from the ticket is not acceptable for a
+   client without a secret — the ticket is public.
 4. **Never put a credential in the URL**, even where the vendor still accepts it
    (Firecrawl once documented `/{API_KEY}/v2/mcp`): URLs end up in logs.
 
