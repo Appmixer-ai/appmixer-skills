@@ -29,7 +29,8 @@
   ],
   "scripts": {
     "test": "bash scripts/smoke-test.sh",
-    "release": "commit-and-tag-version"
+    "release": "commit-and-tag-version",
+    "eval": "node evals/src/cli.ts"
   },
   "agents": {
     "skills": [
