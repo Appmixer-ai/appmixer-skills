@@ -233,8 +233,10 @@ Step 2.
 Follow the `review-connector` skill — a read-only audit of every generated
 component against the standards in `references/` (component.json contract,
 behavior patterns, dynamic-source rules, trigger `test()` rules). Fix every
-`error` finding by editing the component files directly; use judgement on
-warnings. Re-run the review after fixes until clean.
+`error` finding that a rule in `references/` backs by editing the component files
+directly; a finding that contradicts a rule or cites none is not applied (see
+"Applying a Review Finding" in `references/16-agent-instructions.md`). Use
+judgement on warnings. Re-run the review after fixes until clean.
 
 ---
 

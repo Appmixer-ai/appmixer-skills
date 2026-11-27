@@ -171,10 +171,12 @@ you run a deterministic validator and fix anything it flags, looping until clean
     to the right after the last Assert. Connected components either share a row
     (Δy = 0) or are ≥ MIN_DY apart; never backward/overlapping edges. Enforced
     (as warnings) by `layout`.
-15. **Cover every component** — each connector **action** should appear in at least
-    one flow. `component-coverage` excludes `trigger: true` components, so it only
-    flags uncovered **actions** — but triggers CAN and SHOULD be E2E-covered too,
-    using the provoke pattern below.
+15. **Cover every component** — each public connector **action** should appear in at
+    least one flow. `component-coverage` excludes `trigger: true` and
+    `"private": true` components, so it only flags uncovered public **actions** —
+    but triggers CAN and SHOULD be E2E-covered too, using the provoke pattern below.
+    A private component (a dynamic-input source) must NOT be a flow node at all
+    (`no-private-component-node`); unit-test it instead.
 16. **Never verify a Create via full-text search** — search endpoints
     (`searchTerm`-style inputs) read an eventually-consistent index: a record
     created a second earlier is deterministically missing (and archived/deleted

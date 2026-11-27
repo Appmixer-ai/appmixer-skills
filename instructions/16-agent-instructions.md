@@ -17,6 +17,26 @@ and ten tests — and was sent back as too big. The migration guarded against an
 ordering problem that was assumed, not measured, and did not exist. The fix that
 replaced it is about 15 lines in the original `tick()`.
 
+## Applying a Review Finding
+
+A finding from a review (a human, the review skill, a pipeline review stage, Copilot) is a claim,
+not an instruction. Before you change code for it:
+
+1. **Find the rule behind it** — the file and section in these instructions that the finding
+   relies on. A finding that quotes a rule you cannot find here (a "repo rule" from a copied
+   CLAUDE.md, a convention from older connectors) has no rule behind it.
+2. **Rules win.** When the finding contradicts a rule, or has none behind it, do not apply it.
+   Reply on the finding and cite the rule (e.g. 07 "List (Items) Components: not public"). The
+   newer rule wins over older code and older copies of the rules.
+3. **Apply the rule, not the reviewer's sketch.** The suggested fix is one way to satisfy the rule;
+   check it against the rest of the instructions (quota, one-page Find, private sources) before
+   you copy it.
+
+Why: a review blocked a new connector because its Find components read one page, quoting "List =
+all items, no limit" from a stale copy of the rules in a repo's CLAUDE.md. An automated fixer
+applied it within two minutes and added a cursor loop of up to 100 requests per call — exactly what
+"Find (Items) Components" forbids. The commit had to be reverted.
+
 ## Capturing New Learnings
 
 As you work on connectors, you will discover information that is not yet
