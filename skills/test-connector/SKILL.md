@@ -346,6 +346,10 @@ CLI component tests), follow the two references shipped with this skill:
    re-import → re-run; `references/09-testing.md` and
    `references/11-e2e-flow-generation.md` hold the flow design rules
    the fixes must follow).
+3. **Were the changes tested?** — `references/13-e2e-run.md` → "Were the
+   changes tested?": `appmixer e2e coverage <ref> --changed … --live --since …
+   --deployed` after the runs. Every changed component must be `verified`;
+   green flows alone are not the answer.
 
 Flow JSONs are produced during the build by `build-connector`
 (`references/11-e2e-flow-generation.md`, bundled here too for the fix loop);

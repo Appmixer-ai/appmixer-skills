@@ -207,6 +207,28 @@ before moving on.
 **Always end your report to the user with the summary table** built from the
 `RESULT |` lines — one row per flow: name, status, designer URL.
 
+### Were the changes tested?
+
+Green flows only say the flows passed — not that they ran what you changed, and
+not that every component in them worked (a component the asserts do not look at
+can fail while the E2E result store still records the run as a success). After
+the runs, ask the CLI what they proved:
+
+```bash
+appmixer e2e coverage <vendor>:<connector> --changed <Component,Other> --live --since "<start of the runs>" --deployed
+# or, in a git checkout: --base origin/dev instead of --changed
+```
+
+- every changed component must be **verified** — a flow that passed produced its
+  output and it logged no error;
+- **errored** = it logged an error in that run, also when the flow passed — treat
+  it as a failure and fix it (flow wiring or component);
+- **not-run / uncovered** = no passing flow reached it — add or extend a flow;
+- `deployed files differ` = the instance does not run your code — publish again.
+
+Exit 0 = no gaps, 2 = gaps. Put its verdict next to the summary table; a
+report without it does not say the change is tested.
+
 ## Flow Completion Detection
 
 Flows are monitored via **log polling**, not flow stage:
