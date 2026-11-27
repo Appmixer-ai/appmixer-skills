@@ -309,6 +309,13 @@ port); if the provider only offers a status endpoint to poll, it MUST use a
    tenant's events reach every other tenant's flows. A route with `auth: false`
    and no signature check that routes by an id from the payload = `error`
    (anyone can inject events into a tenant's flows).
+5. **Webhook trigger verifies that a call is authentic** (`webhook: true`, per
+   "Verify that a call is authentic" in `07-component-types.md`). `receive()`
+   checks the vendor's signature or a per-registration secret kept in state,
+   with `crypto.timingSafeEqual`, before any API request or emit, and fails
+   closed. A `receive()` that emits whatever the payload names with no such
+   check = `error` on a new trigger, `warning` on an existing one. A vendor that
+   offers neither signature nor custom headers/URL must be stated in a comment.
 
 ### AI Agents only (an `AIAgent` component of an LLM connector)
 

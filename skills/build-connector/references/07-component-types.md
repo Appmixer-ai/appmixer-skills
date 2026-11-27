@@ -379,6 +379,27 @@ See [`examples/webhook-trigger/component.json`](examples/webhook-trigger/compone
 **Behavior file pattern**:
 See [`examples/webhook-trigger/UpdatedContact.js`](examples/webhook-trigger/UpdatedContact.js).
 
+**Verify that a call is authentic.** The webhook URL is public: anyone who learns it can POST to
+it, and a `receive()` that trusts the payload emits whatever the caller names (an existing record
+read back by its ID, an event that never happened). Before any API request or `send*`:
+
+- **The vendor signs its calls** (an HMAC header over the raw body, a signing secret returned when
+  the webhook is registered): verify that signature.
+- **The vendor does not sign**, but lets you set headers or the URL of the registration: generate a
+  random secret per registration in `start()` (`crypto.randomBytes(32).toString('hex')`), send it
+  as a custom header (or a query parameter appended to `context.getWebhookUrl()`), save it in the
+  state next to the webhook ID, and compare it in `receive()`.
+- Compare with `crypto.timingSafeEqual` (equal lengths first), never `===`.
+- **Fail closed**: no secret in the state, no header in the call, or a mismatch → log, answer
+  `context.response({ error: 'Forbidden' }, 403)` and emit nothing.
+- **The vendor offers neither**: say so in a code comment and in the PR, and keep `receive()` from
+  emitting anything the payload alone decides (read the record back and check it belongs to the
+  registration's scope).
+
+Reference implementation: the example above, and `src/appmixer/gorgias/lib.js` `isAuthenticWebhook()` in appmixer-connectors (PR #1569; header secret per
+HTTP integration). A state saved before the secret existed fails closed, so the changelog of the
+release that adds the check tells users to restart running flows.
+
 #### 2b. Plugin-based Triggers (shared global endpoint + `addListener`)
 
 When the upstream service requires a **single global webhook callback URL per app** (Meta WhatsApp, Slack Events API, Stripe Webhooks at the app level), the per-trigger `getWebhookUrl()` pattern in section 2 does NOT work — you can only register one URL on the upstream service, and Appmixer issues a different URL per trigger instance. The right pattern is a **connector-level plugin** that owns one endpoint and fans out events to many subscribed trigger instances.
@@ -534,6 +555,7 @@ See [`examples/hybrid-trigger/NewRecord.js`](examples/hybrid-trigger/NewRecord.j
     - MUST implement `start(context)` to register webhook
     - MUST implement `stop(context)` to unregister webhook
     - MUST implement `receive(context)` to handle webhook payloads
+    - MUST verify that a call is authentic (vendor signature, or a per-registration secret kept in state) before any API request or emit, and fail closed — see "Verify that a call is authentic" above
     - MUST call `context.getWebhookUrl()` to get the callback URL
     - MUST return `context.response()` after processing webhook
     - SHOULD save `webhookId` in state for cleanup
@@ -842,7 +864,7 @@ Cache key is a SHA-256 hash of `{ url, token }` — unique per user and endpoint
 
 The `context.lock(key)` around the fetch is not just for correctness — the designer fires source calls in a **concurrent burst** when a component's inspector opens (one call per dropdown, several dropdowns per component). The first caller populates the cache while the rest wait on the lock and then read the cached value, so the API sees one call instead of the whole burst.
 
-**Variant — cache unconditionally (heavily rate-limited APIs):** when the upstream API has tight limits (e.g. Xero: 60 calls/min, 5 concurrent per tenant) or one source component backs a dropdown used by most components in the connector (typically a tenant/account selector), skip the sentinel check and cache inside `receive()` unconditionally, with a short TTL. Cache the **final assembled (post-pagination) records array** — one cache entry then saves up to ~100 upstream page calls, and ~2 min staleness on list data is an acceptable tradeoff even for normal flow execution. Pair this with honoring `Retry-After` on 429 responses in the connector's HTTP client, so a single throttled page does not fail the whole paginated fetch.
+**Variant — cache unconditionally (heavily rate-limited APIs):** when the upstream API has tight limits (e.g. Xero: 60 calls/min, 5 concurrent per tenant) or one source component backs a dropdown used by most components in the connector (typically a tenant/account selector), skip the sentinel check and cache inside `receive()` unconditionally, with a short TTL. Cache the source's **one page** (a dynamic source makes one request with the API's maximum page size, see "List (Items) Components: not public") — ~2 min staleness on list data is an acceptable tradeoff even for normal flow execution. Pair this with honoring `Retry-After` on 429 responses in the connector's HTTP client.
 
 **Reference implementations:**
 - Error suppression only: `src/appmixer/microsoft/onedrive/ListSites/ListSites.js`

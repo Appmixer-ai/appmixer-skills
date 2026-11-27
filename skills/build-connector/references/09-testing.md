@@ -23,7 +23,7 @@ E2E test flows are automated workflow tests stored as `test-flow-*.json` files i
 
 **Important**: Connectors should have **multiple smaller test flows** rather than one large flow. Each flow should test a specific feature or workflow (e.g., `test-flow-crud.json`, `test-flow-search.json`, `test-flow-webhooks.json`). This approach makes tests easier to maintain, debug, and understand.
 
-**Full Coverage Requirement**: All components in a connector MUST be tested. Verify that every component in the connector appears in at least one test flow.
+**Full Coverage Requirement**: All **public** components in a connector MUST be tested. Verify that every public component appears in at least one test flow. A `"private": true` component (a dynamic-input source) is never a flow node — `appmixer e2e validate` rejects it (`no-private-component-node`); unit-test it and let the component whose input uses it cover it.
 
 **Data assumptions get a designer sticky note**: a flow that assumes tenant
 data (hardcoded entity IDs that must exist), provokes its own data, or carries
@@ -738,7 +738,7 @@ component ids are specified at the top of this document and not repeated here.)
     - Pass data between components via variables
 
 5. **File Naming**
-    - Name test flow files: `test-flow-<feature>.json` (e.g., `test-flow-crud.json`, `test-flow-list.json`)
+    - Name test flow files: `test-flow-<feature>.json` (e.g., `test-flow-crud.json`, `test-flow-search.json`)
     - Use clear, descriptive flow names that indicate what the flow tests
 
 #### Example Test Flow Pattern
@@ -747,10 +747,11 @@ See [`examples/e2e-test-flow.json`](examples/e2e-test-flow.json).
 
 #### Creating a Test Flow: Step-by-Step
 
-1. **Plan** — list ALL components (actions and triggers) and group them into
-   scenarios, e.g. `test-flow-crud.json` (Create, Update, Get, Delete),
-   `test-flow-list.json` (List and Find), `test-flow-advanced.json` (complex
-   operations). Every component appears in at least one flow.
+1. **Plan** — list ALL public components (actions and triggers) and group them
+   into scenarios, e.g. `test-flow-crud.json` (Create, Update, Get, Delete),
+   `test-flow-search.json` (Find), `test-flow-advanced.json` (complex
+   operations). Every public component appears in at least one flow; private
+   components (dynamic-input sources) appear in none.
 2. **Create the file** at
    `src/<vendor>/<connector>/artifacts/test-flows/test-flow-<feature>.json`
    with OnStart → connector components → Assert(s) → AfterAll → cleanup →

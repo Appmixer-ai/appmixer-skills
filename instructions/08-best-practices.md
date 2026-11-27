@@ -98,7 +98,7 @@ Behavior JS file MUST follow these rules:
 ## Performance
 
 - **Caching**: Cache frequently accessed data (e.g., user lists, configuration)
-- **Pagination**: triggers and internal helpers page through large datasets; Find components and private List sources do not (one request, maximum page size)
+- **Pagination**: only triggers page through large datasets. Find components, private List sources, **and any helper they call** make one request with the API's maximum page size — a `listAll()` in `lib.js` that follows a cursor is pagination too, wherever it lives
 - **Locking**: Use locking mechanisms for shared resources
 - **Batching**: Batch API calls when possible to reduce requests
 
@@ -200,6 +200,8 @@ async function getSubfolders(context, rootFolderId) {
 ```
 
 **Why batching is important**: Deep recursive folder structures with hundreds of subfolders can take minutes to traverse sequentially. Batched concurrent requests significantly reduce total execution time and are less likely to timeout.
+
+**Bound the traversal.** The example has no cap, and every request counts against the user's quota. Use it only where reading everything is the job (a trigger that diffs a folder tree, a plugin job), stop at a documented maximum of items or requests, and never call it from a Find component or a dynamic source (see "Pagination" above).
 
 ## Common Patterns
 
