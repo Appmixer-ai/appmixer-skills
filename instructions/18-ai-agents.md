@@ -82,6 +82,7 @@ itself only calls `collectComponentTools`, `getComponentToolDefs`,
 4. **An MCP server (`appmixer.mcpservers.*.MCPServer`).** Its tools are listed
    with `?action=listTools` and called with `?action=callTool`; the component id
    is shortened (`short-uuid`) to keep the function name under 64 characters.
+   How to build the MCP server connector itself: `20-mcp-servers.md`.
 
 Rules that hold for every kind:
 

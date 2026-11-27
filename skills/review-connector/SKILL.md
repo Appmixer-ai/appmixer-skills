@@ -33,6 +33,7 @@ The rules to check live in the `references/` directory next to this SKILL.md:
 | `14-async-components.md` | Jobs that finish later — self-callback vs. continuation chain |
 | `18-ai-agents.md` | AI Agent components — ports, the `tools` port mechanisms, memory, provider mapping |
 | `19-security-dependency-fixes.md` | Dependency changes — lockfile in sync for `npm ci`, Node 18, no bundled HTTP client |
+| `20-mcp-servers.md` | MCP server connectors — remote first, fixed vendor URL, auth reuse, breaking rewrite |
 
 Complete example files (component.json, behaviors, auth.js, lib.js) are in
 `references/examples/`. Real-world example connectors (when you want a
@@ -346,6 +347,16 @@ Check against `references/18-ai-agents.md`:
    agents only: `ai/mcptools` (MCP Gateway) differs on purpose.
 8. **Model content read as a string only** — `warning`: reasoning models return a
    list of chunks; take the `text` parts.
+
+### MCP server connectors only (`appmixer.mcpservers.*`)
+Check against `references/20-mcp-servers.md`:
+- A new or changed MCP connector spawns a local server (`StdioClientTransport`, `server.js`, a vendor MCP package) although the vendor runs an official remote MCP server — **error**. Name the remote URL.
+- The MCP URL comes from a component input or the account while a stored credential is sent with it — **error** (credential exfiltration). Exception: a self-managed instance base URL from the account, validated `https:`, with a fixed path appended.
+- A credential in the URL (path or query) — **error**.
+- `client.close()` not in a `finally` that also covers a failed `connect` — **warning**.
+- An own `appmixer:mcpservers:*` service where the main connector's service would be accepted by the remote server — **warning**.
+- `validate` does not call the MCP endpoint, so a credential the MCP server rejects passes connect — **warning**.
+- A stdio → remote rewrite without a major `bundle.json` bump and a `BREAKING:` entry naming changed tools and account changes — **error**.
 
 ### Dependency changes only (a `package.json` or `package-lock.json` changed)
 Check against `references/19-security-dependency-fixes.md`:
